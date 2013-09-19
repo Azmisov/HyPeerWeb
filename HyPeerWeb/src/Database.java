@@ -125,7 +125,36 @@ public class Database {
 	 * @author guy
 	 */
 	public boolean addNode(Node node){
+            String update;
+            update = "INSERT INTO Nodes VALUES(" + 
+                node.getWebID() + ", " + 
+                node.getHeight() + ", " + 
+                node.getFold() + ", " + 
+                node.getSurrogateFold() + ", " +
+                node.getInverseSurrogateFold() + ");";
+            
+            if(!sqlUpdate(update))
 		return false;
+            
+            ArrayList<Integer> list;
+            int webID = node.getWebID();
+            
+            list = node.getNeighbors();
+            for(int i:list)
+                if(!addNeighbor(webID, i))
+                    return false;
+            
+            list = node.getSurrogateNeighbors();
+            for(int i:list)
+                if(!addSurrogateNeighbor(webID, i))
+                    return false;
+            
+            list = node.getInverseSurrogateNeighbors();
+            for(int i:list)
+                if(!addSurrogateNeighbor(i, webID))
+                    return false;
+            
+            return true;
 	}
 	/**
 	 * Add a node to the database
