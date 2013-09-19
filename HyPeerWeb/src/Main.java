@@ -124,14 +124,14 @@ public class Main {
                         list1.add(8);
                         
                         ArrayList<Integer> list2 = new ArrayList();
-                        list1.add(9);
-                        list1.add(10);
-                        list1.add(11);
+                        list2.add(9);
+                        list2.add(10);
+                        list2.add(11);
                         
                         ArrayList<Integer> list3 = new ArrayList();
-                        list1.add(12);
-                        list1.add(13);
-                        list1.add(14);
+                        list3.add(12);
+                        list3.add(13);
+                        list3.add(14);
                         
                         node.setNeighbors(list1);
                         node.setSurrogateNeighbors(list2);
@@ -158,14 +158,37 @@ public class Main {
 				System.out.println("Failed to set inverse surrogate fold");
 				errs++;
 			}
+                        ArrayList<Integer> list;
                         //Neighbors
+                        list = db.getNeighbors(5);
+                        for(int i = 0; i < list.size(); i++)
+                            if(list.get(i) != i + 6){
+                                System.out.println("Neighbor list is wrong");
+                                errs++;
+                            }
+                        
+                        //Surrogate Neighbors
+                        list = db.getSurrogateNeighbors(5);
+                        for(int i = 0; i < list.size(); i++)
+                            if(list.get(i) != i + 9){
+                                System.out.println("Surrogate Neighbor list is wrong");
+                                errs++;
+                            }
+                        
+                        //Inverse Surrogate Neighbors
+                        list = db.getInverseSurrogateNeighbors(5);
+                        for(int i = 0; i < list.size(); i++)
+                            if(list.get(i) != i + 12){
+                                System.out.println("Inverse Surrogate Neighbor list is wrong");
+                                errs++;
+                            }
                         
 		} catch (Exception e){
 			System.out.println("!! getColumn exception encountered, could not complete tests !!");
 			errs++;
 		}
 		System.out.println("# errors = "+errs);
-		System.out.println("---- END testNodeAttibutes ----");
+		System.out.println("---- END testAddNode1 ----");
 		return errs;
 	}
 }
