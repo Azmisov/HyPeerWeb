@@ -179,7 +179,7 @@ public class Main {
                         list = db.getInverseSurrogateNeighbors(5);
                         for(int i = 0; i < list.size(); i++)
                             if(list.get(i) != i + 12){
-                                System.out.println("Neighbor list is wrong");
+                                System.out.println("Inverse Surrogate Neighbor list is wrong");
                                 errs++;
                             }
                         
