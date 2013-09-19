@@ -45,13 +45,15 @@ public class Database {
 			String db_setup = 
 				"BEGIN;"+
 				"create table if not exists `Nodes` (`WebId` integer primary key, `Height` integer, `Fold` integer, `SurrogateFold` integer, `InverseSurrogateFold` integer);"+
-				"create table if not exists `Neighbors` (`WebId` integer primary key, `Neighbor` integer);"+
-				"create table if not exists `SurrogateNeighbors` (`WebId` integer primary key, `SurrogateNeighbor` integer);"+
-				"create index if not exists `InverseSurrogateNeighbors` on `SurrogateNeighbors` (`SurrogateNeighbor`);"+
+				"create table if not exists `Neighbors` (`WebId` integer, `Neighbor` integer);"+
+				"create table if not exists `SurrogateNeighbors` (`WebId` integer, `SurrogateNeighbor` integer);"+
+				"create index if not exists `Idx_Neighbors` on `Neighbors` (`WebId`);"+
+				"create index if not exists `Idx_SurrogateNeighbors` on `SurrogateNeighbors` (`WebId`);"+
+				"create index if not exists `Idx_InverseSurrogateNeighbors` on `SurrogateNeighbors` (`SurrogateNeighbor`);"+
 				"COMMIT;";
 			stmt = db.createStatement();
 			stmt.setQueryTimeout(5);
-			stmt.executeQuery(db_setup);
+			stmt.executeUpdate(db_setup);			
 		} catch (SQLException e) {
 			System.out.println("Could not create the database!");
 			throw e;
@@ -77,6 +79,15 @@ public class Database {
 			throw new Exception("Failed to connect to database");
 		//Successful connection available
 		return singleton;
+	}
+	/**
+	 * Removes all data from the database, leaving the structure intact.
+	 * @author john
+	 */
+	public void clearDB(){
+		sqlUpdate("delete from `Nodes`");
+		sqlUpdate("delete from `Neighbors`");
+		sqlUpdate("delete from `SurrogateNeighbors`");
 	}
 	
 	///SQL OPERATIONS
@@ -114,7 +125,36 @@ public class Database {
 	 * @author guy
 	 */
 	public boolean addNode(Node node){
+            String update;
+            update = "INSERT INTO Nodes VALUES(" + 
+                node.getWebID() + ", " + 
+                node.getHeight() + ", " + 
+                node.getFold() + ", " + 
+                node.getSurrogateFold() + ", " +
+                node.getInverseSurrogateFold() + ");";
+            
+            if(!sqlUpdate(update))
 		return false;
+            
+            ArrayList<Integer> list;
+            int webID = node.getWebID();
+            
+            list = node.getNeighbors();
+            for(int i:list)
+                if(!addNeighbor(webID, i))
+                    return false;
+            
+            list = node.getSurrogateNeighbors();
+            for(int i:list)
+                if(!addSurrogateNeighbor(webID, i))
+                    return false;
+            
+            list = node.getInverseSurrogateNeighbors();
+            for(int i:list)
+                if(!addSurrogateNeighbor(i, webID))
+                    return false;
+            
+            return true;
 	}
 	/**
 	 * Add a node to the database
@@ -237,15 +277,11 @@ public class Database {
 	
 	//private methods for getting/setting columns
 	private boolean setColumn(int webid, String colname, int value){
-		try{
-			PreparedStatement setc = db.prepareStatement("update");
-			//setc.
-			//stmt.executeUpdate("update `Nodes` set `"+colname+"` = '"+value+"' where `` = '"+webid+"'");
-		} catch(Exception e){}
-		return false;
+		return sqlUpdate("update `Nodes` set `"+colname+"` = '"+value+"' where `WebId` = '"+webid+"'");
 	}
 	private int getColumn(int webid, String colname) throws Exception{
-		throw new Exception("Not implemented");
+		ResultSet res = sqlQuery("select `"+colname+"` as col_value from `Nodes` where `WebId` = '"+webid+"'");
+		return res.getInt("col_value");
 	}
 	
 	///NODE NEIGHBORS
@@ -276,8 +312,8 @@ public class Database {
 	 * @throws Exception throws exception if there was an error in retrieval
 	 * @author josh
 	 */
-	public int[] getNeighbors(int webid) throws Exception{
-		throw new Exception("Failed to retrieve data");
+	public ArrayList<Integer> getNeighbors(int webid) throws Exception{
+		throw new Exception("getNeighbors not yet implemented");
 	}
 	/**
 	 * Add a surrogate neighbor to a node
@@ -287,8 +323,7 @@ public class Database {
 	 * @author john
 	 */
 	public boolean addSurrogateNeighbor(int webid, int neighbor){
-		sqlUpdate("INSERT INTO SurrogateNeighbors VALUES(" + webid + "," + neighbor + ")");
-		return true;
+		return sqlUpdate("INSERT INTO SurrogateNeighbors VALUES(" + webid + "," + neighbor + ")");
 	}
 	/**
 	 * Remove a surrogate neighbor from a node
@@ -298,9 +333,8 @@ public class Database {
 	 * @author john
 	 */
 	public boolean removeSurrogateNeighbor(int webid, int neighbor){
-		sqlUpdate("DELETE FROM SurrogateNeighbors WHERE WebID=" + webid +
+		return sqlUpdate("DELETE FROM SurrogateNeighbors WHERE WebID=" + webid +
 				" AND SurrogateNeighbor=" + neighbor);
-		return true;
 	}
 	/**
 	 * Retrieves a list of surrogate neighbors
@@ -311,12 +345,9 @@ public class Database {
 	 */
 	public ArrayList<Integer> getSurrogateNeighbors(int webid) throws Exception{
 		ArrayList<Integer> data = new ArrayList<>();
-		ResultSet results = sqlQuery("SELECT * FROM SurrogateNeighbors WHERE WebID=" + webid);
-		while (!results.isLast())
-		{
-			data.add(results.getInt("SurrogateNeighbor"));
-			results.next();
-		}
+		ResultSet results = sqlQuery("select `SurrogateNeighbor` as `sn` from `SurrogateNeighbors` where `WebID` = '"+webid+"'");
+		while (results.next())
+			data.add(results.getInt("sn"));
 		return data;
 	}
 	/**
@@ -328,13 +359,9 @@ public class Database {
 	 */
 	public ArrayList<Integer> getInverseSurrogateNeighbors(int webid) throws Exception{
 		ArrayList<Integer> data = new ArrayList<>();
-		ResultSet results = sqlQuery("SELECT * FROM SurrogateNeighbors "
-				+ "WHERE SurrogateNeighbor=" + webid);
-		while (!results.isLast())
-		{
-			data.add(results.getInt("WebID"));
-			results.next();
-		}
+		ResultSet results = sqlQuery("select `WebId` as `webid` from `SurrogateNeighbors` where `SurrogateNeighbor` = "+webid);
+		while (results.next())
+			data.add(results.getInt("webid"));
 		return data;
 	}
 }
