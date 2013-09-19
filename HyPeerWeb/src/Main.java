@@ -7,10 +7,10 @@ public class Main {
 	public static void main(String[] args){
 		int total_errs = 0;
 		try {
-			System.out.println("BEGIN DATABASE CLASS TESTING:");
+			System.out.println("BEGIN DATABASE CLASS TESTING:\n");
 			//Make sure database is working
 			Database db = Database.getInstance();
-			//total_errs += testSurrogates(db);
+			total_errs += testSurrogates(db);
 			int addNodeTestErrors = 0;
 			//Add node test code must come before testNodeAttributes
 			if (addNodeTestErrors == 0)
@@ -18,9 +18,11 @@ public class Main {
 		} catch (Exception ex) {
 			System.out.println("DB creation failed:\t"+ex.getMessage());
 		}
+		System.out.println("\nTOTAL ERRS = "+total_errs);
 	}
         
 	private static int testSurrogates(Database db){
+		System.out.println("---- TEST surrogates ----");
 		int errs = 0;
 		try{
 			db.clearDB();
@@ -59,14 +61,15 @@ public class Main {
 			System.out.println("Surrogate Neighbor Tests completed");
 		}
 		catch (Exception e) {
-			System.out.println("Exception encountered");
+			System.out.println("Exception encountered: "+e.getMessage());
 			errs++;
 		}
+		System.out.println(errs > 0 ? "errors = "+errs : "passed");
 		return errs;
 	}
 	
 	private static int testNodeAttributes(Database db){
-		System.out.println("---- BEGIN testNodeAttibutes ----");
+		System.out.println("---- TEST node attibutes ----");
 		int errs = 0, temp;
 		try{
 			db.clearDB();
@@ -98,8 +101,7 @@ public class Main {
 			System.out.println("!! getColumn exception encountered, could not complete tests !!");
 			errs++;
 		}
-		System.out.println("# errors = "+errs);
-		System.out.println("---- END testNodeAttibutes ----");
+		System.out.println(errs > 0 ? "errors = "+errs : "passed");
 		return errs;
 	}
         
