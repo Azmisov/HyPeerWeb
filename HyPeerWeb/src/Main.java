@@ -15,6 +15,7 @@ public class Main {
 			//Add node test code must come before testNodeAttributes
 			if (addNodeTestErrors == 0)
 				total_errs += testNodeAttributes(db);
+                        total_errs += testAddNode1(db);//line added by Guy
 		} catch (Exception ex) {
 			System.out.println("DB creation failed:\t"+ex.getMessage());
 		}
@@ -184,7 +185,7 @@ public class Main {
                             }
                         
 		} catch (Exception e){
-			System.out.println("!! getColumn exception encountered, could not complete tests !!");
+			System.out.println(e);
 			errs++;
 		}
 		System.out.println("# errors = "+errs);
