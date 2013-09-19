@@ -10,7 +10,7 @@ public class Main {
 			System.out.println("BEGIN DATABASE CLASS TESTING:");
 			//Make sure database is working
 			Database db = Database.getInstance();
-			total_errs += testSurrogates(db);
+			//total_errs += testSurrogates(db);
 			int addNodeTestErrors = 0;
 			//Add node test code must come before testNodeAttributes
 			if (addNodeTestErrors == 0)
