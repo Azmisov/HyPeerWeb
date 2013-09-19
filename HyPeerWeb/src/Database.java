@@ -45,7 +45,13 @@ public class Database {
 		}
 		//Setup the database, if not already there
 		try {
-			String[] db_setup = {"BEGIN;", "create table if not exists `Nodes` (`WebId` integer primary key, `Height` integer, `Fold` integer, `SurrogateFold` integer, `InverseSurrogateFold` integer);", "create table if not exists `Neighbors` (`WebId` integer, `Neighbor` integer);", "create table if not exists `SurrogateNeighbors` (`WebId` integer, `SurrogateNeighbor` integer);", "create index if not exists `Idx_Neighbors` on `Neighbors` (`WebId`);", "create index if not exists `Idx_SurrogateNeighbors` on `SurrogateNeighbors` (`WebId`);", "create index if not exists `Idx_InverseSurrogateNeighbors` on `SurrogateNeighbors` (`SurrogateNeighbor`);", "COMMIT;"};
+			String[] db_setup = {"BEGIN;", 
+                            "create table if not exists `Nodes` (`WebId` integer primary key, `Height` integer, `Fold` integer, `SurrogateFold` integer, `InverseSurrogateFold` integer);", 
+                            "create table if not exists `Neighbors` (`WebId` integer, `Neighbor` integer);", 
+                            "create table if not exists `SurrogateNeighbors` (`WebId` integer, `SurrogateNeighbor` integer);", 
+                            "create index if not exists `Idx_Neighbors` on `Neighbors` (`WebId`);", 
+                            "create index if not exists `Idx_SurrogateNeighbors` on `SurrogateNeighbors` (`WebId`);", 
+                            "create index if not exists `Idx_InverseSurrogateNeighbors` on `SurrogateNeighbors` (`SurrogateNeighbor`);", "COMMIT;"};
 			stmt = db.createStatement();
 			stmt.setQueryTimeout(5);
 			for (int i = 0; i < db_setup.length; i++) {
@@ -195,10 +201,10 @@ public class Database {
 	 * @author brian
 	 */
 	public boolean removeNode(int webid) {
-		return false;
+            return sqlUpdate("DELETE FROM Nodes WHERE WebId=" + webid + ";");
 	}
-
-	///NODE ATTRIBUTES
+        
+        ///NODE ATTRIBUTES
 	/**
 	 * Set a node's height
 	 *
@@ -311,11 +317,11 @@ public class Database {
 	
 	//private methods for getting/setting columns
 	private boolean setColumn(int webid, String colname, int value) {
-		return sqlUpdate("update `Nodes` set `" + colname + "` = '" + value + "' where `WebId` = '" + webid + "'");
+		return sqlUpdate("update `Nodes` set `" + colname + "` = '" + value + "' where `WebId` = '" + webid + "';");
 	}
 
 	private int getColumn(int webid, String colname) throws Exception {
-		ResultSet res = sqlQuery("select `" + colname + "` as col_value from `Nodes` where `WebId` = '" + webid + "'");
+		ResultSet res = sqlQuery("select `" + colname + "` as col_value from `Nodes` where `WebId` = '" + webid + "';");
 		return res.getInt("col_value");
 	}
 
@@ -333,7 +339,7 @@ public class Database {
 			db.setAutoCommit(false);
 
 			String sql = "INSERT INTO Neighbors (WebId, Neighbor) "
-					+ "VALUES (?, ?)";
+					+ "VALUES (?, ?);";
 
 			PreparedStatement stmt1 = db.prepareStatement(sql);
 			stmt1.setInt(1, webid);
@@ -378,7 +384,7 @@ public class Database {
 		try {
 			db.setAutoCommit(false);
 
-			String sql = "DELETE FROM Neighbors WHERE WebId = ? AND Neighbor = ?";
+			String sql = "DELETE FROM Neighbors WHERE WebId = ? AND Neighbor = ?;";
 
 			PreparedStatement stmt1 = db.prepareStatement(sql);
 			stmt1.setInt(1, webid);
@@ -426,7 +432,7 @@ public class Database {
 		try {
 			db.setAutoCommit(false);
 
-			String sql = "SELECT Neighbor FROM Neighbors WHERE WebId = ?";
+			String sql = "SELECT Neighbor FROM Neighbors WHERE WebId = ?;";
 
 			PreparedStatement stmt1 = db.prepareStatement(sql);
 			stmt1.setInt(1, webid);
@@ -467,7 +473,7 @@ public class Database {
 	 * @author john
 	 */
 	public boolean addSurrogateNeighbor(int webid, int neighbor) {
-		return sqlUpdate("INSERT INTO SurrogateNeighbors VALUES(" + webid + "," + neighbor + ")");
+		return sqlUpdate("INSERT INTO SurrogateNeighbors VALUES(" + webid + "," + neighbor + ");");
 	}
 
 	/**
@@ -480,7 +486,7 @@ public class Database {
 	 */
 	public boolean removeSurrogateNeighbor(int webid, int neighbor) {
 		return sqlUpdate("DELETE FROM SurrogateNeighbors WHERE WebID=" + webid
-				+ " AND SurrogateNeighbor=" + neighbor);
+				+ " AND SurrogateNeighbor=" + neighbor + ";");
 	}
 
 	/**
@@ -493,7 +499,7 @@ public class Database {
 	 */
 	public ArrayList<Integer> getSurrogateNeighbors(int webid) throws Exception {
 		ArrayList<Integer> data = new ArrayList<>();
-		ResultSet results = sqlQuery("select `SurrogateNeighbor` as `sn` from `SurrogateNeighbors` where `WebID` = '" + webid + "'");
+		ResultSet results = sqlQuery("select `SurrogateNeighbor` as `sn` from `SurrogateNeighbors` where `WebID` = '" + webid + "';");
 		while (results.next()) {
 			data.add(results.getInt("sn"));
 		}
@@ -510,7 +516,7 @@ public class Database {
 	 */
 	public ArrayList<Integer> getInverseSurrogateNeighbors(int webid) throws Exception {
 		ArrayList<Integer> data = new ArrayList<>();
-		ResultSet results = sqlQuery("select `WebId` as `webid` from `SurrogateNeighbors` where `SurrogateNeighbor` = " + webid);
+		ResultSet results = sqlQuery("select `WebId` as `webid` from `SurrogateNeighbors` where `SurrogateNeighbor` = " + webid + ";");
 		while (results.next()) {
 			data.add(results.getInt("webid"));
 		}

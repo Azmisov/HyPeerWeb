@@ -216,31 +216,88 @@ public class Main {
 			db.addNode(webID, height, fold, surrogateFold);
 			//Height
 			if (db.getHeight(9) != 1) {
-				System.out.println("Failed to set node height");
+				System.err.println("Failed to set node height");
 				errs++;
 			}
 			//Fold
 			if (db.getFold(9) != 6) {
-				System.out.println("Failed to set node fold");
+				System.err.println("Failed to set node fold");
 				errs++;
 			}
 			//Surrogate fold
 			if (db.getSurrogateFold(9) != 2) {
-				System.out.println("Failed to set surrogate fold");
+				System.err.println("Failed to set surrogate fold");
 				errs++;
 			}
 			//Inverse Surrogate fold
 			if (db.getInverseSurrogateFold(9) != 9) {
-				System.out.println("Failed to set inverse surrogate fold");
+				System.err.println("Failed to set inverse surrogate fold");
 				errs++;
 			}
                     } catch (Exception e) {
-			System.out.println(e);
+			System.err.println(e);
 			errs++;
 		}
 		System.out.println(errs > 0 ? "errors = " + errs : "passed");
 		return errs;
 	}
+        
+        private static int testRemoveNode(Database db){
+            System.out.println("---- TEST remove node ----");
+		int errs = 0;
+		try {
+			//fill Node with attributes
+			db.clearDB();
+			int webID = 9;
+                        int height = 1;
+                        int fold = 6;
+                        int surrogateFold = 2;
+                        
+			db.addNode(webID, height, fold, surrogateFold);
+                        
+                        if (!db.removeNode(webID)){
+                            System.err.println("Failed to remove node");
+                        }
+                        
+			//Height
+                        try{
+                            int fail = db.getHeight(webID);
+                            System.err.println("Failed to remove height");
+                            errs++;
+                        }
+                        catch (Exception e){}
+			
+			//Fold
+                        try{
+                            int fail = db.getFold(webID);
+                            System.err.println("Failed to remove height");
+                            errs++;
+                        }
+                        catch (Exception e){}
+			
+			//Surrogate fold
+                        try{
+                            int fail = db.getSurrogateFold(webID);
+                            System.err.println("Failed to remove height");
+                            errs++;
+                        }
+                        catch (Exception e){}
+			
+			//Inverse Surrogate fold
+                        try{
+                            int fail = db.getInverseSurrogateFold(webID);
+                            System.err.println("Failed to remove height");
+                            errs++;
+                        }
+                        catch (Exception e){}
+			
+                    } catch (Exception e) {
+			System.err.println(e);
+			errs++;
+		}
+		System.out.println(errs > 0 ? "errors = " + errs : "passed");
+		return errs;
+        }
 
 	private static int testNeighbors(Database db) {
 
