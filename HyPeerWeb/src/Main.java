@@ -60,7 +60,6 @@ public class Main {
 						+ "\nFound Surrogate Neighbors: " + SurrList.size());
 				errs++;
 			}
-			System.out.println("Surrogate Neighbor Tests completed");
 		} catch (Exception e) {
 			System.out.println("Exception encountered: " + e.getMessage());
 			errs++;
