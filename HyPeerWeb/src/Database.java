@@ -313,7 +313,7 @@ public class Database {
 	 * @author josh
 	 */
 	public ArrayList<Integer> getNeighbors(int webid) throws Exception{
-		throw new Exception("Failed to retrieve data");
+		throw new Exception("getNeighbors not yet implemented");
 	}
 	/**
 	 * Add a surrogate neighbor to a node
