@@ -345,12 +345,9 @@ public class Database {
 	 */
 	public ArrayList<Integer> getSurrogateNeighbors(int webid) throws Exception{
 		ArrayList<Integer> data = new ArrayList<>();
-		ResultSet results = sqlQuery("SELECT * FROM SurrogateNeighbors WHERE WebID=" + webid);
-		while (!results.isLast())
-		{
-			data.add(results.getInt("SurrogateNeighbor"));
-			results.next();
-		}
+		ResultSet results = sqlQuery("select `SurrogateNeighbor` as `sn` from `SurrogateNeighbors` where `WebID` = '"+webid+"'");
+		while (results.next())
+			data.add(results.getInt("sn"));
 		return data;
 	}
 	/**
@@ -362,13 +359,9 @@ public class Database {
 	 */
 	public ArrayList<Integer> getInverseSurrogateNeighbors(int webid) throws Exception{
 		ArrayList<Integer> data = new ArrayList<>();
-		ResultSet results = sqlQuery("SELECT * FROM SurrogateNeighbors "
-				+ "WHERE SurrogateNeighbor=" + webid);
-		while (!results.isLast())
-		{
-			data.add(results.getInt("WebID"));
-			results.next();
-		}
+		ResultSet results = sqlQuery("select `WebId` as `webid` from `SurrogateNeighbors` where `SurrogateNeighbor` = "+webid);
+		while (results.next())
+			data.add(results.getInt("webid"));
 		return data;
 	}
 }
