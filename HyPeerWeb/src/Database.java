@@ -239,16 +239,24 @@ public class Database {
 	};
 	
 	//private methods for getting/setting columns
+	private PreparedStatement
+				_setCol = db.prepareStatement("update `Nodes` set `?` = ? where `WebId` = ?"),
+				_getCol = db.prepareStatement("select ? as col_value from `Nodes` where `WebId` = ?");
 	private boolean setColumn(int webid, String colname, int value){
 		try{
-			PreparedStatement setc = db.prepareStatement("update");
-			//setc.
-			//stmt.executeUpdate("update `Nodes` set `"+colname+"` = '"+value+"' where `` = '"+webid+"'");
+			_setCol.setString(0, colname);
+			_setCol.setInt(1, value);
+			_setCol.setInt(2, webid);
+			_setCol.executeUpdate();
+			return true;
 		} catch(Exception e){}
 		return false;
 	}
 	private int getColumn(int webid, String colname) throws Exception{
-		throw new Exception("Not implemented");
+		_getCol.setString(0, colname);
+		_getCol.setInt(1, webid);
+		ResultSet res = _getCol.executeQuery();
+		return res.getInt("col_value");
 	}
 	
 	///NODE NEIGHBORS
