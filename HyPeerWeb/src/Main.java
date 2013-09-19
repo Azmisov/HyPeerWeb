@@ -16,6 +16,7 @@ public class Main {
 				testSurrogates(db) +
 				testNodeAttributes(db) +
 				testAddNode1(db) +	//line added by Guy
+                                testAddNode2(db) +
 				testNeighbors(db);
 		} catch (Exception ex) {
 			System.out.println("DB creation failed:\t" + ex.getMessage());
@@ -193,6 +194,47 @@ public class Main {
 			}
 
 		} catch (Exception e) {
+			System.out.println(e);
+			errs++;
+		}
+		System.out.println(errs > 0 ? "errors = " + errs : "passed");
+		return errs;
+	}
+
+        //@author Brian
+        private static int testAddNode2(Database db) {
+		System.out.println("---- TEST add node #2 ----");
+		int errs = 0;
+		try {
+			//fill Node with attributes
+			db.clearDB();
+			int webID = 9;
+                        int height = 1;
+                        int fold = 6;
+                        int surrogateFold = 2;
+                        
+			db.addNode(webID, height, fold, surrogateFold);
+			//Height
+			if (db.getHeight(9) != 1) {
+				System.out.println("Failed to set node height");
+				errs++;
+			}
+			//Fold
+			if (db.getFold(9) != 6) {
+				System.out.println("Failed to set node fold");
+				errs++;
+			}
+			//Surrogate fold
+			if (db.getSurrogateFold(9) != 2) {
+				System.out.println("Failed to set surrogate fold");
+				errs++;
+			}
+			//Inverse Surrogate fold
+			if (db.getInverseSurrogateFold(9) != 9) {
+				System.out.println("Failed to set inverse surrogate fold");
+				errs++;
+			}
+                    } catch (Exception e) {
 			System.out.println(e);
 			errs++;
 		}
