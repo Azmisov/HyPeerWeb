@@ -10,8 +10,12 @@ import java.util.List;
 
 /**
  * Low-level Database access class
- *
  * @author isaac
+ * TODO, future:
+ * - make prepared statement interface
+ * - update removeNode test cases
+ * - disable auto-commit for mass edits (addNode)
+ * - reuse auto-commit code
  */
 public class Database {
 	//Reference to singleton
@@ -45,13 +49,17 @@ public class Database {
 		}
 		//Setup the database, if not already there
 		try {
-			String[] db_setup = {"BEGIN;", 
-                            "create table if not exists `Nodes` (`WebId` integer primary key, `Height` integer, `Fold` integer, `SurrogateFold` integer, `InverseSurrogateFold` integer);", 
-                            "create table if not exists `Neighbors` (`WebId` integer, `Neighbor` integer);", 
-                            "create table if not exists `SurrogateNeighbors` (`WebId` integer, `SurrogateNeighbor` integer);", 
-                            "create index if not exists `Idx_Neighbors` on `Neighbors` (`WebId`);", 
-                            "create index if not exists `Idx_SurrogateNeighbors` on `SurrogateNeighbors` (`WebId`);", 
-                            "create index if not exists `Idx_InverseSurrogateNeighbors` on `SurrogateNeighbors` (`SurrogateNeighbor`);", "COMMIT;"};
+			String[] db_setup = {
+				"BEGIN;", 
+				"create table if not exists `Nodes` (`WebId` integer primary key, `Height` integer, `Fold` integer, `SurrogateFold` integer, `InverseSurrogateFold` integer);", 
+				"create table if not exists `Neighbors` (`WebId` integer, `Neighbor` integer);", 
+				"create table if not exists `SurrogateNeighbors` (`WebId` integer, `SurrogateNeighbor` integer);", 
+				"create index if not exists `Idx_Neighbors` on `Neighbors` (`WebId`);", 
+				"create index if not exists `Idx_InverseNeighbors` on `Neighbors` (`Neighbor`);", 
+				"create index if not exists `Idx_SurrogateNeighbors` on `SurrogateNeighbors` (`WebId`);", 
+				"create index if not exists `Idx_InverseSurrogateNeighbors` on `SurrogateNeighbors` (`SurrogateNeighbor`);",
+				"COMMIT;"
+			};
 			stmt = db.createStatement();
 			stmt.setQueryTimeout(5);
 			for (int i = 0; i < db_setup.length; i++) {
@@ -62,7 +70,6 @@ public class Database {
 			throw e;
 		}
 	}
-
 	/**
 	 * Gets the singleton instance of the Database class
 	 *
@@ -86,7 +93,6 @@ public class Database {
 		//Successful connection available
 		return singleton;
 	}
-
 	/**
 	 * Removes all data from the database, leaving the structure intact.
 	 *
@@ -115,7 +121,6 @@ public class Database {
 		}
 		return true;
 	}
-
 	/**
 	 * Run an SQL query statement
 	 *
@@ -137,45 +142,38 @@ public class Database {
 	 * @author guy
 	 */
 	public boolean addNode(Node node) {
-		String update;
-		update = "INSERT INTO Nodes VALUES("
-				+ node.getWebID() + ", "
-				+ node.getHeight() + ", "
-				+ node.getFold() + ", "
-				+ node.getSurrogateFold() + ", "
-				+ node.getInverseSurrogateFold() + ");";
+		try {
+			Exception commitErr = new Exception("Failed to add node");
+			String update;
+			update = "INSERT INTO Nodes VALUES("
+					+ node.getWebID() + ", "
+					+ node.getHeight() + ", "
+					+ node.getFold() + ", "
+					+ node.getSurrogateFold() + ", "
+					+ node.getInverseSurrogateFold() + ");";
+			if (!sqlUpdate(update))
+				throw commitErr;
 
-		if (!sqlUpdate(update)) {
+			ArrayList<Integer> list;
+			int webID = node.getWebID();
+
+			list = node.getNeighbors();
+			for (int i : list) {
+				if (!addNeighbor(webID, i))
+					throw commitErr;
+			}
+			
+			//surrogate and inverse are reflexive
+			list = node.getSurrogateNeighbors();
+			for (int i : list) {
+				if (!addSurrogateNeighbor(webID, i))
+					throw commitErr;
+			}
+		} catch (Exception e) {
 			return false;
 		}
-
-		ArrayList<Integer> list;
-		int webID = node.getWebID();
-
-		list = node.getNeighbors();
-		for (int i : list) {
-			if (!addNeighbor(webID, i)) {
-				return false;
-			}
-		}
-
-		list = node.getSurrogateNeighbors();
-		for (int i : list) {
-			if (!addSurrogateNeighbor(webID, i)) {
-				return false;
-			}
-		}
-
-		list = node.getInverseSurrogateNeighbors();
-		for (int i : list) {
-			if (!addSurrogateNeighbor(i, webID)) {
-				return false;
-			}
-		}
-
 		return true;
 	}
-
 	/**
 	 * Add a node to the database
 	 *
@@ -187,12 +185,9 @@ public class Database {
 	 * @author brian
 	 */
 	public boolean addNode(int webid, int height, int foldid, int sfoldid) {
-		//may want to create a new node and send it to addNode(Node) ???
-		//set inverse surrogate fold of "sfold" to "webid"
-            return addNode(new Node(webid, height, foldid, sfoldid, 
+		return addNode(new Node(webid, height, foldid, sfoldid, 
                     webid, null, null, null));
 	}
-
 	/**
 	 * Removes a node from the database
 	 *
@@ -200,8 +195,14 @@ public class Database {
 	 * @return true if the node was successfully removed
 	 * @author brian
 	 */
-	public boolean removeNode(int webid) {
-            return sqlUpdate("DELETE FROM Nodes WHERE WebId=" + webid + ";");
+	public boolean removeNode(int webid){
+		return sqlUpdate(
+			"BEGIN;"+
+			"DELETE FROM Nodes WHERE WebId=" + webid + ";"+
+			"DELETE FROM Neighbors WHERE WebID=" + webid + " OR Neighbor="+ webid +";"+
+			"DELETE FROM SurrogateNeighbors WHERE WebID=" + webid + ";"+
+			"COMMIT;"
+		);
 	}
         
         ///NODE ATTRIBUTES
@@ -216,7 +217,6 @@ public class Database {
 	public boolean setHeight(int webid, int height) {
 		return setColumn(webid, "Height", height);
 	}
-
 	/**
 	 * Set the Fold node of another node
 	 *
@@ -228,7 +228,6 @@ public class Database {
 	public boolean setFold(int webid, int foldid) {
 		return setColumn(webid, "Fold", foldid);
 	}
-
 	/**
 	 * Set the Surrogate Fold node of another node
 	 *
@@ -264,7 +263,6 @@ public class Database {
 		}
 		return true;
 	}
-
 	/**
 	 * Get a node's height
 	 *
@@ -276,8 +274,6 @@ public class Database {
 	public int getHeight(int webid) throws Exception {
 		return getColumn(webid, "Height");
 	}
-
-	;
 	/**
 	 * Get the Fold node of another node
 	 * @param webid the WebId of the node to access
@@ -288,8 +284,6 @@ public class Database {
 	public int getFold(int webid) throws Exception {
 		return getColumn(webid, "Fold");
 	}
-
-	;
 	/**
 	 * Get the Surrogate Fold node of another node
 	 * @param webid the WebId of the node to access
@@ -300,8 +294,6 @@ public class Database {
 	public int getSurrogateFold(int webid) throws Exception {
 		return getColumn(webid, "SurrogateFold");
 	}
-
-	;
 	/**
 	 * Gets the Inverse Surrogate Fold of another node
 	 * @param webid the WebId of the node to access
@@ -312,14 +304,11 @@ public class Database {
 	public int getInverseSurrogateFold(int webid) throws Exception {
 		return getColumn(webid, "InverseSurrogateFold");
 	}
-
-	;
 	
 	//private methods for getting/setting columns
 	private boolean setColumn(int webid, String colname, int value) {
 		return sqlUpdate("update `Nodes` set `" + colname + "` = '" + value + "' where `WebId` = '" + webid + "';");
 	}
-
 	private int getColumn(int webid, String colname) throws Exception {
 		ResultSet res = sqlQuery("select `" + colname + "` as col_value from `Nodes` where `WebId` = '" + webid + "';");
 		return res.getInt("col_value");
@@ -371,7 +360,6 @@ public class Database {
 		}
 		return true;
 	}
-
 	/**
 	 * Removes neighbor node from a node
 	 *
@@ -416,7 +404,6 @@ public class Database {
 		}
 		return true;
 	}
-
 	/**
 	 * Retrieves a list of a node's neighbors
 	 *
@@ -463,7 +450,6 @@ public class Database {
 
 		return neighbors;
 	}
-
 	/**
 	 * Add a surrogate neighbor to a node
 	 *
@@ -475,7 +461,6 @@ public class Database {
 	public boolean addSurrogateNeighbor(int webid, int neighbor) {
 		return sqlUpdate("INSERT INTO SurrogateNeighbors VALUES(" + webid + "," + neighbor + ");");
 	}
-
 	/**
 	 * Remove a surrogate neighbor from a node
 	 *
@@ -488,7 +473,6 @@ public class Database {
 		return sqlUpdate("DELETE FROM SurrogateNeighbors WHERE WebID=" + webid
 				+ " AND SurrogateNeighbor=" + neighbor + ";");
 	}
-
 	/**
 	 * Retrieves a list of surrogate neighbors
 	 *
@@ -505,7 +489,6 @@ public class Database {
 		}
 		return data;
 	}
-
 	/**
 	 * Retrieves a list of inverse surrogate neighbors
 	 *
