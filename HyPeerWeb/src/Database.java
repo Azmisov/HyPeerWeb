@@ -183,7 +183,8 @@ public class Database {
 	public boolean addNode(int webid, int height, int foldid, int sfoldid) {
 		//may want to create a new node and send it to addNode(Node) ???
 		//set inverse surrogate fold of "sfold" to "webid"
-		return false;
+            return addNode(new Node(webid, height, foldid, sfoldid, 
+                    webid, null, null, null));
 	}
 
 	/**
