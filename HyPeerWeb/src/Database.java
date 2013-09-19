@@ -338,4 +338,13 @@ public class Database {
 		}
 		return data;
 	}
+        /**
+	 * Removes all data from the database, leaving the structure intact.
+	 * @author john
+	 */
+	public void clearDB(){
+		sqlUpdate("DELETE * FROM Nodes");
+                sqlUpdate("DELETE * FROM Neighbors");
+                sqlUpdate("DELETE * FROM SurrogateNeighbors");
+	}
 }
