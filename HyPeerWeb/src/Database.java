@@ -290,8 +290,7 @@ public class Database {
 	 * @author john
 	 */
 	public boolean addSurrogateNeighbor(int webid, int neighbor){
-		sqlUpdate("INSERT INTO SurrogateNeighbors VALUES(" + webid + "," + neighbor + ")");
-		return true;
+		return sqlUpdate("INSERT INTO SurrogateNeighbors VALUES(" + webid + "," + neighbor + ")");
 	}
 	/**
 	 * Remove a surrogate neighbor from a node
@@ -301,9 +300,8 @@ public class Database {
 	 * @author john
 	 */
 	public boolean removeSurrogateNeighbor(int webid, int neighbor){
-		sqlUpdate("DELETE FROM SurrogateNeighbors WHERE WebID=" + webid +
+		return sqlUpdate("DELETE FROM SurrogateNeighbors WHERE WebID=" + webid +
 				" AND SurrogateNeighbor=" + neighbor);
-		return true;
 	}
 	/**
 	 * Retrieves a list of surrogate neighbors
