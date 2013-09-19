@@ -45,15 +45,18 @@ public class Database {
 			String db_setup = 
 				"BEGIN;"+
 				"create table if not exists `Nodes` (`WebId` integer primary key, `Height` integer, `Fold` integer, `SurrogateFold` integer, `InverseSurrogateFold` integer);"+
-				"create table if not exists `Neighbors` (`WebId` integer primary key, `Neighbor` integer);"+
-				"create table if not exists `SurrogateNeighbors` (`WebId` integer primary key, `SurrogateNeighbor` integer);"+
-				"create index if not exists `InverseSurrogateNeighbors` on `SurrogateNeighbors` (`SurrogateNeighbor`);"+
+				"create table if not exists `Neighbors` (`WebId` integer, `Neighbor` integer);"+
+				"create table if not exists `SurrogateNeighbors` (`WebId` integer, `SurrogateNeighbor` integer);"+
+				"create index if not exists `Idx_Neighbors` on `Neighbors` (`WebId`);"+
+				"create index if not exists `Idx_SurrogateNeighbors` on `SurrogateNeighbors` (`WebId`);"+
+				"create index if not exists `Idx_InverseSurrogateNeighbors` on `SurrogateNeighbors` (`SurrogateNeighbor`);"+
 				"COMMIT;";
 			stmt = db.createStatement();
 			stmt.setQueryTimeout(5);
-			stmt.executeQuery(db_setup);
+			stmt.executeUpdate(db_setup);
 		} catch (SQLException e) {
 			System.out.println("Could not create the database!");
+			System.out.println(e.getMessage());
 			throw e;
 		}
 	}
