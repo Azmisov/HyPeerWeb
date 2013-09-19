@@ -53,10 +53,9 @@ public class Database {
 				"COMMIT;";
 			stmt = db.createStatement();
 			stmt.setQueryTimeout(5);
-			stmt.executeUpdate(db_setup);
+			stmt.executeUpdate(db_setup);			
 		} catch (SQLException e) {
 			System.out.println("Could not create the database!");
-			System.out.println(e.getMessage());
 			throw e;
 		}
 	}
@@ -80,6 +79,15 @@ public class Database {
 			throw new Exception("Failed to connect to database");
 		//Successful connection available
 		return singleton;
+	}
+	/**
+	 * Removes all data from the database, leaving the structure intact.
+	 * @author john
+	 */
+	public void clearDB(){
+		sqlUpdate("delete from `Nodes`");
+		sqlUpdate("delete from `Neighbors`");
+		sqlUpdate("delete from `SurrogateNeighbors`");
 	}
 	
 	///SQL OPERATIONS
@@ -268,23 +276,11 @@ public class Database {
 	};
 	
 	//private methods for getting/setting columns
-	private PreparedStatement
-				_setCol = db.prepareStatement("update `Nodes` set `?` = ? where `WebId` = ?"),
-				_getCol = db.prepareStatement("select ? as col_value from `Nodes` where `WebId` = ?");
 	private boolean setColumn(int webid, String colname, int value){
-		try{
-			_setCol.setString(0, colname);
-			_setCol.setInt(1, value);
-			_setCol.setInt(2, webid);
-			_setCol.executeUpdate();
-			return true;
-		} catch(Exception e){}
-		return false;
+		return sqlUpdate("update `Nodes` set `"+colname+"` = '"+value+"' where `WebId` = '"+webid+"'");
 	}
 	private int getColumn(int webid, String colname) throws Exception{
-		_getCol.setString(0, colname);
-		_getCol.setInt(1, webid);
-		ResultSet res = _getCol.executeQuery();
+		ResultSet res = sqlQuery("select `"+colname+"` as col_value from `Nodes` where `WebId` = '"+webid+"'");
 		return res.getInt("col_value");
 	}
 	
@@ -374,14 +370,5 @@ public class Database {
 			results.next();
 		}
 		return data;
-	}
-        /**
-	 * Removes all data from the database, leaving the structure intact.
-	 * @author john
-	 */
-	public void clearDB(){
-		sqlUpdate("DELETE * FROM Nodes");
-                sqlUpdate("DELETE * FROM Neighbors");
-                sqlUpdate("DELETE * FROM SurrogateNeighbors");
 	}
 }
