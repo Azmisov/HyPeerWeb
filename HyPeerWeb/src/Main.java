@@ -17,6 +17,7 @@ public class Main {
 				testNodeAttributes(db) +
 				testAddNode1(db) +	//line added by Guy
                                 testAddNode2(db) +
+                                testRemoveNode(db) +
 				testNeighbors(db);
 		} catch (Exception ex) {
 			System.out.println("DB creation failed:\t" + ex.getMessage());
