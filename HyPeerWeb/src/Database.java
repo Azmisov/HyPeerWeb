@@ -316,7 +316,7 @@ public class Database {
 	 * @throws Exception throws exception if there was an error in retrieval
 	 * @author josh
 	 */
-	public int[] getNeighbors(int webid) throws Exception{
+	public ArrayList<Integer> getNeighbors(int webid) throws Exception{
 		throw new Exception("Failed to retrieve data");
 	}
 	/**

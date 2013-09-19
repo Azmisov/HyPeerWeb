@@ -102,4 +102,68 @@ public class Main {
 		System.out.println("---- END testNodeAttibutes ----");
 		return errs;
 	}
+        
+        //@author guy
+        private static int testAddNode1(Database db){
+		System.out.println("---- BEGIN testAddNode1 ----");
+                int errs = 0;
+		try{
+                        //fill Node with attributes
+			db.clearDB();
+                        Node node = new Node(5);
+                        node.setHeight(1);
+                        node.setFold(2);
+                        node.setSurrogateFold(3);
+                        node.setInverseSurrogateFold(4);
+                        
+                        ArrayList<Integer> list1 = new ArrayList();
+                        list1.add(6);
+                        list1.add(7);
+                        list1.add(8);
+                        
+                        ArrayList<Integer> list2 = new ArrayList();
+                        list1.add(9);
+                        list1.add(10);
+                        list1.add(11);
+                        
+                        ArrayList<Integer> list3 = new ArrayList();
+                        list1.add(12);
+                        list1.add(13);
+                        list1.add(14);
+                        
+                        node.setNeighbors(list1);
+                        node.setSurrogateNeighbors(list2);
+                        node.setInverseSurrogateNeighbors(list3);
+                                
+			db.addNode(node);
+			//Height
+			if (db.getHeight(5) != 1){
+				System.out.println("Failed to set node height");
+				errs++;
+			}
+			//Fold
+			if (db.getFold(5) != 2){
+				System.out.println("Failed to set node fold");
+				errs++;
+			}
+			//Surrogate fold
+			if (db.getSurrogateFold(5) != 3){
+				System.out.println("Failed to set surrogate fold");
+				errs++;
+			}
+                        //Inverse Surrogate fold
+			if (db.getInverseSurrogateFold(5) != 4){
+				System.out.println("Failed to set inverse surrogate fold");
+				errs++;
+			}
+                        //Neighbors
+                        
+		} catch (Exception e){
+			System.out.println("!! getColumn exception encountered, could not complete tests !!");
+			errs++;
+		}
+		System.out.println("# errors = "+errs);
+		System.out.println("---- END testNodeAttibutes ----");
+		return errs;
+	}
 }
