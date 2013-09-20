@@ -15,7 +15,7 @@ public class Main {
 			total_errs =
 				testSurrogates(db) +
 				testNodeAttributes(db) +
-				testAddNode1(db) +	//line added by Guy
+				testAddNode1(db) +
                                 testAddNode2(db) +
                                 testRemoveNode(db) +
 				testNeighbors(db);
