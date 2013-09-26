@@ -24,7 +24,7 @@ public class HyPeerWeb {
 	 * @return the singleton
 	 * @author isaac
 	 */
-	public HyPeerWeb getInstance() throws Exception{
+	public static HyPeerWeb getInstance() throws Exception{
 		if (instance != null)
 			return instance;
 		instance = new HyPeerWeb();

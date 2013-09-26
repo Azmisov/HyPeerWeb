@@ -8,6 +8,8 @@ public class Main {
 
 	public static void main(String[] args) {
 		int total_errs = 0;
+		
+		/* DATABASE TEST CODE
 		try {
 			System.out.println("BEGIN DATABASE CLASS TESTING:\n");
 			//Make sure database is working
@@ -20,8 +22,20 @@ public class Main {
                                 testRemoveNode(db) +
 				testNeighbors(db);
 		} catch (Exception ex) {
-			System.out.println("DB creation failed:\t" + ex.getMessage());
+			System.out.println("DB creation failed:\n" + ex.getMessage());
 		}
+		//*/
+		
+		//* HYPEERWEB TEST CODE
+		try{
+			System.out.println("BEGIN HYPEERWEB CLASS TESTING:\n");
+			HyPeerWeb web = HyPeerWeb.getInstance();
+			
+		} catch (Exception ex){
+			System.out.println("Could not initialize HyPeerWeb:\n" + ex.getMessage());
+		}
+		//*/
+		
 		System.out.println("\nTOTAL ERRS = " + total_errs);
 	}
 
