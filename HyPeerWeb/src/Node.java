@@ -24,8 +24,9 @@ public class Node {
 	 *
 	 * @param id The WebID of the Node
 	 */
-	public Node(int id) {
+	public Node(int id, int height) {
 		webID = id;
+		this.height = height;
 	}
 
 	/**
@@ -61,6 +62,17 @@ public class Node {
 			inverseSurrogateNeighbors = isNeighbors;
 		}
 	}
+	
+	/**
+	 * Finds the closest valid insertion point (the parent
+	 * of the child to add) from a starting node
+	 * @return the parent of the child to add
+	 * @author josh
+	 */
+	public Node findInsertionNode(){
+		return null;
+	}
+	
 
 	//WEBID
 	/**

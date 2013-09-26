@@ -19,12 +19,16 @@ import java.util.List;
  */
 public class Database {
 	//Reference to singleton
-
 	private static Database singleton;
 	private static boolean IS_CONNECTED = true;
 	//Database connection and default statement
 	private Connection db;
 	private Statement stmt;
+	//Databse commit management
+	private StringBuilder sqlbuffer;
+	private boolean autocommit = true,
+					commitFail = false;
+	private int commitStack = 0;
 
 	/**
 	 * Private constructor for the singleton - Initializes database connection -
@@ -69,6 +73,7 @@ public class Database {
 			System.out.println("Could not create the database!");
 			throw e;
 		}
+		sqlbuffer = new StringBuilder();
 	}
 	/**
 	 * Gets the singleton instance of the Database class
@@ -95,10 +100,9 @@ public class Database {
 	}
 	/**
 	 * Removes all data from the database, leaving the structure intact.
-	 *
 	 * @author john
 	 */
-	public void clearDB() {
+	public void clear() {
 		sqlUpdate("delete from `Nodes`");
 		sqlUpdate("delete from `Neighbors`");
 		sqlUpdate("delete from `SurrogateNeighbors`");
@@ -114,7 +118,15 @@ public class Database {
 	 */
 	private boolean sqlUpdate(String sql) {
 		try {
-			stmt.executeUpdate(sql);
+			if (autocommit)
+				stmt.executeUpdate(sql);
+			else if (!commitFail){
+				sqlbuffer.append(sql);
+				if (sql.charAt(sql.length()-1) != ';')
+					sqlbuffer.append(';');
+				if (sql.equals("COMMIT;"))
+					stmt.executeUpdate(sqlbuffer.toString());
+			}
 		} catch (Exception e) {
 			System.out.println("SQL Error: " + e.getMessage());
 			return false;
@@ -132,7 +144,46 @@ public class Database {
 	private ResultSet sqlQuery(String sql) throws Exception {
 		return stmt.executeQuery(sql);
 	}
-
+	
+	//COMMIT MANAGEMENT
+	/**
+	 * Starts a commit
+	 * @author isaac
+	 */
+	private void beginCommit(){
+		if (commitStack == 0){
+			commitFail = false;
+			autocommit = false;
+			sqlbuffer.append("BEGIN;");
+		}
+		commitStack++;
+	}
+	/**
+	 * Ends a commit
+	 * @return true, if the commit was successful
+	 * @author isaac
+	 */
+	private boolean endCommit(){
+		if (--commitStack == 0){
+			boolean ret = commitFail ? false : sqlUpdate("COMMIT;");
+			clearCommit();
+			return ret;
+		}
+		return true;
+	}
+	/**
+	 * Clears a commit, should an exception occur throughout the process
+	 * @author isaac
+	 */
+	private void clearCommit(){
+		if (!commitFail){
+			sqlbuffer = new StringBuilder();
+			autocommit = true;
+		}
+		if (--commitStack != 0)
+			commitFail = true;
+	}
+	
 	///FULL NODE OPERATIONS
 	/**
 	 * Add a node to the database
@@ -143,7 +194,8 @@ public class Database {
 	 */
 	public boolean addNode(Node node) {
 		try {
-			Exception commitErr = new Exception("Failed to add node");
+			beginCommit();
+			
 			String update;
 			update = "INSERT INTO Nodes VALUES("
 					+ node.getWebID() + ", "
@@ -151,28 +203,25 @@ public class Database {
 					+ node.getFold() + ", "
 					+ node.getSurrogateFold() + ", "
 					+ node.getInverseSurrogateFold() + ");";
-			if (!sqlUpdate(update))
-				throw commitErr;
+			sqlUpdate(update);
 
 			ArrayList<Integer> list;
 			int webID = node.getWebID();
 
 			list = node.getNeighbors();
-			for (int i : list) {
-				if (!addNeighbor(webID, i))
-					throw commitErr;
-			}
+			for (int i : list)
+				addNeighbor(webID, i);
 			
 			//surrogate and inverse are reflexive
 			list = node.getSurrogateNeighbors();
-			for (int i : list) {
-				if (!addSurrogateNeighbor(webID, i))
-					throw commitErr;
-			}
+			for (int i : list)
+				addSurrogateNeighbor(webID, i);
+			
+			return endCommit();
 		} catch (Exception e) {
+			clearCommit();
 			return false;
 		}
-		return true;
 	}
 	/**
 	 * Add a node to the database
@@ -196,13 +245,11 @@ public class Database {
 	 * @author brian
 	 */
 	public boolean removeNode(int webid){
-		return sqlUpdate(
-			"BEGIN;"+
-			"DELETE FROM Nodes WHERE WebId=" + webid + ";"+
-			"DELETE FROM Neighbors WHERE WebID=" + webid + " OR Neighbor="+ webid +";"+
-			"DELETE FROM SurrogateNeighbors WHERE WebID=" + webid + ";"+
-			"COMMIT;"
-		);
+		beginCommit();
+		sqlUpdate("DELETE FROM Nodes WHERE WebId=" + webid + ";");
+		sqlUpdate("DELETE FROM Neighbors WHERE WebID=" + webid + " OR Neighbor="+ webid +";");
+		sqlUpdate("DELETE FROM SurrogateNeighbors WHERE WebID=" + webid + ";");
+		return endCommit();
 	}
         
         ///NODE ATTRIBUTES
@@ -237,31 +284,10 @@ public class Database {
 	 * @author isaac
 	 */
 	public boolean setSurrogateFold(int webid, int sfoldid) {
-		try {
-			db.setAutoCommit(false);
-			if (!setColumn(webid, "SurrogateFold", sfoldid)
-					|| !setColumn(sfoldid, "InverseSurrogateFold", webid)) {
-				throw new Exception("Failed to set fold columns");
-			}
-			db.commit();
-		} catch (Exception e) {
-			try {
-				System.out.println("SQL Error: " + e.getMessage());
-				db.rollback();
-			} catch (SQLException ex) {
-				System.out.println("SQL Error: Could not rollback changes");
-				System.out.println(ex.getMessage());
-			}
-			return false;
-		} finally {
-			try {
-				db.setAutoCommit(true);
-			} catch (SQLException ex) {
-				System.out.println("Error: Could not enable auto-commit");
-				return false;
-			}
-		}
-		return true;
+		beginCommit();
+		setColumn(webid, "SurrogateFold", sfoldid);
+		setColumn(sfoldid, "InverseSurrogateFold", webid);
+		return endCommit();
 	}
 	/**
 	 * Get a node's height
@@ -324,41 +350,10 @@ public class Database {
 	 * @author josh
 	 */
 	public boolean addNeighbor(int webid, int neighbor) {
-		try {
-			db.setAutoCommit(false);
-
-			String sql = "INSERT INTO Neighbors (WebId, Neighbor) "
-					+ "VALUES (?, ?);";
-
-			PreparedStatement stmt1 = db.prepareStatement(sql);
-			stmt1.setInt(1, webid);
-			stmt1.setInt(2, neighbor);
-			stmt1.executeUpdate();
-
-			PreparedStatement stmt2 = db.prepareStatement(sql);
-			stmt2.setInt(1, neighbor);
-			stmt2.setInt(2, webid);
-			stmt2.executeUpdate();
-
-			db.commit();
-		} catch (Exception e) {
-			try {
-				System.out.println("SQL Error: " + e.getMessage());
-				db.rollback();
-			} catch (SQLException ex) {
-				System.out.println("SQL Error: Could not rollback changes");
-				System.out.println(ex.getMessage());
-			}
-			return false;
-		} finally {
-			try {
-				db.setAutoCommit(true);
-			} catch (SQLException ex) {
-				System.out.println("Error: Could not enable auto-commit");
-				return false;
-			}
-		}
-		return true;
+		beginCommit();
+		sqlUpdate("INSERT INTO Neighbors (WebId, Neighbor) VALUES ("+webid+", "+neighbor+");");
+		sqlUpdate("INSERT INTO Neighbors (WebId, Neighbor) VALUES ("+neighbor+", "+webid+");");
+		return endCommit();
 	}
 	/**
 	 * Removes neighbor node from a node
@@ -369,40 +364,9 @@ public class Database {
 	 * @author josh
 	 */
 	public boolean removeNeighbor(int webid, int neighbor) {
-		try {
-			db.setAutoCommit(false);
-
-			String sql = "DELETE FROM Neighbors WHERE WebId = ? AND Neighbor = ?;";
-
-			PreparedStatement stmt1 = db.prepareStatement(sql);
-			stmt1.setInt(1, webid);
-			stmt1.setInt(2, neighbor);
-			stmt1.executeUpdate();
-
-			PreparedStatement stmt2 = db.prepareStatement(sql);
-			stmt2.setInt(1, neighbor);
-			stmt2.setInt(2, webid);
-			stmt2.executeUpdate();
-
-			db.commit();
-		} catch (Exception e) {
-			try {
-				System.out.println("SQL Error: " + e.getMessage());
-				db.rollback();
-			} catch (SQLException ex) {
-				System.out.println("SQL Error: Could not rollback changes");
-				System.out.println(ex.getMessage());
-			}
-			return false;
-		} finally {
-			try {
-				db.setAutoCommit(true);
-			} catch (SQLException ex) {
-				System.out.println("Error: Could not enable auto-commit");
-				return false;
-			}
-		}
-		return true;
+		return sqlUpdate("DELETE FROM Neighbors WHERE "+
+							"(WebId="+webid+" AND Neighbor = "+neighbor+") OR "+
+							"(WebID="+neighbor+" AND Neighbor="+webid+");");
 	}
 	/**
 	 * Retrieves a list of a node's neighbors
@@ -413,41 +377,10 @@ public class Database {
 	 * @author josh
 	 */
 	public List<Integer> getNeighbors(int webid) throws Exception {
-
-		List<Integer> neighbors;
-
-		try {
-			db.setAutoCommit(false);
-
-			String sql = "SELECT Neighbor FROM Neighbors WHERE WebId = ?;";
-
-			PreparedStatement stmt1 = db.prepareStatement(sql);
-			stmt1.setInt(1, webid);
-			ResultSet set = stmt1.executeQuery();
-			neighbors = new ArrayList<>();
-			while (set.next()) {
-				neighbors.add(set.getInt(1));
-			}
-
-			db.commit();
-		} catch (Exception e) {
-			try {
-				System.out.println("SQL Error: " + e.getMessage());
-				db.rollback();
-			} catch (SQLException ex) {
-				System.out.println("SQL Error: Could not rollback changes");
-				System.out.println(ex.getMessage());
-			}
-			return null;
-		} finally {
-			try {
-				db.setAutoCommit(true);
-			} catch (SQLException ex) {
-				System.out.println("Error: Could not enable auto-commit");
-				return null;
-			}
-		}
-
+		ResultSet set = sqlQuery("SELECT Neighbor FROM Neighbors WHERE WebId = "+webid+";");
+		List<Integer> neighbors = new ArrayList<>();
+		while (set.next())
+			neighbors.add(set.getInt(1));
 		return neighbors;
 	}
 	/**
@@ -481,12 +414,11 @@ public class Database {
 	 * @throws Exception throws exception if there was an error in retrieval
 	 * @author john
 	 */
-	public ArrayList<Integer> getSurrogateNeighbors(int webid) throws Exception {
-		ArrayList<Integer> data = new ArrayList<>();
+	public List<Integer> getSurrogateNeighbors(int webid) throws Exception {
+		List<Integer> data = new ArrayList<>();
 		ResultSet results = sqlQuery("select `SurrogateNeighbor` as `sn` from `SurrogateNeighbors` where `WebID` = '" + webid + "';");
-		while (results.next()) {
+		while (results.next())
 			data.add(results.getInt("sn"));
-		}
 		return data;
 	}
 	/**
@@ -497,12 +429,11 @@ public class Database {
 	 * @throws Exception throws exception if there was an error in retrieval
 	 * @author john
 	 */
-	public ArrayList<Integer> getInverseSurrogateNeighbors(int webid) throws Exception {
+	public List<Integer> getInverseSurrogateNeighbors(int webid) throws Exception {
 		ArrayList<Integer> data = new ArrayList<>();
 		ResultSet results = sqlQuery("select `WebId` as `webid` from `SurrogateNeighbors` where `SurrogateNeighbor` = " + webid + ";");
-		while (results.next()) {
+		while (results.next())
 			data.add(results.getInt("webid"));
-		}
 		return data;
 	}
 }

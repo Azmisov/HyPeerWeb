@@ -29,7 +29,7 @@ public class Main {
 		System.out.println("---- TEST surrogates ----");
 		int errs = 0;
 		try {
-			db.clearDB();
+			db.clear();
 			if (!db.getSurrogateNeighbors(1).isEmpty()) {
 				System.out.println("Found Surrogate Neighbors when database "
 						+ "was supposed to be empty");
@@ -44,7 +44,7 @@ public class Main {
 			db.addSurrogateNeighbor(4, 1);
 			db.addSurrogateNeighbor(4, 2);
 			db.addSurrogateNeighbor(7, 1);
-			ArrayList<Integer> SurrList = db.getInverseSurrogateNeighbors(1);
+			List<Integer> SurrList = db.getInverseSurrogateNeighbors(1);
 			if (SurrList.size() != 2) {
 				System.out.println("Expected Surrogate Neighbors: 2"
 						+ "\nFound Surrogate Neighbors: " + SurrList.size());
@@ -74,8 +74,8 @@ public class Main {
 		System.out.println("---- TEST node attibutes ----");
 		int errs = 0, temp;
 		try {
-			db.clearDB();
-			db.addNode(new Node(5));
+			db.clear();
+			db.addNode(new Node(5, 0));
 			//Height
 			if (!db.setHeight(5, 10)) {
 				errs++;
@@ -85,7 +85,7 @@ public class Main {
 				errs++;
 			}
 			//Fold
-			db.addNode(new Node(6));
+			db.addNode(new Node(6, 0));
 			if (!db.setFold(5, 6)) {
 				errs++;
 			}
@@ -119,8 +119,8 @@ public class Main {
 		int errs = 0;
 		try {
 			//fill Node with attributes
-			db.clearDB();
-			Node node = new Node(5);
+			db.clear();
+			Node node = new Node(5, 0);
 			node.setHeight(1);
 			node.setFold(2);
 			node.setSurrogateFold(3);
@@ -208,7 +208,7 @@ public class Main {
 		int errs = 0;
 		try {
 			//fill Node with attributes
-			db.clearDB();
+			db.clear();
 			int webID = 9;
                         int height = 1;
                         int fold = 6;
@@ -248,7 +248,7 @@ public class Main {
 		int errs = 0;
 		try {
 			//fill Node with attributes
-			db.clearDB();
+			db.clear();
 			int webID = 9;
                         int height = 1;
                         int fold = 6;
@@ -307,12 +307,12 @@ public class Main {
 
 		try {
 
-			db.clearDB();
-			db.addNode(new Node(0));
-			db.addNode(new Node(1));
-			db.addNode(new Node(2));
-			db.addNode(new Node(3));
-			db.addNode(new Node(4));
+			db.clear();
+			db.addNode(new Node(0, 0));
+			db.addNode(new Node(1, 0));
+			db.addNode(new Node(2, 0));
+			db.addNode(new Node(3, 0));
+			db.addNode(new Node(4, 0));
 
 			db.addNeighbor(0, 1);
 			db.addNeighbor(0, 2);
