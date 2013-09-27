@@ -319,4 +319,19 @@ public class Node {
 	public void deleteInverseSurrogateNeighbor(int isn) {
 		inverseSurrogateNeighbors.remove(isn);
 	}
+        
+        /**
+         * Finds and returns the node whose WebID is closest to the given long
+         * Assumed to always start with the node with WebID of zero
+         * @param index The value to get as close as possible to
+         */
+        public Node findClosestTo(long index)
+        {
+            long closeness = index & webID;
+            for (int i=0; i < neighbors.size(); i++)
+            {
+                long c = index & neighbors.get(i);
+            }
+            return this;
+        }
 }
