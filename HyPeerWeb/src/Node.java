@@ -325,7 +325,7 @@ public class Node {
          * Assumed to always start with the node with WebID of zero
          * @param index The value to get as close as possible to
          */
-        public Node findClosestTo(long index)
+        public Node findStartPointForInsertion(long index)
         {
             long closeness = index & webID;
             for (int i=0; i < neighbors.size(); i++)
