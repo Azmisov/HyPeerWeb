@@ -1,4 +1,5 @@
 
+import java.util.Random;
 import java.util.Set;
 import java.util.TreeSet;
 
@@ -68,6 +69,13 @@ public class HyPeerWeb {
 	 * @author john
 	 */
 	private Node findRandomNode(){
+            if (nodes.isEmpty())
 		return null;
+            
+            Random rand = new Random();
+            long index = rand.nextInt(Integer.MAX_VALUE);
+            index *= Integer.MAX_VALUE;
+            index += rand.nextInt(Integer.MAX_VALUE);
+            return null;
 	}
 }
