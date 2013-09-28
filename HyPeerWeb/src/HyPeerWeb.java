@@ -94,6 +94,6 @@ public class HyPeerWeb {
             long index = rand.nextInt(Integer.MAX_VALUE);
             index *= Integer.MAX_VALUE;
             index += rand.nextInt(Integer.MAX_VALUE);
-            return null;
+            return ((Node)nodes.toArray()[0]).findInsertionStartPoint(index);
 	}
 }
