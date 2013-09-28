@@ -196,14 +196,19 @@ public class Database {
 		try {
 			beginCommit();
 			
-			String update;
-			update = "INSERT INTO Nodes VALUES("
-					+ node.getWebID() + ", "
-					+ node.getHeight() + ", "
-					+ node.getFold().getWebID() + ", "
-					+ node.getSurrogateFold().getWebID() + ", "
-					+ node.getInverseSurrogateFold().getWebID() + ");";
-			sqlUpdate(update);
+                        int webid = node.getWebID();
+                        
+                        String update;
+			update = "INSERT INTO Nodes (WebID) VALUES(" + webid + ");";
+                        sqlUpdate(update);
+			
+                        setHeight(webid, node.getHeight());
+                        if(node.getFold() != null)
+                            setFold(webid, node.getFold().getWebID());
+                        if(node.getSurrogateFold() != null)
+                            setSurrogateFold(webid, node.getSurrogateFold().getWebID());
+			if(node.getInverseSurrogateFold() != null)
+                            setSurrogateFold(node.getInverseSurrogateFold().getWebID(), webid);
 
 			ArrayList<Node> list;
 			int webID = node.getWebID();

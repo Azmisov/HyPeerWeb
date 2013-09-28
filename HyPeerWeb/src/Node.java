@@ -11,9 +11,9 @@ public class Node {
         private boolean hasChild;
 	private int webID;
 	private int height;
-	private Node fold;
-	private Node surrogateFold;
-	private Node inverseSurrogateFold;
+	private Node fold = null;
+	private Node surrogateFold = null;
+	private Node inverseSurrogateFold = null;
 	private ArrayList<Node> neighbors = new ArrayList();
 	private ArrayList<Node> surrogateNeighbors = new ArrayList();
 	private ArrayList<Node> inverseSurrogateNeighbors = new ArrayList();

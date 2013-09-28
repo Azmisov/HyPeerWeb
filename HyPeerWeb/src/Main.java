@@ -26,7 +26,7 @@ public class Main {
 		}
 		//*/
 		
-		//* HYPEERWEB TEST CODE
+		// HYPEERWEB TEST CODE
 		try{
 			System.out.println("BEGIN HYPEERWEB CLASS TESTING:\n");
 			HyPeerWeb web = HyPeerWeb.getInstance();
@@ -227,8 +227,9 @@ public class Main {
                         int height = 1;
                         Node fold = new Node(6,4);
                         Node surrogateFold = new Node(2,2);
+                        Node isf = new Node(8,4);
                         
-			db.addNode(webID, height, fold, surrogateFold, null);
+			db.addNode(webID, height, fold, surrogateFold, isf);
 			//Height
 			if (db.getHeight(9) != 1) {
 				System.err.println("Failed to set node height");
@@ -245,7 +246,7 @@ public class Main {
 				errs++;
 			}
 			//Inverse Surrogate fold
-			if (db.getInverseSurrogateFold(9) != 9) {
+			if (db.getInverseSurrogateFold(9) != 8) {
 				System.err.println("Failed to set inverse surrogate fold");
 				errs++;
 			}
