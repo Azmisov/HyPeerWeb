@@ -136,9 +136,9 @@ public class Main {
 			db.clear();
 			Node node = new Node(5, 0);
 			node.setHeight(1);
-			node.setFold(2);
-			node.setSurrogateFold(3);
-			node.setInverseSurrogateFold(4);
+			node.setFold(new Node(2,1));
+			node.setSurrogateFold(new Node(3,2));
+			node.setInverseSurrogateFold(new Node(4,2));
 
 			ArrayList<Integer> list1 = new ArrayList();
 			list1.add(6);

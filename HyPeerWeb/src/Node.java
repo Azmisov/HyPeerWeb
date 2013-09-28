@@ -1,22 +1,22 @@
 
 /**
  *
- * @author Guy int and Integer need to be replaced with WebID and Height when
- * those types exist.
+ * @author Guy
  */
 import java.util.ArrayList;
 
 public class Node {
 	//NODE ATTRIBUTES
-
+        
+        private boolean hasChild;
 	private int webID;
 	private int height;
-	private int fold;
-	private int surrogateFold;
-	private int inverseSurrogateFold;
-	private ArrayList<Integer> neighbors = new ArrayList();
-	private ArrayList<Integer> surrogateNeighbors = new ArrayList();
-	private ArrayList<Integer> inverseSurrogateNeighbors = new ArrayList();
+	private Node fold;
+	private Node surrogateFold;
+	private Node inverseSurrogateFold;
+	private ArrayList<Node> neighbors = new ArrayList();
+	private ArrayList<Node> surrogateNeighbors = new ArrayList();
+	private ArrayList<Node> inverseSurrogateNeighbors = new ArrayList();
 
 	//CONSTRUCTORS
 	/**
@@ -43,9 +43,9 @@ public class Node {
 	 * @param isNeighbors An ArrayList containing the Inverse Surrogate
 	 * Neighbors of the Node
 	 */
-	public Node(int id, int Height, int Fold, int sFold, int isFold,
-			ArrayList<Integer> Neighbors, ArrayList<Integer> sNeighbors,
-			ArrayList<Integer> isNeighbors) {
+	public Node(int id, int Height, Node Fold, Node sFold, Node isFold,
+			ArrayList<Node> Neighbors, ArrayList<Node> sNeighbors,
+			ArrayList<Node> isNeighbors) {
 		webID = id;
 		height = Height;
 		fold = Fold;
@@ -73,6 +73,21 @@ public class Node {
 		return null;
 	}
 	
+        //CHILD
+        /**
+         * Finds out if this node has a child
+         * @return true if this node has a child, false otherwise
+         */
+        public boolean hasChild(){
+               return hasChild;
+        }
+        /**
+         * Sets hasChild to true or false
+         * @param b new value for hasChild
+         */
+        public void hasChild(boolean b){
+            hasChild = b;
+        }
 
 	//WEBID
 	/**
@@ -109,7 +124,7 @@ public class Node {
 	 *
 	 * @return The WebID of the Node's Fold
 	 */
-	public int getFold() {
+	public Node getFold() {
 		return fold;
 	}
 
@@ -118,7 +133,7 @@ public class Node {
 	 *
 	 * @param f The WebID of the Fold of the Node
 	 */
-	public void setFold(int f) {
+	public void setFold(Node f) {
 		fold = f;
 	}
 
@@ -128,7 +143,7 @@ public class Node {
 	 *
 	 * @return The WebID of the Surrogate Fold of the Node
 	 */
-	public int getSurrogateFold() {
+	public Node getSurrogateFold() {
 		return surrogateFold;
 	}
 
@@ -137,7 +152,7 @@ public class Node {
 	 *
 	 * @param sf The WebID of the Surrogate Fold of the Node
 	 */
-	public void setSurrogateFold(int sf) {
+	public void setSurrogateFold(Node sf) {
 		surrogateFold = sf;
 	}
 
@@ -147,7 +162,7 @@ public class Node {
 	 *
 	 * @return The WebID of the Inverse Surrogate Fold of the Node
 	 */
-	public int getInverseSurrogateFold() {
+	public Node getInverseSurrogateFold() {
 		return inverseSurrogateFold;
 	}
 
@@ -156,7 +171,7 @@ public class Node {
 	 *
 	 * @param sf The WebID of the Inverse Surrogate Fold of the Node
 	 */
-	public void setInverseSurrogateFold(int sf) {
+	public void setInverseSurrogateFold(Node sf) {
 		inverseSurrogateFold = sf;
 	}
 
@@ -166,7 +181,7 @@ public class Node {
 	 *
 	 * @return An ArrayList containing the Neighbors of the Node
 	 */
-	public ArrayList<Integer> getNeighbors() {
+	public ArrayList<Node> getNeighbors() {
 		return neighbors;
 	}
 
@@ -176,7 +191,7 @@ public class Node {
 	 * @param al An ArrayList containing the new list of Neighbors. If al is
 	 * null nothing will be changed
 	 */
-	public void setNeighbors(ArrayList<Integer> al) {
+	public void setNeighbors(ArrayList<Node> al) {
 		if (al != null) {
 			neighbors = al;
 		}
@@ -188,7 +203,7 @@ public class Node {
 	 *
 	 * @param n The WebID of the Neighbor
 	 */
-	public void addNeighbor(int n) {
+	public void addNeighbor(Node n) {
 		if (!isNeighbor(n)) {
 			neighbors.add(n);
 		}
@@ -200,7 +215,7 @@ public class Node {
 	 * @param n The WebID to check
 	 * @return True if found, false otherwise
 	 */
-	public boolean isNeighbor(int n) {
+	public boolean isNeighbor(Node n) {
 		return neighbors.contains(n);
 	}
 
@@ -219,7 +234,7 @@ public class Node {
 	 *
 	 * @return An ArrayList containing the Surrogate Neighbors of the Node
 	 */
-	public ArrayList<Integer> getSurrogateNeighbors() {
+	public ArrayList<Node> getSurrogateNeighbors() {
 		return surrogateNeighbors;
 	}
 
@@ -229,7 +244,7 @@ public class Node {
 	 * @param al An ArrayList containing the new list of Surrogate Neighbors If
 	 * al is null nothing will be changed
 	 */
-	public void setSurrogateNeighbors(ArrayList<Integer> al) {
+	public void setSurrogateNeighbors(ArrayList<Node> al) {
 		if (al != null) {
 			surrogateNeighbors = al;
 		}
@@ -241,7 +256,7 @@ public class Node {
 	 *
 	 * @param sn The WebID of the Surrogate Neighbor
 	 */
-	public void addSurrogateNeighbor(int sn) {
+	public void addSurrogateNeighbor(Node sn) {
 		if (!isSurrogateNeighbor(sn)) {
 			surrogateNeighbors.add(sn);
 		}
@@ -253,7 +268,7 @@ public class Node {
 	 * @param sn The WebID to check
 	 * @return True if found, false otherwise
 	 */
-	public boolean isSurrogateNeighbor(int sn) {
+	public boolean isSurrogateNeighbor(Node sn) {
 		return surrogateNeighbors.contains(sn);
 	}
 
@@ -273,7 +288,7 @@ public class Node {
 	 * @return An ArrayList containing the Inverse Surrogate Neighbors of the
 	 * Node
 	 */
-	public ArrayList<Integer> getInverseSurrogateNeighbors() {
+	public ArrayList<Node> getInverseSurrogateNeighbors() {
 		return inverseSurrogateNeighbors;
 	}
 
@@ -283,7 +298,7 @@ public class Node {
 	 * @param al An ArrayList containing the new list of Inverse Surrogate
 	 * Neighbors. If al is null nothing will be changed
 	 */
-	public void setInverseSurrogateNeighbors(ArrayList<Integer> al) {
+	public void setInverseSurrogateNeighbors(ArrayList<Node> al) {
 		if (al != null) {
 			inverseSurrogateNeighbors = al;
 		}
@@ -295,7 +310,7 @@ public class Node {
 	 *
 	 * @param isn The WebID of the Inverse Surrogate Neighbor
 	 */
-	public void addInverseSurrogateNeighbor(int isn) {
+	public void addInverseSurrogateNeighbor(Node isn) {
 		if (!isInverseSurrogateNeighbor(isn)) {
 			inverseSurrogateNeighbors.add(isn);
 		}
@@ -307,7 +322,7 @@ public class Node {
 	 * @param isn The WebID to check
 	 * @return True if found, false otherwise
 	 */
-	public boolean isInverseSurrogateNeighbor(int isn) {
+	public boolean isInverseSurrogateNeighbor(Node isn) {
 		return inverseSurrogateNeighbors.contains(isn);
 	}
 
@@ -316,7 +331,7 @@ public class Node {
 	 *
 	 * @param isn The WebID to delete
 	 */
-	public void deleteInverseSurrogateNeighbor(int isn) {
+	public void deleteInverseSurrogateNeighbor(Node isn) {
 		inverseSurrogateNeighbors.remove(isn);
 	}
         
@@ -330,7 +345,7 @@ public class Node {
             long closeness = index & webID;
             for (int i=0; i < neighbors.size(); i++)
             {
-                long c = index & neighbors.get(i);
+                long c = index & neighbors.get(i).getWebID();
             }
             return this;
         }
