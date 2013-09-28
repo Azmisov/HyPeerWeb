@@ -140,20 +140,20 @@ public class Main {
 			node.setSurrogateFold(new Node(3,2));
 			node.setInverseSurrogateFold(new Node(4,2));
 
-			ArrayList<Integer> list1 = new ArrayList();
-			list1.add(6);
-			list1.add(7);
-			list1.add(8);
+			ArrayList<Node> list1 = new ArrayList();
+			list1.add(new Node(6,4));
+			list1.add(new Node(7,4));
+			list1.add(new Node(8,4));
 
-			ArrayList<Integer> list2 = new ArrayList();
-			list2.add(9);
-			list2.add(10);
-			list2.add(11);
+			ArrayList<Node> list2 = new ArrayList();
+			list2.add(new Node(9,4));
+			list2.add(new Node(10,4));
+			list2.add(new Node(11,4));
 
-			ArrayList<Integer> list3 = new ArrayList();
-			list3.add(12);
-			list3.add(13);
-			list3.add(14);
+			ArrayList<Node> list3 = new ArrayList();
+			list3.add(new Node(12,4));
+			list3.add(new Node(13,4));
+			list3.add(new Node(14,4));
 
 			node.setNeighbors(list1);
 			node.setSurrogateNeighbors(list2);
@@ -225,10 +225,10 @@ public class Main {
 			db.clear();
 			int webID = 9;
                         int height = 1;
-                        int fold = 6;
-                        int surrogateFold = 2;
+                        Node fold = new Node(6,4);
+                        Node surrogateFold = new Node(2,2);
                         
-			db.addNode(webID, height, fold, surrogateFold);
+			db.addNode(webID, height, fold, surrogateFold, null);
 			//Height
 			if (db.getHeight(9) != 1) {
 				System.err.println("Failed to set node height");
@@ -265,10 +265,10 @@ public class Main {
 			db.clear();
 			int webID = 9;
                         int height = 1;
-                        int fold = 6;
-                        int surrogateFold = 2;
+                        Node fold = new Node(6,4);
+                        Node surrogateFold = new Node(2,2);
                         
-			db.addNode(webID, height, fold, surrogateFold);
+			db.addNode(webID, height, fold, surrogateFold, null);
                         
                         if (!db.removeNode(webID)){
                             System.err.println("Failed to remove node");

@@ -57,7 +57,8 @@ public class HyPeerWeb {
 		
 		//Set neighbours (Guy)
 		parent.hasChild(true);
-                parent.addNeighbor(webid);
+                parent.addNeighbor(child);
+                child.addNeighbor(parent);
 		
 		//Set folds (Brian/Isaac)
 		

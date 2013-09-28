@@ -200,22 +200,22 @@ public class Database {
 			update = "INSERT INTO Nodes VALUES("
 					+ node.getWebID() + ", "
 					+ node.getHeight() + ", "
-					+ node.getFold() + ", "
-					+ node.getSurrogateFold() + ", "
-					+ node.getInverseSurrogateFold() + ");";
+					+ node.getFold().getWebID() + ", "
+					+ node.getSurrogateFold().getWebID() + ", "
+					+ node.getInverseSurrogateFold().getWebID() + ");";
 			sqlUpdate(update);
 
-			ArrayList<Integer> list;
+			ArrayList<Node> list;
 			int webID = node.getWebID();
 
 			list = node.getNeighbors();
-			for (int i : list)
-				addNeighbor(webID, i);
+			for (Node n : list)
+				addNeighbor(webID, n.getWebID());
 			
 			//surrogate and inverse are reflexive
 			list = node.getSurrogateNeighbors();
-			for (int i : list)
-				addSurrogateNeighbor(webID, i);
+			for (Node n : list)
+				addSurrogateNeighbor(webID, n.getWebID());
 			
 			return endCommit();
 		} catch (Exception e) {
@@ -233,9 +233,9 @@ public class Database {
 	 * @return true if the node was successfully added
 	 * @author brian
 	 */
-	public boolean addNode(int webid, int height, int foldid, int sfoldid) {
-		return addNode(new Node(webid, height, foldid, sfoldid, 
-                    webid, null, null, null));
+	public boolean addNode(int webid, int height, Node fold, Node sfold, Node isfold) {
+		return addNode(new Node(webid, height, fold, sfold, isfold,
+                    null, null, null));
 	}
 	/**
 	 * Removes a node from the database
