@@ -2,6 +2,7 @@
 import java.util.Random;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.ArrayList;
 
 /**
  * The Great HyPeerWeb Singleton
@@ -56,10 +57,25 @@ public class HyPeerWeb {
 		nodes.add(child);
 		
 		//Set neighbours (Guy)
-		parent.hasChild(true);
+		parent.hasChild(true);//sets parents hadChild value to true
+                ArrayList<Node> list;
+                //makes the parent's ISNs the child's neighbors
+                list = parent.getInverseSurrogateNeighbors();
+                for (Node n:list){
+                    child.addNeighbor(n);
+                }
+                //adds a neighbor of parent as a surrogate neighbor of child if nieghbor is childless
+                //and makes child an isn of neighbor
+                list = parent.getNeighbors();
+                for(Node n:list){
+                    if(!n.hasChild()){ 
+                        child.addSurrogateNeighbor(n);
+                        n.addInverseSurrogateNeighbor(child);
+                    }
+                }
                 parent.addNeighbor(child);
                 child.addNeighbor(parent);
-		
+        
 		//Set folds (Brian/Isaac)
 		
 		return child;
