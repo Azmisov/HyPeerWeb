@@ -1,7 +1,6 @@
 
 import java.sql.Connection;
 import java.sql.DriverManager;
-import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
@@ -196,7 +195,7 @@ public class Database {
 		try {
 			beginCommit();
 			
-                        int webid = node.getWebID();
+                        int webid = node.getWebId();
                         
                         String update;
 			update = "INSERT INTO Nodes (WebID) VALUES(" + webid + ");";
@@ -204,23 +203,23 @@ public class Database {
 			
                         setHeight(webid, node.getHeight());
                         if(node.getFold() != null)
-                            setFold(webid, node.getFold().getWebID());
+                            setFold(webid, node.getFold().getWebId());
                         if(node.getSurrogateFold() != null)
-                            setSurrogateFold(webid, node.getSurrogateFold().getWebID());
+                            setSurrogateFold(webid, node.getSurrogateFold().getWebId());
 			if(node.getInverseSurrogateFold() != null)
-                            setSurrogateFold(node.getInverseSurrogateFold().getWebID(), webid);
+                            setSurrogateFold(node.getInverseSurrogateFold().getWebId(), webid);
 
-			ArrayList<Node> list;
+			Node[] list;
 
 			list = node.getNeighbors();
 			for (Node n : list)
-				addNeighbor(webid, n.getWebID());
+				addNeighbor(webid, n.getWebId());
 			
 			//surrogate and inverse are reflexive
                         //if every node adds its SNs, the ISNs will also be recorded
 			list = node.getSurrogateNeighbors();
 			for (Node n : list)
-				addSurrogateNeighbor(webid, n.getWebID());
+				addSurrogateNeighbor(webid, n.getWebId());
 			
 			return endCommit();
 		} catch (Exception e) {

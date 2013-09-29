@@ -5,7 +5,7 @@
  */
 import java.util.ArrayList;
 
-public class Node {
+public class Node implements NodeInterface {
 	//NODE ATTRIBUTES
         
         private boolean hasChild;
@@ -95,7 +95,8 @@ public class Node {
 	 *
 	 * @return The WebID of the Node
 	 */
-	public int getWebID() {
+        @Override
+	public int getWebId() {
 		return webID;
 	}
 
@@ -105,6 +106,7 @@ public class Node {
 	 *
 	 * @return The Height of the Node
 	 */
+        @Override
 	public int getHeight() {
 		return height;
 	}
@@ -143,6 +145,7 @@ public class Node {
 	 *
 	 * @return The WebID of the Surrogate Fold of the Node
 	 */
+        @Override
 	public Node getSurrogateFold() {
 		return surrogateFold;
 	}
@@ -181,8 +184,9 @@ public class Node {
 	 *
 	 * @return An ArrayList containing the Neighbors of the Node
 	 */
-	public ArrayList<Node> getNeighbors() {
-		return neighbors;
+        @Override
+	public Node[] getNeighbors() {
+		return neighbors.toArray(new Node[0]);
 	}
 
 	/**
@@ -234,8 +238,9 @@ public class Node {
 	 *
 	 * @return An ArrayList containing the Surrogate Neighbors of the Node
 	 */
-	public ArrayList<Node> getSurrogateNeighbors() {
-		return surrogateNeighbors;
+        @Override
+	public Node[] getSurrogateNeighbors() {
+		return surrogateNeighbors.toArray(new Node[0]);
 	}
 
 	/**
@@ -288,8 +293,9 @@ public class Node {
 	 * @return An ArrayList containing the Inverse Surrogate Neighbors of the
 	 * Node
 	 */
-	public ArrayList<Node> getInverseSurrogateNeighbors() {
-		return inverseSurrogateNeighbors;
+        @Override
+	public Node[] getInverseSurrogateNeighbors() {
+		return inverseSurrogateNeighbors.toArray(new Node[0]);
 	}
 
 	/**
@@ -345,8 +351,18 @@ public class Node {
             long closeness = index & webID;
             for (int i=0; i < neighbors.size(); i++)
             {
-                long c = index & neighbors.get(i).getWebID();
+                long c = index & neighbors.get(i).getWebId();
             }
             return this;
         }
+
+    @Override
+    public NodeInterface getParent() {
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    }
+
+    @Override
+    public int compareTo(NodeInterface node) {
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    }
 }

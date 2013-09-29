@@ -8,7 +8,8 @@ import java.util.ArrayList;
  * The Great HyPeerWeb Singleton
  * @author isaac
  */
-public class HyPeerWeb {
+public class HyPeerWeb implements HyPeerWebInterface {
+    
 	private static HyPeerWeb instance;
 	Set<Node> nodes;
 	Database db;
@@ -52,21 +53,21 @@ public class HyPeerWeb {
 		
 		//Create child node and set its height
 		int height = parent.getHeight()+1,
-			webid = (int) (Math.pow(10, height-1) + parent.getWebID());
+			webid = (int) (Math.pow(10, height-1) + parent.getWebId());
 		Node child = new Node(webid, height);
                 db.addNode(child);
 		parent.setHeight(height);
-                db.setHeight(parent.getWebID(), height);
+                db.setHeight(parent.getWebId(), height);
 		nodes.add(child);
 		
 		//Set neighbours (Guy)
 		parent.hasChild(true);//sets parents hadChild value to true
-                ArrayList<Node> list;
+                Node[] list;
                 //makes the parent's ISNs the child's neighbors
                 list = parent.getInverseSurrogateNeighbors();
                 for (Node n:list){
                     child.addNeighbor(n);
-                    db.addNeighbor(child.getWebID(), n.getWebID());
+                    db.addNeighbor(child.getWebId(), n.getWebId());
                 }
                 //adds a neighbor of parent as a surrogate neighbor of child if nieghbor is childless
                 //and makes child an isn of neighbor
@@ -74,13 +75,13 @@ public class HyPeerWeb {
                 for(Node n:list){
                     if(!n.hasChild()){ 
                         child.addSurrogateNeighbor(n);
-                        db.addSurrogateNeighbor(child.getWebID(), n.getWebID());
+                        db.addSurrogateNeighbor(child.getWebId(), n.getWebId());
                         n.addInverseSurrogateNeighbor(child);
                     }
                 }
                 parent.addNeighbor(child);
                 child.addNeighbor(parent);
-                db.addNeighbor(parent.getWebID(), child.getWebID());
+                db.addNeighbor(parent.getWebId(), child.getWebId());
         
 		//Set folds (Brian/Isaac)
 		
@@ -100,6 +101,22 @@ public class HyPeerWeb {
             long index = rand.nextInt(Integer.MAX_VALUE);
             index *= Integer.MAX_VALUE;
             index += rand.nextInt(Integer.MAX_VALUE);
-            return ((Node)nodes.toArray()[0]).findInsertionStartPoint(index);
+            return ((Node)nodes.toArray()[0]).findInsertionNode();
 	}
+
+    @Override
+    public Node[] getOrderedListOfNodes() {
+        return nodes.toArray(new Node[0]);
+    }
+
+    @Override
+    public Node getNode(int webId) {
+        for (Node n : nodes) {
+            if (n.getWebId() == webId) {
+                return n;
+            }
+        }
+        
+        return null;
+    }
 }
