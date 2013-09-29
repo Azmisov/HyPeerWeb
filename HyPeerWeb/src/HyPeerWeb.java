@@ -59,8 +59,6 @@ public class HyPeerWeb {
                 db.setHeight(parent.getWebID(), height);
 		nodes.add(child);
 		
-                
-                
 		//Set neighbours (Guy)
 		parent.hasChild(true);//sets parents hadChild value to true
                 ArrayList<Node> list;
