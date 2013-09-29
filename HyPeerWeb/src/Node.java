@@ -357,12 +357,27 @@ public class Node implements NodeInterface {
         }
 
     @Override
-    public NodeInterface getParent() {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    public Node getParent() {
+        
+        Node lowest = this;
+        
+        for (Node n : neighbors) {
+            if (n.webID < lowest.webID) {
+                lowest = n;
+            }
+        }
+        
+        return lowest;
     }
 
     @Override
     public int compareTo(NodeInterface node) {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+        if (webID < node.getWebId()) {
+            return -1;
+        } else if (webID == node.getWebId()) {
+            return 0;
+        } else {
+            return 1;
+        }
     }
 }
