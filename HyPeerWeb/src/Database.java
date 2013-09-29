@@ -216,7 +216,8 @@ public class Database {
 			for (Node n : list)
 				addNeighbor(webid, n.getWebID());
 			
-			//surrogate and inverse are reflexive 
+			//surrogate and inverse are reflexive
+                        //if every node adds its SNs, the ISNs will also be recorded
 			list = node.getSurrogateNeighbors();
 			for (Node n : list)
 				addSurrogateNeighbor(webid, n.getWebID());

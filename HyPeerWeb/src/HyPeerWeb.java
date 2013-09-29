@@ -43,6 +43,7 @@ public class HyPeerWeb {
 		if (nodes.isEmpty()){
 			Node first = new Node(0, 0);
 			nodes.add(first);
+                        db.addNode(first);
 			return first;
 		}
 		
@@ -53,9 +54,13 @@ public class HyPeerWeb {
 		int height = parent.getHeight()+1,
 			webid = (int) (Math.pow(10, height-1) + parent.getWebID());
 		Node child = new Node(webid, height);
+                db.addNode(child);
 		parent.setHeight(height);
+                db.setHeight(parent.getWebID(), height);
 		nodes.add(child);
 		
+                
+                
 		//Set neighbours (Guy)
 		parent.hasChild(true);//sets parents hadChild value to true
                 ArrayList<Node> list;
@@ -63,6 +68,7 @@ public class HyPeerWeb {
                 list = parent.getInverseSurrogateNeighbors();
                 for (Node n:list){
                     child.addNeighbor(n);
+                    db.addNeighbor(child.getWebID(), n.getWebID());
                 }
                 //adds a neighbor of parent as a surrogate neighbor of child if nieghbor is childless
                 //and makes child an isn of neighbor
@@ -70,11 +76,13 @@ public class HyPeerWeb {
                 for(Node n:list){
                     if(!n.hasChild()){ 
                         child.addSurrogateNeighbor(n);
+                        db.addSurrogateNeighbor(child.getWebID(), n.getWebID());
                         n.addInverseSurrogateNeighbor(child);
                     }
                 }
                 parent.addNeighbor(child);
                 child.addNeighbor(parent);
+                db.addNeighbor(parent.getWebID(), child.getWebID());
         
 		//Set folds (Brian/Isaac)
 		
