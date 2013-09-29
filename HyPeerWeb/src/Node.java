@@ -69,8 +69,37 @@ public class Node implements NodeInterface {
 	 * @return the parent of the child to add
 	 * @author josh
 	 */
-	public Node findInsertionNode(){
-		return null;
+        public Node findInsertionNode(){
+            
+            Node result = findInsertionNode(2);
+            
+            if(result == null) {
+                return this;
+            }
+            
+            return result;
+        }
+        
+	private Node findInsertionNode(int times){
+            
+            if (surrogateFold != null) {
+                return surrogateFold;
+            } else if (surrogateNeighbors != null && !surrogateNeighbors.isEmpty()) {
+                return surrogateNeighbors.get(0);
+            } else if (times == 0) {
+                return null;
+            }
+            
+            for (Node n : neighbors) {
+                if (n.height < height) {
+                    Node result = n.findInsertionNode(times - 1);
+                    if (result != null) {
+                        return result;
+                    }
+                }
+            }
+            
+            return null;
 	}
 	
         //CHILD
@@ -126,6 +155,7 @@ public class Node implements NodeInterface {
 	 *
 	 * @return The WebID of the Node's Fold
 	 */
+        @Override
 	public Node getFold() {
 		return fold;
 	}
@@ -165,6 +195,7 @@ public class Node implements NodeInterface {
 	 *
 	 * @return The WebID of the Inverse Surrogate Fold of the Node
 	 */
+        @Override
 	public Node getInverseSurrogateFold() {
 		return inverseSurrogateFold;
 	}
@@ -356,28 +387,28 @@ public class Node implements NodeInterface {
             return this;
         }
 
-    @Override
-    public Node getParent() {
-        
-        Node lowest = this;
-        
-        for (Node n : neighbors) {
-            if (n.webID < lowest.webID) {
-                lowest = n;
+        @Override
+        public Node getParent() {
+
+            Node lowest = this;
+
+            for (Node n : neighbors) {
+                if (n.webID < lowest.webID) {
+                    lowest = n;
+                }
+            }
+
+            return lowest;
+        }
+
+        @Override
+        public int compareTo(NodeInterface node) {
+            if (webID < node.getWebId()) {
+                return -1;
+            } else if (webID == node.getWebId()) {
+                return 0;
+            } else {
+                return 1;
             }
         }
-        
-        return lowest;
-    }
-
-    @Override
-    public int compareTo(NodeInterface node) {
-        if (webID < node.getWebId()) {
-            return -1;
-        } else if (webID == node.getWebId()) {
-            return 0;
-        } else {
-            return 1;
-        }
-    }
 }
