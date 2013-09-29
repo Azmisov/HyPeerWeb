@@ -211,16 +211,15 @@ public class Database {
                             setSurrogateFold(node.getInverseSurrogateFold().getWebID(), webid);
 
 			ArrayList<Node> list;
-			int webID = node.getWebID();
 
 			list = node.getNeighbors();
 			for (Node n : list)
-				addNeighbor(webID, n.getWebID());
+				addNeighbor(webid, n.getWebID());
 			
-			//surrogate and inverse are reflexive
+			//surrogate and inverse are reflexive 
 			list = node.getSurrogateNeighbors();
 			for (Node n : list)
-				addSurrogateNeighbor(webID, n.getWebID());
+				addSurrogateNeighbor(webid, n.getWebID());
 			
 			return endCommit();
 		} catch (Exception e) {
