@@ -164,36 +164,50 @@ public class Node implements NodeInterface{
 	 * @return the parent of the child to add
 	 * @author josh
 	 */
-	public Node findInsertionNode(){
+	   public Node findInsertionNode() {
 
-		Node result = findInsertionNode(2);
+        Node result = findInsertionNode(this, 2);
 
-		if(result == null) {
-			return this;
-		}
+        if (result == null) {
+            return this;
+        }
 
-		return result;
-	}
-	private Node findInsertionNode(int times){
-			
-			if (surrogateFold != null) {
-				return surrogateFold;
-			} else if (surrogateNeighbors != null && !surrogateNeighbors.isEmpty()) {
-				return surrogateNeighbors.get(0);
-			} else if (times == 0) {
-				return null;
-			}
-			
-			for (Node n : neighbors) {
-				if (n.height < height) {
-					Node result = n.findInsertionNode(times - 1);
-					if (result != null) {
-						return result;
-					}
-				}
-			}
-			
-			return null;
+        return result;
+    }
+
+    private Node findInsertionNode(Node original, int times) {
+        if (surrogateFold != null) {
+            return surrogateFold;
+        }
+
+        if (surrogateNeighbors != null && !surrogateNeighbors.isEmpty()) {
+            return surrogateNeighbors.get(0);
+        }
+
+        for (Node n : neighbors) {
+            if (n != original && n.height < height) {
+                return n;
+            }
+        }
+
+        if (times == 0) {
+            return null;
+        }
+
+        for (Node n : neighbors) {
+
+            if (n == original) {
+                continue;
+            }
+
+            Node result = n.findInsertionNode(this, times - 1);
+
+            if (result != null) {
+                return result;
+            }
+        }
+
+        return null;
 	}
 	
 	//EN-MASSE DATABASE CHANGE HANDLING
