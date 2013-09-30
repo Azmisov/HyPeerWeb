@@ -6,6 +6,7 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.TreeSet;
 
 /**
  * Low-level Database access class
@@ -254,6 +255,41 @@ public class Database {
 		sqlUpdate("DELETE FROM Neighbors WHERE WebID=" + webid + " OR Neighbor="+ webid +";");
 		sqlUpdate("DELETE FROM SurrogateNeighbors WHERE WebID=" + webid + ";");
 		return endCommit();
+	}
+        
+	/**
+	 * Makes nodes from data stored in database
+	 * @return a TreeSet<Node> containing all nodes stored in database
+	 */
+	public TreeSet<Node> getAllNodes() throws Exception{
+		TreeSet<Node> tsnodes = new TreeSet();
+		ArrayList<Node> nodes = new ArrayList();
+		ResultSet rs;
+		String sql;
+		Node n;
+		int i;
+
+		//get data from Nodes table
+		sql = "SELECT * FROM Nodes";
+		rs = sqlQuery(sql);
+		while(rs.next()){
+			n = new Node(rs.getInt("WebId"), rs.getInt("Height"));
+			nodes.add(n);
+		}
+		rs.beforeFirst();
+		i = 0;
+		while(rs.next()){
+			n = nodes.get(i);
+			if(rs.getInt("Fold") != -1)//need to set default value of f, sf, and isf to -1 because getInt will return 0 if entry in null
+			n.setFold(n);
+		}
+
+		//get data from Neighbors table
+
+		//get data from SurrogateNeighbors table
+
+		//fill treeset from arraylist
+		return tsnodes;
 	}
         
         ///NODE ATTRIBUTES
