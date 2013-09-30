@@ -111,7 +111,7 @@ public class HyPeerWeb implements HyPeerWebInterface {
 		long index = rand.nextInt(Integer.MAX_VALUE);
 		index *= Integer.MAX_VALUE;
 		index += rand.nextInt(Integer.MAX_VALUE);
-		return ((Node) nodes.toArray()[0]).findInsertionNode();
+		return ((Node) nodes.toArray()[0]).findInsertionStartPoint(index);
 	}
 
 	@Override
