@@ -1,3 +1,5 @@
+package hypeerweb;
+
 
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -280,8 +282,9 @@ public class Database {
 		i = 0;
 		while(rs.next()){
 			n = nodes.get(i);
-			if(rs.getInt("Fold") != -1)//need to set default value of f, sf, and isf to -1 because getInt will return 0 if entry in null
-			n.setFold(n);
+			if(rs.getInt("Fold") != -1){//need to set default value of f, sf, and isf to -1 because getInt will return 0 if entry in null
+			//n.setFold(n);
+			}
 		}
 
 		//get data from Neighbors table

@@ -1,6 +1,9 @@
+package hypeerweb;
 
 import java.util.Random;
 import java.util.TreeSet;
+import validator.HyPeerWebInterface;
+import validator.NodeInterface;
 
 /**
  * The Great HyPeerWeb Singleton
@@ -9,10 +12,10 @@ import java.util.TreeSet;
 public class HyPeerWeb implements HyPeerWebInterface {
 	
 	private static HyPeerWeb instance;
-	TreeSet<Node> nodes;
-	Database db;
+	private TreeSet<Node> nodes;
+	private Database db;
 	//Random number generator for getting random nodes
-	Random rand;
+	private Random rand;
 	
 	/**
 	 * Private constructor for initializing the HyPeerWeb
@@ -53,9 +56,9 @@ public class HyPeerWeb implements HyPeerWebInterface {
 		if (nodes.size() == 1){
 			Node sec = new Node(1, 1),
 				first = nodes.first();
-			first.setHeight(1);
-			first.setFold(sec);
-			sec.setFold(first);
+			first.height = 1;
+			first.fold = sec;
+			sec.fold = first;
 			nodes.add(sec);
 			return sec;
 		}

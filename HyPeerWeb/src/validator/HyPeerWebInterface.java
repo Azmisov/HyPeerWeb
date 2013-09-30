@@ -1,3 +1,5 @@
+package validator;
+
 /**
  * The methods required to use the Validator.
  * 

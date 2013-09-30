@@ -1,16 +1,18 @@
+package hypeerweb;
+
+import java.util.ArrayList;
+import validator.NodeInterface;
 
 /**
- *
+ * The Node class
  * @author Guy
  */
-import java.util.ArrayList;
-
 public class Node implements NodeInterface{
 	//NODE ATTRIBUTES	
 	private boolean hasChild;
 	private int webID;
-	private int height;
-	private Node fold = null;
+	protected int height;
+	protected Node fold = null;
 	private Node surrogateFold = null;
 	private Node inverseSurrogateFold = null;
 	private ArrayList<Node> neighbors = new ArrayList();

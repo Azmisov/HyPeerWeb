@@ -1,4 +1,7 @@
 
+import hypeerweb.Node;
+import hypeerweb.HyPeerWeb;
+import hypeerweb.Database;
 import java.util.*;
 
 /**
@@ -134,11 +137,6 @@ public class Main {
 		try {
 			//fill Node with attributes
 			db.clear();
-			Node node = new Node(5, 0);
-			node.setHeight(1);
-			node.setFold(new Node(2,1));
-			node.setSurrogateFold(new Node(3,2));
-			node.setInverseSurrogateFold(new Node(4,2));
 
 			ArrayList<Node> list1 = new ArrayList();
 			list1.add(new Node(6,4));
@@ -155,9 +153,7 @@ public class Main {
 			list3.add(new Node(13,4));
 			list3.add(new Node(14,4));
 
-			node.setNeighbors(list1);
-			node.setSurrogateNeighbors(list2);
-			node.setInverseSurrogateNeighbors(list3);
+			Node node = new Node(5, 1, new Node(2,1), new Node(3,2), new Node(4,2), list1, list2, list3);
 
 			db.addNode(node);
 			//Height

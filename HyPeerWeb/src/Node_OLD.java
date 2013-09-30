@@ -3,6 +3,9 @@
  *
  * @author Guy
  */
+import validator.NodeInterface;
+import hypeerweb.Node;
+import hypeerweb.Database;
 import java.util.ArrayList;
 
 public class Node_OLD implements NodeInterface{
