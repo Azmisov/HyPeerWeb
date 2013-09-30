@@ -149,7 +149,7 @@ public class Database {
 	 * Starts a commit
 	 * @author isaac
 	 */
-	private void beginCommit(){
+	public void beginCommit(){
 		if (commitStack == 0){
 			commitFail = false;
 			autocommit = false;
@@ -162,7 +162,7 @@ public class Database {
 	 * @return true, if the commit was successful
 	 * @author isaac
 	 */
-	private boolean endCommit(){
+	public boolean endCommit(){
 		if (--commitStack == 0){
 			boolean ret = commitFail ? false : sqlUpdate("COMMIT;");
 			clearCommit();
@@ -281,17 +281,25 @@ public class Database {
 	}
 	/**
 	 * Set the Surrogate Fold node of another node
-	 *
+	 * 
 	 * @param webid the WebId of the node to modify
 	 * @param sfoldid the WebId of the node's surrogate fold
 	 * @return true if the operation was successful
 	 * @author isaac
 	 */
 	public boolean setSurrogateFold(int webid, int sfoldid) {
-		beginCommit();
-		setColumn(webid, "SurrogateFold", sfoldid);
-		setColumn(sfoldid, "InverseSurrogateFold", webid);
-		return endCommit();
+		return setColumn(webid, "SurrogateFold", sfoldid);
+	}
+	/**
+	 * Set the Inverse Surrogate Fold node of another node
+	 * 
+	 * @param webid the WebId of the node to modify
+	 * @param sfoldid the WebId of the node's inverse surrogate fold
+	 * @return true if the operation was successful
+	 * @author isaac
+	 */
+	public boolean setInverseSurrogateFold(int webid, int isfoldid){
+		return setColumn(webid, "InverseSurrogateFold", isfoldid);
 	}
 	/**
 	 * Get a node's height

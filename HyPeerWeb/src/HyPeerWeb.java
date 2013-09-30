@@ -40,15 +40,16 @@ public class HyPeerWeb implements HyPeerWebInterface {
 	 * @return the new node
 	 * @author guy, brian, isaac
 	 */
-	public Node addNode(){
-		//Handle hypeerweb with no nodes
+	public Node addNode() throws Exception{
+		//There are two special cases:
+		//1) No nodes
 		if (nodes.isEmpty()){
 			Node first = new Node(0, 0);
 			nodes.add(first);
 			db.addNode(first);
 			return first;
 		}
-		//Hypeerweb with one node
+		//2) One node
 		if (nodes.size() == 1){
 			Node sec = new Node(1, 1),
 				first = nodes.first();
@@ -59,59 +60,27 @@ public class HyPeerWeb implements HyPeerWebInterface {
 			return sec;
 		}
 		
-		//Find parent node
-		Node parent = findRandomNode().findInsertionNode();
-		
-		//Create child node and set its height
-		int height = parent.getHeight()+1,
-			webid = (int) (Math.pow(10, height-1) + parent.getWebId());
-		Node child = new Node(webid, height);
-		db.addNode(child);
-		parent.setHeight(height);
-		db.setHeight(parent.getWebId(), height);
+		//Otherwise, use the normal insertion algorithm
+		Node child = this.getRandomInsertionNode().addChild(db);
+		if (child == null)
+			throw new Exception("Failed to add a new node");
+		//Node successfully added!
 		nodes.add(child);
-		
-		//Set neighbours (Guy)
-		parent.hasChild(true);//sets parents hadChild value to true
-				Node[] list;
-				//makes the parent's ISNs the child's neighbors
-				list = parent.getInverseSurrogateNeighbors();
-				for (Node n:list){
-					child.addNeighbor(n);
-					db.addNeighbor(child.getWebId(), n.getWebId());
-				}
-				//adds a neighbor of parent as a surrogate neighbor of child if nieghbor is childless
-				//and makes child an isn of neighbor
-				list = parent.getNeighbors();
-				for(Node n:list){
-					if(!n.hasChild()){ 
-						child.addSurrogateNeighbor(n);
-						db.addSurrogateNeighbor(child.getWebId(), n.getWebId());
-						n.addInverseSurrogateNeighbor(child);
-					}
-				}
-				parent.addNeighbor(child);
-				child.addNeighbor(parent);
-				db.addNeighbor(parent.getWebId(), child.getWebId());
-		
-		//Set folds (Brian/Isaac)
-		
 		return child;
 	}
 	
 	/**
-	 * Picks a random node in the HyPeerWeb
-	 * @return the random node
-	 * @author john
+	 * Retrieves a random node in the HyPeerWeb that is a valid
+	 * insertion point
+	 * @return a random node that is a valid insertion point
+	 * @author John, Josh
 	 */
-	private Node findRandomNode(){
-		if (nodes.isEmpty())
-			return null;
-		
+	private Node getRandomInsertionNode(){
 		long index = rand.nextInt(Integer.MAX_VALUE);
 		index *= Integer.MAX_VALUE;
 		index += rand.nextInt(Integer.MAX_VALUE);
-		return nodes.first().findInsertionStartPoint(index);
+		//Always start at Node with WebID = 0
+		return nodes.first().searchForNode(index).findInsertionNode();
 	}
 
 	@Override
