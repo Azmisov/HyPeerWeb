@@ -376,12 +376,14 @@ public class Node implements NodeInterface{
 	 * Assumed to always start with the node with WebID of zero
 	 * @param index The value to get as close as possible to
 	 */
-	public Node findStartPointForInsertion(long index)
+	public Node findInsertionStartPoint(long index)
 	{
 		long closeness = index & webID;
 		for (int i=0; i < neighbors.size(); i++)
 		{
 			long c = index & neighbors.get(i).getWebId();
+                        if (c > closeness)
+                            return neighbors.get(i).findInsertionStartPoint(index);
 		}
 		return this;
 	}
