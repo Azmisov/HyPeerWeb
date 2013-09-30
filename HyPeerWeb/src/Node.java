@@ -385,6 +385,13 @@ public class Node implements NodeInterface{
                         if (c > closeness)
                             return neighbors.get(i).findInsertionStartPoint(index);
 		}
+                if (fold != null)
+                {
+                    long c = index & fold.getWebId();
+                    if (c > closeness)
+                        return fold.findInsertionStartPoint(index);
+                }
+                
 		return this;
 	}
 
