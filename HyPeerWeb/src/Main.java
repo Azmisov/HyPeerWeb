@@ -1,6 +1,5 @@
 
 import hypeerweb.Node;
-import hypeerweb.HyPeerWeb;
 import hypeerweb.Database;
 import java.util.*;
 
@@ -12,7 +11,7 @@ public class Main {
 	public static void main(String[] args) {
 		int total_errs = 0;
 		
-		/* DATABASE TEST CODE
+		//* DATABASE TEST CODE
 		try {
 			System.out.println("BEGIN DATABASE CLASS TESTING:\n");
 			//Make sure database is working
@@ -29,7 +28,7 @@ public class Main {
 		}
 		//*/
 		
-		// HYPEERWEB TEST CODE
+		/* HYPEERWEB TEST CODE
 		try{
 			System.out.println("BEGIN HYPEERWEB CLASS TESTING:\n");
 			HyPeerWeb web = HyPeerWeb.getInstance();

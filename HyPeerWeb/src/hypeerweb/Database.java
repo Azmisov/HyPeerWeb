@@ -7,6 +7,9 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.TreeSet;
 
@@ -68,7 +71,7 @@ public final class Database {
 				"COMMIT;";
 			//This statement is used by sqlUpdate/sqlQuery
 			//it should never be called directly
-			stmt = db.createStatement();
+			stmt = db.createStatement(ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY);
 			stmt.setQueryTimeout(5);
 			//Setup the database (... except here)
 			stmt.executeUpdate(db_setup);
@@ -253,76 +256,75 @@ public final class Database {
 	 */
 	public TreeSet<Node> getAllNodes() throws Exception{
 		TreeSet<Node> tsnodes = new TreeSet();
-		ArrayList<Node> nodes = new ArrayList();
+		//Index for finding nodes
+		HashMap<Integer, Node> nodes = new HashMap();
 		ResultSet rs;
-		String sql;
-		Node n, left, right;
-		int i;
+		Node n, left, right, raw;
+		int id;
 
-		//get data from Nodes table
-		sql = "SELECT * FROM Nodes";
-		rs = sqlQuery(sql);
-		while(rs.next()){
-			n = new Node(rs.getInt("WebId"), rs.getInt("Height"));
-			nodes.add(n);
-		}
-				if(nodes.isEmpty())
-					return tsnodes;
-				
-		rs.beforeFirst();
-		i = 0;
-		while(rs.next()){
-			n = nodes.get(i++);
-			if(rs.getInt("Fold") != -1)//-1 means the node has no fold
-							n.setFold(findNodeInList(rs.getInt("Fold"),nodes));
-			if(rs.getInt("SurrogateFold") != -1)
-							n.setSurrogateFold(findNodeInList(rs.getInt("SurrogateFold"),nodes));
-						if(rs.getInt("InverseSurrogateFold") != -1)
-							n.setInverseSurrogateFold(findNodeInList(rs.getInt("InverseSurrogateFold"),nodes));
-		}
-
-		//get data from Neighbors table
-				sql = "SELECT * FROM Neighbors";
-				rs = sqlQuery(sql);
-				while(rs.next()){
-					left = findNodeInList(rs.getInt("WebId"),nodes);
-					right = findNodeInList(rs.getInt("Neighbor"),nodes);
-					left.addNeighbor(right);
+		//Get data from Nodes table
+		rs = sqlQuery(
+				"SELECT `WebID`,`Height`,`Fold`,`SurrogateFold`,`InverseSurrogateFold`"
+				+ "FROM `Nodes` ORDER BY `WebID` ASC");
+		//Create raw nodes (no neighbor links)
+		while (rs.next()){
+			id = rs.getInt("WebId");
+			raw = nodes.get(id);
+			//Create a new node
+			if (raw == null){
+				raw = new Node(id, rs.getInt("Height"));
+				nodes.put(id, raw);
+			}
+			//Update a temporary node
+			else raw.height = rs.getInt("Height");
+			//Initialize folds
+			if ((id = rs.getInt("Fold")) != -1){
+				n = nodes.get(id);
+				if (n == null){
+					n = new Node(id, -1);
+					nodes.put(id, n);
 				}
-				
-		//get data from SurrogateNeighbors table
-				sql = "SELECT * FROM SurrogateNeighbors";
-				rs = sqlQuery(sql);
-				while(rs.next()){
-					left = findNodeInList(rs.getInt("WebId"),nodes);
-					right = findNodeInList(rs.getInt("SurrogateNeighbor"),nodes);
-					left.addSurrogateNeighbor(right);
-					right.addInverseSurrogateNeighbor(left);
+				raw.fold = n;
+			}
+			if ((id = rs.getInt("SurrogateFold")) != -1){
+				n = nodes.get(id);
+				if (n == null){
+					n = new Node(id, -1);
+					nodes.put(id, n);
 				}
-				rs.close();
-				
-		//fill treeset from arraylist
-				for(Node node: nodes){
-					tsnodes.add(node);
+				raw.surrogateFold = n;
+			}
+			if ((id = rs.getInt("InverseSurrogateFold")) != -1){
+				n = nodes.get(id);
+				if (n == null){
+					n = new Node(id, -1);
+					nodes.put(id, n);
 				}
-		return tsnodes;
-	}
-		
-	/**
-	 * finds the node in the list with the correct webid, used by getAllNodes()
-	 * @param webid the webid to search for
-	 * @param list the list to search in
-	 * @return the node with the right webid
-	 */
-	private Node findNodeInList(int webid, ArrayList<Node> list){
-		Node toReturn = new Node(1111,1111);
-		for(Node n:list){
-			if(n.getWebId() == webid){
-				toReturn = n;
-				break;
+				raw.inverseSurrogateFold = n;
 			}
 		}
-		return toReturn;
+		if (nodes.isEmpty())
+			return tsnodes;
+
+		//get data from Neighbors table
+		rs = sqlQuery("SELECT `WebID`,`Neighbor` FROM `Neighbors`");
+		while(rs.next()){
+			left = nodes.get(rs.getInt("WebId"));
+			right = nodes.get(rs.getInt("Neighbor"));
+			left.addNeighbor(right);
+		}
+				
+		//get data from SurrogateNeighbors table
+		rs = sqlQuery("SELECT `WebId`,`SurrogateNeighbor` FROM SurrogateNeighbors");
+		while(rs.next()){
+			left = nodes.get(rs.getInt("WebId"));
+			right = nodes.get(rs.getInt("SurrogateNeighbor"));
+			left.addSurrogateNeighbor(right);
+			right.addInverseSurrogateNeighbor(left);
+		}
+		
+		tsnodes.addAll(nodes.values());
+		return tsnodes;
 	}
 
 	///NODE ATTRIBUTES

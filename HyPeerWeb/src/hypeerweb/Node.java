@@ -18,6 +18,8 @@ public class Node implements NodeInterface{
 	protected ArrayList<Node> neighbors = new ArrayList();
 	protected ArrayList<Node> surrogateNeighbors = new ArrayList();
 	protected ArrayList<Node> inverseSurrogateNeighbors = new ArrayList();
+	//Hash code prime
+	private static long prime = Long.parseLong("2654435761");
 
 	//CONSTRUCTORS
 	/**
@@ -420,41 +422,16 @@ public class Node implements NodeInterface{
 		return lowest;
 	}
 		
-		//Setters
-		/**
-	 * Sets the WebID of the Fold of the Node
-	 *
-	 * @param f The WebID of the Fold of the Node
-	 */
-	public void setFold(Node f) {
-		fold = f;
-	}
-		/**
-	 * Sets the WebID of the Surrogate Fold of the Node
-	 *
-	 * @param sf The WebID of the Surrogate Fold of the Node
-	 */
-	public void setSurrogateFold(Node sf) {
-		surrogateFold = sf;
-	}
-		/**
-	 * Sets the WebID of the Inverse Surrogate Fold of the Node
-	 *
-	 * @param sf The WebID of the Inverse Surrogate Fold of the Node
-	 */
-	public void setInverseSurrogateFold(Node sf) {
-		inverseSurrogateFold = sf;
-	}
-		/**
+	//Setters
+	/**
 	 * Adds a Neighbor WebID to the list of Neighbors if it is not already in
 	 * the list
 	 *
 	 * @param n The WebID of the Neighbor
 	 */
 	public void addNeighbor(Node n) {
-		if (!isNeighbor(n)) {
+		if (!isNeighbor(n))
 			neighbors.add(n);
-		}
 	}
 	/**
 	 * Checks to see if a WebID is in the list of Neighbors
@@ -462,19 +439,18 @@ public class Node implements NodeInterface{
 	 * @param n The WebID to check
 	 * @return True if found, false otherwise
 	 */
-	public boolean isNeighbor(Node n) {
+	private boolean isNeighbor(Node n) {
 		return neighbors.contains(n);
 	}
-		/**
+	/**
 	 * Adds a Surrogate Neighbor WebID to the list of Surrogate Neighbors if it
 	 * is not already in the list
 	 *
 	 * @param sn The WebID of the Surrogate Neighbor
 	 */
 	public void addSurrogateNeighbor(Node sn) {
-		if (!isSurrogateNeighbor(sn)) {
+		if (!isSurrogateNeighbor(sn))
 			surrogateNeighbors.add(sn);
-		}
 	}
 	/**
 	 * Checks to see if a WebID is in the list of Surrogate Neighbors
@@ -482,19 +458,18 @@ public class Node implements NodeInterface{
 	 * @param sn The WebID to check
 	 * @return True if found, false otherwise
 	 */
-	public boolean isSurrogateNeighbor(Node sn) {
+	private boolean isSurrogateNeighbor(Node sn) {
 		return surrogateNeighbors.contains(sn);
 	}
-		/**
+	/**
 	 * Adds an Inverse Surrogate Neighbor WebID to the list of Inverse Surrogate
 	 * Neighbors if it is not already in the list
 	 *
 	 * @param isn The WebID of the Inverse Surrogate Neighbor
 	 */
 	public void addInverseSurrogateNeighbor(Node isn) {
-		if (!isInverseSurrogateNeighbor(isn)) {
+		if (!isInverseSurrogateNeighbor(isn))
 			inverseSurrogateNeighbors.add(isn);
-		}
 	}
 	/**
 	 * Checks to see if a WebID is in the list of Inverse Surrogate Neighbors
@@ -502,7 +477,7 @@ public class Node implements NodeInterface{
 	 * @param isn The WebID to check
 	 * @return True if found, false otherwise
 	 */
-	public boolean isInverseSurrogateNeighbor(Node isn) {
+	private boolean isInverseSurrogateNeighbor(Node isn) {
 		return inverseSurrogateNeighbors.contains(isn);
 	}
 		
@@ -513,5 +488,15 @@ public class Node implements NodeInterface{
 		else if (webID == node.getWebId())
 			return 0;
 		return 1;
+	}
+	@Override
+	public int hashCode(){
+		return (int) ((this.webID * prime) % Integer.MAX_VALUE);
+	}
+	@Override
+	public boolean equals(Object obj) {
+		if (obj == null || getClass() != obj.getClass())
+			return false;
+		return this.webID != ((Node) obj).webID;
 	}
 }
