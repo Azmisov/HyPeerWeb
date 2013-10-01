@@ -57,7 +57,7 @@ public class Database {
 		try {
 			String[] db_setup = {
 				"BEGIN;", 
-				"create table if not exists `Nodes` (`WebId` integer primary key, `Height` integer, `Fold` integer, `SurrogateFold` integer, `InverseSurrogateFold` integer);", 
+				"create table if not exists `Nodes` (`WebId` integer primary key, `Height` integer, `Fold` integer default -1, `SurrogateFold` integer default -1, `InverseSurrogateFold` integer default -1);", 
 				"create table if not exists `Neighbors` (`WebId` integer, `Neighbor` integer);", 
 				"create table if not exists `SurrogateNeighbors` (`WebId` integer, `SurrogateNeighbor` integer);", 
 				"create index if not exists `Idx_Neighbors` on `Neighbors` (`WebId`);", 
@@ -268,7 +268,7 @@ public class Database {
 		ArrayList<Node> nodes = new ArrayList();
 		ResultSet rs;
 		String sql;
-		Node n;
+		Node n, left, right;
 		int i;
 
 		//get data from Nodes table
@@ -278,22 +278,63 @@ public class Database {
 			n = new Node(rs.getInt("WebId"), rs.getInt("Height"));
 			nodes.add(n);
 		}
+                if(nodes.isEmpty())
+                    return tsnodes;
+                
 		rs.beforeFirst();
 		i = 0;
 		while(rs.next()){
-			n = nodes.get(i);
-			if(rs.getInt("Fold") != -1){//need to set default value of f, sf, and isf to -1 because getInt will return 0 if entry in null
-			//n.setFold(n);
-			}
+			n = nodes.get(i++);
+			if(rs.getInt("Fold") != -1)//-1 means the node has no fold
+                            n.setFold(findNodeInList(rs.getInt("Fold"),nodes));
+			if(rs.getInt("SurrogateFold") != -1)
+                            n.setSurrogateFold(findNodeInList(rs.getInt("SurrogateFold"),nodes));
+                        if(rs.getInt("InverseSurrogateFold") != -1)
+                            n.setInverseSurrogateFold(findNodeInList(rs.getInt("InverseSurrogateFold"),nodes));
 		}
 
 		//get data from Neighbors table
-
+                sql = "SELECT * FROM Neighbors";
+                rs = sqlQuery(sql);
+                while(rs.next()){
+                    left = findNodeInList(rs.getInt("WebId"),nodes);
+                    right = findNodeInList(rs.getInt("Neighbor"),nodes);
+                    left.addNeighbor(right);
+                }
+                
 		//get data from SurrogateNeighbors table
-
+                sql = "SELECT * FROM SurrogateNeighbors";
+                rs = sqlQuery(sql);
+                while(rs.next()){
+                    left = findNodeInList(rs.getInt("WebId"),nodes);
+                    right = findNodeInList(rs.getInt("SurrogateNeighbor"),nodes);
+                    left.addSurrogateNeighbor(right);
+                    right.addInverseSurrogateNeighbor(left);
+                }
+                
 		//fill treeset from arraylist
+                for(Node node: nodes){
+                    tsnodes.add(node);
+                }
 		return tsnodes;
 	}
+        
+        /**
+         * finds the node in the list with the correct webid, used by getAllNodes()
+         * @param webid the webid to search for
+         * @param list the list to search in
+         * @return the node with the right webid
+         */
+        private Node findNodeInList(int webid, ArrayList<Node> list){
+            Node toReturn = new Node(1111,1111);
+            for(Node n:list){
+                if(n.getWebId() == webid){
+                    toReturn = n;
+                    break;
+                }
+            }
+            return toReturn;
+        }
         
         ///NODE ATTRIBUTES
 	/**
@@ -354,7 +395,7 @@ public class Database {
 	/**
 	 * Get the Fold node of another node
 	 * @param webid the WebId of the node to access
-	 * @return the WebId of the node's Fold
+	 * @return the WebId of the node's Fold or -1 if the node does not have a fold
 	 * @throws Exception throws exception if retrieval fails
 	 * @author isaac
 	 */
@@ -364,7 +405,7 @@ public class Database {
 	/**
 	 * Get the Surrogate Fold node of another node
 	 * @param webid the WebId of the node to access
-	 * @return the WebId of the node's Surrogate Fold
+	 * @return the WebId of the node's Surrogate Fold or -1 if the node does not have a surrogate fold
 	 * @throws Exception throws exception if retrieval fails
 	 * @author isaac
 	 */
@@ -374,7 +415,7 @@ public class Database {
 	/**
 	 * Gets the Inverse Surrogate Fold of another node
 	 * @param webid the WebId of the node to access
-	 * @return the WebId of the node's Inverse Surrogate Fold
+	 * @return the WebId of the node's Inverse Surrogate Fold or -1 if the node does not have a inverse surrogate fold
 	 * @throws Exception throws exception if retrieval fails
 	 * @author isaac
 	 */

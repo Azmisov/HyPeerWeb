@@ -22,8 +22,8 @@ public class HyPeerWeb implements HyPeerWebInterface {
 	 * @author isaac
 	 */
 	private HyPeerWeb() throws Exception{
-		nodes = new TreeSet<>();
 		db = Database.getInstance();
+                nodes = db.getAllNodes();
 		rand = new Random();
 	}
 	/**

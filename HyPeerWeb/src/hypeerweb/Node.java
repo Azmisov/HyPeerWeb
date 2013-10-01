@@ -400,6 +400,93 @@ public class Node implements NodeInterface{
 
 		return lowest;
 	}
+        
+        //Setters
+        /**
+	 * Sets the WebID of the Fold of the Node
+	 *
+	 * @param f The WebID of the Fold of the Node
+	 */
+	public void setFold(Node f) {
+		fold = f;
+	}
+        /**
+	 * Sets the WebID of the Surrogate Fold of the Node
+	 *
+	 * @param sf The WebID of the Surrogate Fold of the Node
+	 */
+	public void setSurrogateFold(Node sf) {
+		surrogateFold = sf;
+	}
+        /**
+	 * Sets the WebID of the Inverse Surrogate Fold of the Node
+	 *
+	 * @param sf The WebID of the Inverse Surrogate Fold of the Node
+	 */
+	public void setInverseSurrogateFold(Node sf) {
+		inverseSurrogateFold = sf;
+	}
+        /**
+	 * Adds a Neighbor WebID to the list of Neighbors if it is not already in
+	 * the list
+	 *
+	 * @param n The WebID of the Neighbor
+	 */
+	public void addNeighbor(Node n) {
+		if (!isNeighbor(n)) {
+			neighbors.add(n);
+		}
+	}
+	/**
+	 * Checks to see if a WebID is in the list of Neighbors
+	 *
+	 * @param n The WebID to check
+	 * @return True if found, false otherwise
+	 */
+	public boolean isNeighbor(Node n) {
+		return neighbors.contains(n);
+	}
+        /**
+	 * Adds a Surrogate Neighbor WebID to the list of Surrogate Neighbors if it
+	 * is not already in the list
+	 *
+	 * @param sn The WebID of the Surrogate Neighbor
+	 */
+	public void addSurrogateNeighbor(Node sn) {
+		if (!isSurrogateNeighbor(sn)) {
+			surrogateNeighbors.add(sn);
+		}
+	}
+	/**
+	 * Checks to see if a WebID is in the list of Surrogate Neighbors
+	 *
+	 * @param sn The WebID to check
+	 * @return True if found, false otherwise
+	 */
+	public boolean isSurrogateNeighbor(Node sn) {
+		return surrogateNeighbors.contains(sn);
+	}
+        /**
+	 * Adds an Inverse Surrogate Neighbor WebID to the list of Inverse Surrogate
+	 * Neighbors if it is not already in the list
+	 *
+	 * @param isn The WebID of the Inverse Surrogate Neighbor
+	 */
+	public void addInverseSurrogateNeighbor(Node isn) {
+		if (!isInverseSurrogateNeighbor(isn)) {
+			inverseSurrogateNeighbors.add(isn);
+		}
+	}
+	/**
+	 * Checks to see if a WebID is in the list of Inverse Surrogate Neighbors
+	 *
+	 * @param isn The WebID to check
+	 * @return True if found, false otherwise
+	 */
+	public boolean isInverseSurrogateNeighbor(Node isn) {
+		return inverseSurrogateNeighbors.contains(isn);
+	}
+        
 	@Override
 	public int compareTo(NodeInterface node) {
 		if (webID < node.getWebId())
