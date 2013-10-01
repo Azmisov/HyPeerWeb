@@ -77,7 +77,7 @@ public class Node implements NodeInterface{
 			childWebID = 1;
 		for (int i=1; i<childHeight; i++)
 			childWebID <<= 1;
-		childWebID &= webID;
+		childWebID |= webID;
 		Node child = new Node(childWebID, childHeight);
 		
 		//Set neighbours (Guy)
@@ -410,16 +410,12 @@ public class Node implements NodeInterface{
 	}
 	@Override
 	public Node getParent() {
-
 		Node lowest = this;
-
 		for (Node n : neighbors) {
-			if (n.webID < lowest.webID) {
+			if (n.webID < lowest.webID)
 				lowest = n;
-			}
 		}
-
-		return lowest;
+		return lowest == this ? null : lowest;
 	}
 		
 	//Setters

@@ -14,7 +14,7 @@ import validator.Validator;
  */
 public class HyPeerWebTest {
 	//Validation variables
-	private int MAX_TESTS;
+	private int MAX_TESTS = 50;
 	private Validator v;
 
 	/**
@@ -24,6 +24,7 @@ public class HyPeerWebTest {
 	public void testAddNode() throws Exception {
 		System.out.println("addNode");
 		HyPeerWeb web = HyPeerWeb.getInstance();
+		web.deleteAllNodes();
 		
 		//Add a bunch of nodes; if it validates afterwards, addNode should be working
 		//We cannot do simulated tests, since addNode inserts at arbitrary places
