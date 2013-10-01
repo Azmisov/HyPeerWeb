@@ -311,6 +311,7 @@ public class Database {
                     left.addSurrogateNeighbor(right);
                     right.addInverseSurrogateNeighbor(left);
                 }
+                rs.close();
                 
 		//fill treeset from arraylist
                 for(Node node: nodes){
