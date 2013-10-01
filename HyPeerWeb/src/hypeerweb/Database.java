@@ -19,7 +19,7 @@ import java.util.TreeSet;
  * - disable auto-commit for mass edits (addNode)
  * - reuse auto-commit code
  */
-public class Database {
+public final class Database {
 	//Reference to singleton
 	private static Database singleton;
 	private static boolean IS_CONNECTED = true;
@@ -55,22 +55,23 @@ public class Database {
 		}
 		//Setup the database, if not already there
 		try {
-			String[] db_setup = {
-				"BEGIN;", 
-				"create table if not exists `Nodes` (`WebId` integer primary key, `Height` integer, `Fold` integer default -1, `SurrogateFold` integer default -1, `InverseSurrogateFold` integer default -1);", 
-				"create table if not exists `Neighbors` (`WebId` integer, `Neighbor` integer);", 
-				"create table if not exists `SurrogateNeighbors` (`WebId` integer, `SurrogateNeighbor` integer);", 
-				"create index if not exists `Idx_Neighbors` on `Neighbors` (`WebId`);", 
-				"create index if not exists `Idx_InverseNeighbors` on `Neighbors` (`Neighbor`);", 
-				"create index if not exists `Idx_SurrogateNeighbors` on `SurrogateNeighbors` (`WebId`);", 
-				"create index if not exists `Idx_InverseSurrogateNeighbors` on `SurrogateNeighbors` (`SurrogateNeighbor`);",
-				"COMMIT;"
-			};
+			//This needs to be a single string, so we can execute in one batch command
+			String db_setup =
+				"BEGIN;"+
+				"create table if not exists `Nodes` (`WebId` integer primary key, `Height` integer, `Fold` integer default -1, `SurrogateFold` integer default -1, `InverseSurrogateFold` integer default -1);"+
+				"create table if not exists `Neighbors` (`WebId` integer, `Neighbor` integer);"+
+				"create table if not exists `SurrogateNeighbors` (`WebId` integer, `SurrogateNeighbor` integer);"+
+				"create index if not exists `Idx_Neighbors` on `Neighbors` (`WebId`);"+
+				"create index if not exists `Idx_InverseNeighbors` on `Neighbors` (`Neighbor`);"+
+				"create index if not exists `Idx_SurrogateNeighbors` on `SurrogateNeighbors` (`WebId`);"+
+				"create index if not exists `Idx_InverseSurrogateNeighbors` on `SurrogateNeighbors` (`SurrogateNeighbor`);"+
+				"COMMIT;";
+			//This statement is used by sqlUpdate/sqlQuery
+			//it should never be called directly
 			stmt = db.createStatement();
 			stmt.setQueryTimeout(5);
-			for (int i = 0; i < db_setup.length; i++) {
-				stmt.executeUpdate(db_setup[i]);
-			}
+			//Setup the database (... except here)
+			stmt.executeUpdate(db_setup);
 		} catch (SQLException e) {
 			System.out.println("Could not create the database!");
 			throw e;
@@ -104,10 +105,12 @@ public class Database {
 	 * Removes all data from the database, leaving the structure intact.
 	 * @author john
 	 */
-	public void clear() {
-		sqlUpdate("delete from `Nodes`");
-		sqlUpdate("delete from `Neighbors`");
-		sqlUpdate("delete from `SurrogateNeighbors`");
+	public void clear(){
+		beginCommit();
+		sqlUpdate("delete from `Nodes`;");
+		sqlUpdate("delete from `Neighbors`;");
+		sqlUpdate("delete from `SurrogateNeighbors`;");
+		endCommit();
 	}
 
 	///SQL OPERATIONS
@@ -195,40 +198,25 @@ public class Database {
 	 * @author guy
 	 */
 	public boolean addNode(Node node) {
-		try {
-			beginCommit();
-			
-                        int webid = node.getWebId();
-                        
-                        String update;
-			update = "INSERT INTO Nodes (WebID) VALUES(" + webid + ");";
-                        sqlUpdate(update);
-			
-                        setHeight(webid, node.getHeight());
-                        if(node.getFold() != null)
-                            setFold(webid, node.getFold().getWebId());
-                        if(node.getSurrogateFold() != null)
-                            setSurrogateFold(webid, node.getSurrogateFold().getWebId());
-			if(node.getInverseSurrogateFold() != null)
-                            setSurrogateFold(node.getInverseSurrogateFold().getWebId(), webid);
+		beginCommit();
 
-			Node[] list;
+		//Nodes table
+		sqlUpdate("INSERT INTO `Nodes` VALUES ("+
+					node.webID + "," +
+					node.height + "," +
+					(node.fold == null ? -1 : node.fold.webID) + "," +
+					(node.surrogateFold == null ? -1 : node.surrogateFold.webID) + "," +
+					(node.inverseSurrogateFold == null ? -1 : node.inverseSurrogateFold.webID) + ");");
 
-			list = node.getNeighbors();
-			for (Node n : list)
-				addNeighbor(webid, n.getWebId());
-			
-			//surrogate and inverse are reflexive
-                        //if every node adds its SNs, the ISNs will also be recorded
-			list = node.getSurrogateNeighbors();
-			for (Node n : list)
-				addSurrogateNeighbor(webid, n.getWebId());
-			
-			return endCommit();
-		} catch (Exception e) {
-			clearCommit();
-			return false;
-		}
+		//Neighbors table
+		for (Node n : node.neighbors)
+			addNeighbor(node.webID, n.webID);
+
+		//Surrogates table (Inverse is reflexive)
+		for (Node n: node.surrogateNeighbors)
+			addSurrogateNeighbor(node.webID, n.webID);
+
+		return endCommit();
 	}
 	/**
 	 * Add a node to the database
@@ -242,7 +230,7 @@ public class Database {
 	 */
 	public boolean addNode(int webid, int height, Node fold, Node sfold, Node isfold) {
 		return addNode(new Node(webid, height, fold, sfold, isfold,
-                    null, null, null));
+					null, null, null));
 	}
 	/**
 	 * Removes a node from the database
@@ -258,7 +246,7 @@ public class Database {
 		sqlUpdate("DELETE FROM SurrogateNeighbors WHERE WebID=" + webid + ";");
 		return endCommit();
 	}
-        
+		
 	/**
 	 * Makes nodes from data stored in database
 	 * @return a TreeSet<Node> containing all nodes stored in database
@@ -278,66 +266,66 @@ public class Database {
 			n = new Node(rs.getInt("WebId"), rs.getInt("Height"));
 			nodes.add(n);
 		}
-                if(nodes.isEmpty())
-                    return tsnodes;
-                
+				if(nodes.isEmpty())
+					return tsnodes;
+				
 		rs.beforeFirst();
 		i = 0;
 		while(rs.next()){
 			n = nodes.get(i++);
 			if(rs.getInt("Fold") != -1)//-1 means the node has no fold
-                            n.setFold(findNodeInList(rs.getInt("Fold"),nodes));
+							n.setFold(findNodeInList(rs.getInt("Fold"),nodes));
 			if(rs.getInt("SurrogateFold") != -1)
-                            n.setSurrogateFold(findNodeInList(rs.getInt("SurrogateFold"),nodes));
-                        if(rs.getInt("InverseSurrogateFold") != -1)
-                            n.setInverseSurrogateFold(findNodeInList(rs.getInt("InverseSurrogateFold"),nodes));
+							n.setSurrogateFold(findNodeInList(rs.getInt("SurrogateFold"),nodes));
+						if(rs.getInt("InverseSurrogateFold") != -1)
+							n.setInverseSurrogateFold(findNodeInList(rs.getInt("InverseSurrogateFold"),nodes));
 		}
 
 		//get data from Neighbors table
-                sql = "SELECT * FROM Neighbors";
-                rs = sqlQuery(sql);
-                while(rs.next()){
-                    left = findNodeInList(rs.getInt("WebId"),nodes);
-                    right = findNodeInList(rs.getInt("Neighbor"),nodes);
-                    left.addNeighbor(right);
-                }
-                
+				sql = "SELECT * FROM Neighbors";
+				rs = sqlQuery(sql);
+				while(rs.next()){
+					left = findNodeInList(rs.getInt("WebId"),nodes);
+					right = findNodeInList(rs.getInt("Neighbor"),nodes);
+					left.addNeighbor(right);
+				}
+				
 		//get data from SurrogateNeighbors table
-                sql = "SELECT * FROM SurrogateNeighbors";
-                rs = sqlQuery(sql);
-                while(rs.next()){
-                    left = findNodeInList(rs.getInt("WebId"),nodes);
-                    right = findNodeInList(rs.getInt("SurrogateNeighbor"),nodes);
-                    left.addSurrogateNeighbor(right);
-                    right.addInverseSurrogateNeighbor(left);
-                }
-                rs.close();
-                
+				sql = "SELECT * FROM SurrogateNeighbors";
+				rs = sqlQuery(sql);
+				while(rs.next()){
+					left = findNodeInList(rs.getInt("WebId"),nodes);
+					right = findNodeInList(rs.getInt("SurrogateNeighbor"),nodes);
+					left.addSurrogateNeighbor(right);
+					right.addInverseSurrogateNeighbor(left);
+				}
+				rs.close();
+				
 		//fill treeset from arraylist
-                for(Node node: nodes){
-                    tsnodes.add(node);
-                }
+				for(Node node: nodes){
+					tsnodes.add(node);
+				}
 		return tsnodes;
 	}
-        
-        /**
-         * finds the node in the list with the correct webid, used by getAllNodes()
-         * @param webid the webid to search for
-         * @param list the list to search in
-         * @return the node with the right webid
-         */
-        private Node findNodeInList(int webid, ArrayList<Node> list){
-            Node toReturn = new Node(1111,1111);
-            for(Node n:list){
-                if(n.getWebId() == webid){
-                    toReturn = n;
-                    break;
-                }
-            }
-            return toReturn;
-        }
-        
-        ///NODE ATTRIBUTES
+		
+	/**
+	 * finds the node in the list with the correct webid, used by getAllNodes()
+	 * @param webid the webid to search for
+	 * @param list the list to search in
+	 * @return the node with the right webid
+	 */
+	private Node findNodeInList(int webid, ArrayList<Node> list){
+		Node toReturn = new Node(1111,1111);
+		for(Node n:list){
+			if(n.getWebId() == webid){
+				toReturn = n;
+				break;
+			}
+		}
+		return toReturn;
+	}
+
+	///NODE ATTRIBUTES
 	/**
 	 * Set a node's height
 	 *
@@ -369,18 +357,11 @@ public class Database {
 	 * @author isaac
 	 */
 	public boolean setSurrogateFold(int webid, int sfoldid) {
-		return setColumn(webid, "SurrogateFold", sfoldid);
-	}
-	/**
-	 * Set the Inverse Surrogate Fold node of another node
-	 * 
-	 * @param webid the WebId of the node to modify
-	 * @param sfoldid the WebId of the node's inverse surrogate fold
-	 * @return true if the operation was successful
-	 * @author isaac
-	 */
-	public boolean setInverseSurrogateFold(int webid, int isfoldid){
-		return setColumn(webid, "InverseSurrogateFold", isfoldid);
+		beginCommit();
+		//Folds are reflexive
+		setColumn(webid, "SurrogateFold", sfoldid);
+		setColumn(sfoldid, "InverseSurrogateFold", webid);
+		return endCommit();
 	}
 	/**
 	 * Get a node's height
@@ -443,10 +424,7 @@ public class Database {
 	 * @author josh
 	 */
 	public boolean addNeighbor(int webid, int neighbor) {
-		beginCommit();
-		sqlUpdate("INSERT INTO Neighbors (WebId, Neighbor) VALUES ("+webid+", "+neighbor+");");
-		sqlUpdate("INSERT INTO Neighbors (WebId, Neighbor) VALUES ("+neighbor+", "+webid+");");
-		return endCommit();
+		return sqlUpdate("INSERT INTO Neighbors (WebId, Neighbor) VALUES ("+webid+", "+neighbor+");");
 	}
 	/**
 	 * Removes neighbor node from a node

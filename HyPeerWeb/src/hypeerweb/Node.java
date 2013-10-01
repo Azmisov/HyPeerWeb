@@ -13,11 +13,11 @@ public class Node implements NodeInterface{
 	protected int webID;
 	protected int height;
 	protected Node fold = null;
-	private Node surrogateFold = null;
-	private Node inverseSurrogateFold = null;
-	private ArrayList<Node> neighbors = new ArrayList();
-	private ArrayList<Node> surrogateNeighbors = new ArrayList();
-	private ArrayList<Node> inverseSurrogateNeighbors = new ArrayList();
+	protected Node surrogateFold = null;
+	protected Node inverseSurrogateFold = null;
+	protected ArrayList<Node> neighbors = new ArrayList();
+	protected ArrayList<Node> surrogateNeighbors = new ArrayList();
+	protected ArrayList<Node> inverseSurrogateNeighbors = new ArrayList();
 
 	//CONSTRUCTORS
 	/**
@@ -120,7 +120,7 @@ public class Node implements NodeInterface{
 		{
 			db.beginCommit();
 			//Create the child node
-			db.addNode(childWebID, childHeight, null, null, null);
+			db.addNode(child);
 			//Set neighbors and folds
 			ndc.commitToDatabase(db);
 			fdc.commitToDatabase(db);
@@ -174,7 +174,6 @@ public class Node implements NodeInterface{
 
 		return result;
 	}
-
 	private Node findInsertionNode(Node original, int times) {
 		if (surrogateFold != null) {
 			return surrogateFold;
@@ -264,20 +263,19 @@ public class Node implements NodeInterface{
 		@Override
 		public void commitToDatabase(Database db) {
 			for (NodeUpdate nu: updates){
+				int value = nu.value == null ? -1 : nu.value.webID;
 				switch (nu.type){
 					case DIRECT:
-						db.setFold(nu.node.webID, nu.value.height);
+						db.setFold(nu.node.webID, value);
 						break;
 					case SURROGATE:
-						db.setSurrogateFold(nu.node.webID, nu.value.webID);
+						db.setSurrogateFold(nu.node.webID, value);
 						break;
-					case INVERSE:
-						db.setInverseSurrogateFold(nu.node.webID, nu.value.webID);
-						break;
+					//Surrogate/Inverse are reflexive; DB will handle the rest
+					case INVERSE: break;
 				}
 			}
 		}
-
 		@Override
 		public void commitToHyPeerWeb() {
 			for (NodeUpdate nu: updates){
@@ -300,7 +298,6 @@ public class Node implements NodeInterface{
 	 * @author guy
 	 */
 	private static class NeighborDatabaseChanges extends DatabaseChanges implements DatabaseChangesInterface{
-
 		@Override
 		public void commitToDatabase(Database db) {
 			for (NodeUpdate nu: updates){
@@ -309,13 +306,13 @@ public class Node implements NodeInterface{
 						db.addNeighbor(nu.node.webID, nu.value.webID);
 						break;
 					case SURROGATE:
-					case INVERSE:
 						db.addSurrogateNeighbor(nu.node.webID, nu.value.webID);
 						break;
+					//Surrogate/Inverse are reflexive; DB will handle the rest
+					case INVERSE: break;
 				}
 			}
 		}
-
 		@Override
 		public void commitToHyPeerWeb() {
 			for (NodeUpdate nu: updates){
