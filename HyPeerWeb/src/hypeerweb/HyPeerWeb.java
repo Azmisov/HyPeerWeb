@@ -3,7 +3,6 @@ package hypeerweb;
 import java.util.Random;
 import java.util.TreeSet;
 import validator.HyPeerWebInterface;
-import validator.NodeInterface;
 
 /**
  * The Great HyPeerWeb Singleton
@@ -12,10 +11,12 @@ import validator.NodeInterface;
 public class HyPeerWeb implements HyPeerWebInterface {
 	
 	private static HyPeerWeb instance;
-	private TreeSet<Node> nodes;
-	private Database db;
+	private static Database db;
+	private static TreeSet<Node> nodes;
 	//Random number generator for getting random nodes
-	private Random rand;
+	private static Random rand;
+	//Error messages
+	private static Exception addNodeErr;
 	
 	/**
 	 * Private constructor for initializing the HyPeerWeb
@@ -23,8 +24,9 @@ public class HyPeerWeb implements HyPeerWebInterface {
 	 */
 	private HyPeerWeb() throws Exception{
 		db = Database.getInstance();
-                nodes = db.getAllNodes();
+		nodes = db.getAllNodes();
 		rand = new Random();
+		addNodeErr = new Exception("Failed to add a new node");
 	}
 	/**
 	 * Retrieve the HyPeerWeb singleton
@@ -48,17 +50,26 @@ public class HyPeerWeb implements HyPeerWebInterface {
 		//1) No nodes
 		if (nodes.isEmpty()){
 			Node first = new Node(0, 0);
+			if (!db.addNode(first))
+				throw addNodeErr;
 			nodes.add(first);
-			db.addNode(first);
 			return first;
 		}
 		//2) One node
 		if (nodes.size() == 1){
 			Node sec = new Node(1, 1),
 				first = nodes.first();
+			sec.fold = first;
+			//Update the database first
+			db.beginCommit();
+			db.addNode(sec);
+			db.setFold(first.webID, sec.webID);
+			db.setHeight(first.webID, 1);
+			if (!db.endCommit())
+				throw addNodeErr;
+			//Update java struct
 			first.height = 1;
 			first.fold = sec;
-			sec.fold = first;
 			nodes.add(sec);
 			return sec;
 		}
@@ -66,7 +77,7 @@ public class HyPeerWeb implements HyPeerWebInterface {
 		//Otherwise, use the normal insertion algorithm
 		Node child = this.getRandomInsertionNode().addChild(db);
 		if (child == null)
-			throw new Exception("Failed to add a new node");
+			throw addNodeErr;
 		//Node successfully added!
 		nodes.add(child);
 		return child;

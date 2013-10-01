@@ -10,7 +10,7 @@ import validator.NodeInterface;
 public class Node implements NodeInterface{
 	//NODE ATTRIBUTES	
 	private boolean hasChild;
-	private int webID;
+	protected int webID;
 	protected int height;
 	protected Node fold = null;
 	private Node surrogateFold = null;
@@ -164,50 +164,50 @@ public class Node implements NodeInterface{
 	 * @return the parent of the child to add
 	 * @author josh
 	 */
-	   public Node findInsertionNode() {
+	public Node findInsertionNode() {
 
-        Node result = findInsertionNode(this, 2);
+		Node result = findInsertionNode(this, 2);
 
-        if (result == null) {
-            return this;
-        }
+		if (result == null) {
+			return this;
+		}
 
-        return result;
-    }
+		return result;
+	}
 
-    private Node findInsertionNode(Node original, int times) {
-        if (surrogateFold != null) {
-            return surrogateFold;
-        }
+	private Node findInsertionNode(Node original, int times) {
+		if (surrogateFold != null) {
+			return surrogateFold;
+		}
 
-        if (surrogateNeighbors != null && !surrogateNeighbors.isEmpty()) {
-            return surrogateNeighbors.get(0);
-        }
+		if (surrogateNeighbors != null && !surrogateNeighbors.isEmpty()) {
+			return surrogateNeighbors.get(0);
+		}
 
-        for (Node n : neighbors) {
-            if (n != original && n.height < height) {
-                return n;
-            }
-        }
+		for (Node n : neighbors) {
+			if (n != original && n.height < height) {
+				return n;
+			}
+		}
 
-        if (times == 0) {
-            return null;
-        }
+		if (times == 0) {
+			return null;
+		}
 
-        for (Node n : neighbors) {
+		for (Node n : neighbors) {
 
-            if (n == original) {
-                continue;
-            }
+			if (n == original) {
+				continue;
+			}
 
-            Node result = n.findInsertionNode(this, times - 1);
+			Node result = n.findInsertionNode(this, times - 1);
 
-            if (result != null) {
-                return result;
-            }
-        }
+			if (result != null) {
+				return result;
+			}
+		}
 
-        return null;
+		return null;
 	}
 	
 	//EN-MASSE DATABASE CHANGE HANDLING
@@ -422,9 +422,9 @@ public class Node implements NodeInterface{
 
 		return lowest;
 	}
-        
-        //Setters
-        /**
+		
+		//Setters
+		/**
 	 * Sets the WebID of the Fold of the Node
 	 *
 	 * @param f The WebID of the Fold of the Node
@@ -432,7 +432,7 @@ public class Node implements NodeInterface{
 	public void setFold(Node f) {
 		fold = f;
 	}
-        /**
+		/**
 	 * Sets the WebID of the Surrogate Fold of the Node
 	 *
 	 * @param sf The WebID of the Surrogate Fold of the Node
@@ -440,7 +440,7 @@ public class Node implements NodeInterface{
 	public void setSurrogateFold(Node sf) {
 		surrogateFold = sf;
 	}
-        /**
+		/**
 	 * Sets the WebID of the Inverse Surrogate Fold of the Node
 	 *
 	 * @param sf The WebID of the Inverse Surrogate Fold of the Node
@@ -448,7 +448,7 @@ public class Node implements NodeInterface{
 	public void setInverseSurrogateFold(Node sf) {
 		inverseSurrogateFold = sf;
 	}
-        /**
+		/**
 	 * Adds a Neighbor WebID to the list of Neighbors if it is not already in
 	 * the list
 	 *
@@ -468,7 +468,7 @@ public class Node implements NodeInterface{
 	public boolean isNeighbor(Node n) {
 		return neighbors.contains(n);
 	}
-        /**
+		/**
 	 * Adds a Surrogate Neighbor WebID to the list of Surrogate Neighbors if it
 	 * is not already in the list
 	 *
@@ -488,7 +488,7 @@ public class Node implements NodeInterface{
 	public boolean isSurrogateNeighbor(Node sn) {
 		return surrogateNeighbors.contains(sn);
 	}
-        /**
+		/**
 	 * Adds an Inverse Surrogate Neighbor WebID to the list of Inverse Surrogate
 	 * Neighbors if it is not already in the list
 	 *
@@ -508,7 +508,7 @@ public class Node implements NodeInterface{
 	public boolean isInverseSurrogateNeighbor(Node isn) {
 		return inverseSurrogateNeighbors.contains(isn);
 	}
-        
+		
 	@Override
 	public int compareTo(NodeInterface node) {
 		if (webID < node.getWebId())
