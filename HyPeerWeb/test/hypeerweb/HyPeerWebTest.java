@@ -15,8 +15,14 @@ import validator.Validator;
 public class HyPeerWebTest {
 	//Validation variables
 	private int MAX_TESTS = 50;
-	private Validator v;
-
+	
+	@Test
+	public void testHyPeerWeb(){
+		//Validate the web prior to adding to make sure
+		//it is extracting from the Database correctly
+//		assertTrue(new Validator(web)).validate());
+	}
+	
 	/**
 	 * Test of addNode method, of class HyPeerWeb.
 	 */
@@ -28,10 +34,12 @@ public class HyPeerWebTest {
 		
 		//Add a bunch of nodes; if it validates afterwards, addNode should be working
 		//We cannot do simulated tests, since addNode inserts at arbitrary places
+		boolean valid;
 		for (int i=0; i<MAX_TESTS; i++){
 			web.addNode();
-			System.out.println("Adding node #"+i);
-			assertTrue((new Validator(web)).validate());
+			valid = (new Validator(web)).validate();
+			assertTrue(valid);
+			System.out.println("Added node #"+i);
 		}
 		
 	}

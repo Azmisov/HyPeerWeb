@@ -480,6 +480,18 @@ public final class Database {
 				+ " AND SurrogateNeighbor=" + neighbor + ";");
 	}
 	/**
+	 * Remove an inverse surrogate neighbor from a node
+	 * Note that this is simply a reflexive operation to removeSurrogateNeighbor
+	 * 
+	 * @param webid the WebId of the parent node
+	 * @param neighbor the WebId of the neighbor node to remove
+	 * @return true, if the neighbor was successfully removed
+	 * @author isaac
+	 */
+	public boolean removeAllInverseSurrogateNeighbors(int webid) {
+		return sqlUpdate("DELETE FROM SurrogateNeighbors WHERE SurrogateNeighbor="+webid+";");
+	}
+	/**
 	 * Retrieves a list of surrogate neighbors
 	 *
 	 * @param webid the WebId of the original node

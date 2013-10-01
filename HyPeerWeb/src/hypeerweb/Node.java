@@ -83,11 +83,14 @@ public class Node implements NodeInterface{
 		//Set neighbours (Guy)
 		NeighborDatabaseChanges ndc = new NeighborDatabaseChanges();
 		//child neighbors
-		for (Node n: inverseSurrogateNeighbors)
+		for (Node n: inverseSurrogateNeighbors){
 			ndc.updateDirect(child, n);
+			//Remove surrogate reference to parent
+			ndc.removeSurrogate(n, fold);
+		}
 		//adds a neighbor of parent as a surrogate neighbor of child if nieghbor is childless
 		//and makes child an isn of neighbor
-		for(Node n: neighbors){
+		for (Node n: neighbors){
 			if (!n.hasChild){ 
 				ndc.updateSurrogate(child, n);
 				ndc.updateInverse(n, child);
@@ -103,8 +106,8 @@ public class Node implements NodeInterface{
 			fdc.updateDirect(child, inverseSurrogateFold);
 			fdc.updateDirect(inverseSurrogateFold, child);
 			//Remove surrogate references
-			fdc.updateSurrogate(inverseSurrogateFold, null);
-			fdc.updateInverse(this, null);
+			fdc.removeSurrogate(inverseSurrogateFold, null);
+			fdc.removeInverse(this, null);
 		}
 		else{
 			//Update reflexive folds
@@ -114,7 +117,7 @@ public class Node implements NodeInterface{
 			fdc.updateSurrogate(this, fold);
 			fdc.updateInverse(fold, this);
 			//Remove stable state reference
-			fdc.updateDirect(this, null);
+			fdc.removeDirect(this, null);
 		}
 		
 		//Attempt to add the node to the database
@@ -123,6 +126,8 @@ public class Node implements NodeInterface{
 			db.beginCommit();
 			//Create the child node
 			db.addNode(child);
+			//Remove parent surrogates
+			db.removeAllInverseSurrogateNeighbors(webID);
 			//Set neighbors and folds
 			ndc.commitToDatabase(db);
 			fdc.commitToDatabase(db);
@@ -134,8 +139,9 @@ public class Node implements NodeInterface{
 		//Add the node to the Java structure
 		{
 			//Update parent
-			this.height = childHeight;
-			this.hasChild = true;
+			height = childHeight;
+			hasChild = true;
+			inverseSurrogateNeighbors.clear();
 			//Update neighbors and folds
 			ndc.commitToHyPeerWeb();
 			fdc.commitToHyPeerWeb();
@@ -228,10 +234,12 @@ public class Node implements NodeInterface{
 			public NodeUpdateType type;
 			public Node node;
 			public Node value;
-			public NodeUpdate(NodeUpdateType type, Node node, Node value){
+			public boolean delete;
+			public NodeUpdate(NodeUpdateType type, Node node, Node value, boolean delete){
 				this.type = type;
 				this.node = node;
 				this.value = value;
+				this.delete = delete;
 			}
 		}
 		//constructor
@@ -240,13 +248,28 @@ public class Node implements NodeInterface{
 		}
 		//add updates
 		public void updateDirect(Node node, Node value){
-			updates.add(new NodeUpdate(NodeUpdateType.DIRECT, node, value));
+			newUpdate(NodeUpdateType.DIRECT, node, value, false);
 		}
 		public void updateSurrogate(Node node, Node value){
-			updates.add(new NodeUpdate(NodeUpdateType.SURROGATE, node, value));
+			newUpdate(NodeUpdateType.SURROGATE, node, value, false);
 		}
 		public void updateInverse(Node node, Node value){
-			updates.add(new NodeUpdate(NodeUpdateType.INVERSE, node, value));
+			newUpdate(NodeUpdateType.INVERSE, node, value, false);
+		}
+		//remove updates
+		public void removeDirect(Node node, Node value){
+			newUpdate(NodeUpdateType.DIRECT, node, value, true);
+		}
+		public void removeSurrogate(Node node, Node value){
+			newUpdate(NodeUpdateType.SURROGATE, node, value, true);
+		}
+		public void removeInverse(Node node, Node value){
+			newUpdate(NodeUpdateType.INVERSE, node, value, true);
+		}
+		
+		//general constructor
+		private void newUpdate(NodeUpdateType type, Node n, Node v, boolean del){
+			updates.add(new NodeUpdate(type, n, v, del));
 		}
 	}
 	/**
@@ -265,7 +288,7 @@ public class Node implements NodeInterface{
 		@Override
 		public void commitToDatabase(Database db) {
 			for (NodeUpdate nu: updates){
-				int value = nu.value == null ? -1 : nu.value.webID;
+				int value = nu.delete ? -1 : nu.value.webID;
 				switch (nu.type){
 					case DIRECT:
 						db.setFold(nu.node.webID, value);
@@ -281,15 +304,16 @@ public class Node implements NodeInterface{
 		@Override
 		public void commitToHyPeerWeb() {
 			for (NodeUpdate nu: updates){
+				Node value = nu.delete ? null : nu.value;
 				switch (nu.type){
 					case DIRECT:
-						nu.node.fold = nu.value;
+						nu.node.fold = value;
 						break;
 					case SURROGATE:
-						nu.node.surrogateFold = nu.value;
+						nu.node.surrogateFold = value;
 						break;
 					case INVERSE:
-						nu.node.inverseSurrogateFold = nu.value;
+						nu.node.inverseSurrogateFold = value;
 						break;
 				}
 			}
@@ -305,10 +329,14 @@ public class Node implements NodeInterface{
 			for (NodeUpdate nu: updates){
 				switch (nu.type){
 					case DIRECT:
-						db.addNeighbor(nu.node.webID, nu.value.webID);
+						if (nu.delete)
+							db.removeNeighbor(nu.node.webID, nu.value.webID);
+						else db.addNeighbor(nu.node.webID, nu.value.webID);
 						break;
 					case SURROGATE:
-						db.addSurrogateNeighbor(nu.node.webID, nu.value.webID);
+						if (nu.delete)
+							db.removeSurrogateNeighbor(nu.node.webID, nu.value.webID);
+						else db.addSurrogateNeighbor(nu.node.webID, nu.value.webID);
 						break;
 					//Surrogate/Inverse are reflexive; DB will handle the rest
 					case INVERSE: break;
@@ -320,13 +348,19 @@ public class Node implements NodeInterface{
 			for (NodeUpdate nu: updates){
 				switch (nu.type){
 					case DIRECT:
-						nu.node.neighbors.add(nu.value);
+						if (nu.delete)
+							nu.node.neighbors.remove(nu.value);
+						else nu.node.neighbors.add(nu.value);
 						break;
 					case SURROGATE:
-						nu.node.surrogateNeighbors.add(nu.value);
+						if (nu.delete)
+							nu.node.surrogateNeighbors.remove(nu.value);
+						else nu.node.surrogateNeighbors.add(nu.value);
 						break;
 					case INVERSE:
-						nu.node.inverseSurrogateNeighbors.add(nu.node);
+						if (nu.delete)
+							nu.node.inverseSurrogateNeighbors.remove(nu.value);
+						else nu.node.inverseSurrogateNeighbors.add(nu.node);
 						break;
 				}
 			}
@@ -494,5 +528,9 @@ public class Node implements NodeInterface{
 		if (obj == null || getClass() != obj.getClass())
 			return false;
 		return this.webID != ((Node) obj).webID;
+	}
+	@Override
+	public String toString(){
+		return webID+"("+height+")";
 	}
 }
