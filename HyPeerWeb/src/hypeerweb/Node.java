@@ -303,12 +303,34 @@ public class Node implements NodeInterface{
 
 		@Override
 		public void commitToDatabase(Database db) {
-			throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+			for (NodeUpdate nu: updates){
+				switch (nu.type){
+					case DIRECT:
+						db.addNeighbor(nu.node.webID, nu.value.webID);
+						break;
+					case SURROGATE:
+					case INVERSE:
+						db.addSurrogateNeighbor(nu.node.webID, nu.value.webID);
+						break;
+				}
+			}
 		}
 
 		@Override
 		public void commitToHyPeerWeb() {
-			throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+			for (NodeUpdate nu: updates){
+				switch (nu.type){
+					case DIRECT:
+						nu.node.neighbors.add(nu.value);
+						break;
+					case SURROGATE:
+						nu.node.surrogateNeighbors.add(nu.value);
+						break;
+					case INVERSE:
+						nu.node.inverseSurrogateNeighbors.add(nu.node);
+						break;
+				}
+			}
 		}
 	
 	}
