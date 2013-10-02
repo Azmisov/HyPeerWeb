@@ -15,6 +15,7 @@ import validator.Validator;
 public class HyPeerWebTest {
 	//Validation variables
 	private int MAX_TESTS = 50;
+	private int TEST_EVERY = 10;
 	
 	@Test
 	public void testHyPeerWeb(){
@@ -28,7 +29,6 @@ public class HyPeerWebTest {
 	 */
 	@Test
 	public void testAddNode() throws Exception {
-		System.out.println("addNode");
 		HyPeerWeb web = HyPeerWeb.getInstance();
 		web.deleteAllNodes();
 		Node n;
@@ -37,8 +37,10 @@ public class HyPeerWebTest {
 		boolean valid;
 		for (int i=0; i<MAX_TESTS; i++){
 			n = web.addNode();
-			valid = (new Validator(web)).validate();
-			assertTrue(valid);
+			if (i % TEST_EVERY == 0){
+				valid = (new Validator(web)).validate();
+				assertTrue(valid);
+			}
 			System.out.println("Added node #" + n.getWebId());
 		}
 		

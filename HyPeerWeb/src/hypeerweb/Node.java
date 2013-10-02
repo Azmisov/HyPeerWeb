@@ -8,8 +8,7 @@ import validator.NodeInterface;
  * @author Guy
  */
 public class Node implements NodeInterface{
-	//NODE ATTRIBUTES	
-	private boolean hasChild = false;
+	//NODE ATTRIBUTES
 	protected int webID;
 	protected int height;
 	protected Node fold = null;
@@ -85,16 +84,14 @@ public class Node implements NodeInterface{
 		//child neighbors
 		for (Node n: inverseSurrogateNeighbors){
 			ndc.updateDirect(child, n);
-                        ndc.updateDirect(n, child);
+			ndc.updateDirect(n, child);
 			//Remove surrogate reference to parent
-			ndc.removeSurrogate(n, fold);
-                        ndc.removeSurrogate(n, this);
-                        ndc.removeInverse(this, n);
+			ndc.removeSurrogate(n, this);
 		}
 		//adds a neighbor of parent as a surrogate neighbor of child if neighbor is childless
 		//and makes child an isn of neighbor
 		for (Node n: neighbors){
-			if (!n.hasChild){ 
+			if (n.height < childHeight){
 				ndc.updateSurrogate(child, n);
 				ndc.updateInverse(n, child);
 			}
@@ -142,7 +139,6 @@ public class Node implements NodeInterface{
 		//Add the node to the Java structure
 		{
 			//Update parent
-                        hasChild = true;
 			height = childHeight;
 			inverseSurrogateNeighbors.clear();
 			//Update neighbors and folds
@@ -530,7 +526,7 @@ public class Node implements NodeInterface{
 	public boolean equals(Object obj) {
 		if (obj == null || getClass() != obj.getClass())
 			return false;
-		return this.webID != ((Node) obj).webID;
+		return this.webID == ((Node) obj).webID;
 	}
 	@Override
 	public String toString(){

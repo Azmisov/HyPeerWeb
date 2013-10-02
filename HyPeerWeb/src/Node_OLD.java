@@ -10,7 +10,6 @@ import java.util.ArrayList;
 
 public class Node_OLD implements NodeInterface{
 	//NODE ATTRIBUTES	
-	private boolean hasChild;
 	private int webID;
 	private int height;
 	private Node fold = null;
