@@ -357,11 +357,18 @@ public final class Database {
 	 * @author isaac
 	 */
 	public boolean setSurrogateFold(int webid, int sfoldid) {
-		beginCommit();
-		//Folds are reflexive
-		setColumn(webid, "SurrogateFold", sfoldid);
-		setColumn(sfoldid, "InverseSurrogateFold", webid);
-		return endCommit();
+		return setColumn(webid, "SurrogateFold", sfoldid);
+	}
+	/**
+	 * Set the Inverse Surrogate Fold node of another node
+	 * 
+	 * @param webid the WebId of the node to modify
+	 * @param sfoldid the WebId of the node's surrogate fold
+	 * @return true if the operation was successful
+	 * @author isaac
+	 */
+	public boolean setInverseSurrogateFold(int webid, int isfoldid) {
+		return setColumn(webid, "InverseSurrogateFold", isfoldid);
 	}
 	/**
 	 * Get a node's height

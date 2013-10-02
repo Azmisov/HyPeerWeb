@@ -296,8 +296,9 @@ public class Node implements NodeInterface{
 					case SURROGATE:
 						db.setSurrogateFold(nu.node.webID, value);
 						break;
-					//Surrogate/Inverse are reflexive; DB will handle the rest
-					case INVERSE: break;
+					case INVERSE:
+						db.setInverseSurrogateFold(nu.node.webID, value);
+						break;
 				}
 			}
 		}
