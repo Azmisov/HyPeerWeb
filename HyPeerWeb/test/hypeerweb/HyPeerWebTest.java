@@ -42,7 +42,7 @@ public class HyPeerWebTest {
 		Node n;
 		//I put the testHyPeerWeb code here because it was always running after testAddNode and so wasn't testing anything.
 		System.out.println("Testing restore");
-		assertTrue((new Validator(web)).validate());//comment out this line to get new HyPeerWeb
+		//assertTrue((new Validator(web)).validate());//comment out this line to get new HyPeerWeb
 		System.out.println("Done testing restore");
 		
 		//Add a bunch of nodes; if it validates afterwards, addNode should be working
