@@ -85,6 +85,7 @@ public class Node implements NodeInterface{
 		//child neighbors
 		for (Node n: inverseSurrogateNeighbors){
 			ndc.updateDirect(child, n);
+                        ndc.updateDirect(n, child);
 			//Remove surrogate reference to parent
 			ndc.removeSurrogate(n, fold);
                         ndc.removeSurrogate(n, this);
@@ -362,7 +363,7 @@ public class Node implements NodeInterface{
 					case INVERSE:
 						if (nu.delete)
 							nu.node.inverseSurrogateNeighbors.remove(nu.value);
-						else nu.node.inverseSurrogateNeighbors.add(nu.node);
+						else nu.node.inverseSurrogateNeighbors.add(nu.value);
 						break;
 				}
 			}
