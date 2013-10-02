@@ -12,12 +12,12 @@ public class Node_OLD implements NodeInterface{
 	//NODE ATTRIBUTES	
 	private int webID;
 	private int height;
-	private Node fold = null;
-	private Node surrogateFold = null;
-	private Node inverseSurrogateFold = null;
-	private ArrayList<Node> neighbors = new ArrayList();
-	private ArrayList<Node> surrogateNeighbors = new ArrayList();
-	private ArrayList<Node> inverseSurrogateNeighbors = new ArrayList();
+	private Node_OLD fold = null;
+	private Node_OLD surrogateFold = null;
+	private Node_OLD inverseSurrogateFold = null;
+	private ArrayList<Node_OLD> neighbors = new ArrayList();
+	private ArrayList<Node_OLD> surrogateNeighbors = new ArrayList();
+	private ArrayList<Node_OLD> inverseSurrogateNeighbors = new ArrayList();
 
 	//CONSTRUCTORS
 	/**
@@ -44,9 +44,9 @@ public class Node_OLD implements NodeInterface{
 	 * @param isNeighbors An ArrayList containing the Inverse Surrogate
 	 * Neighbors of the Node
 	 */
-	public Node_OLD(int id, int Height, Node Fold, Node sFold, Node isFold,
-			ArrayList<Node> Neighbors, ArrayList<Node> sNeighbors,
-			ArrayList<Node> isNeighbors) {
+	public Node_OLD(int id, int Height, Node_OLD Fold, Node_OLD sFold, Node_OLD isFold,
+			ArrayList<Node_OLD> Neighbors, ArrayList<Node_OLD> sNeighbors,
+			ArrayList<Node_OLD> isNeighbors) {
 		webID = id;
 		height = Height;
 		fold = Fold;
@@ -70,9 +70,9 @@ public class Node_OLD implements NodeInterface{
 	 * @return the parent of the child to add
 	 * @author josh
 	 */
-	public Node findInsertionNode(){
+	public Node_OLD findInsertionNode(){
 
-		Node result = findInsertionNode(2);
+		Node_OLD result = findInsertionNode(2);
 
 		if(result == null) {
 			return this;
@@ -81,7 +81,7 @@ public class Node_OLD implements NodeInterface{
 		return result;
 	}
 		
-	private Node findInsertionNode(int times){
+	private Node_OLD findInsertionNode(int times){
 			
 			if (surrogateFold != null) {
 				return surrogateFold;
@@ -91,9 +91,9 @@ public class Node_OLD implements NodeInterface{
 				return null;
 			}
 			
-			for (Node n : neighbors) {
+			for (Node_OLD n : neighbors) {
 				if (n.height < height) {
-					Node result = n.findInsertionNode(times - 1);
+					Node_OLD result = n.findInsertionNode(times - 1);
 					if (result != null) {
 						return result;
 					}
@@ -108,16 +108,16 @@ public class Node_OLD implements NodeInterface{
 	 * Finds out if this node has a child
 	 * @return true if this node has a child, false otherwise
 	 */
-	public boolean hasChild(){
-		   return hasChild;
-	}
+	//public boolean hasChild(){
+	//	   return hasChild;
+	//}
 	/**
 	 * Sets hasChild to true or false
 	 * @param b new value for hasChild
 	 */
-	public void hasChild(boolean b){
-		hasChild = b;
-	}
+//	public void hasChild(boolean b){
+//		hasChild = b;
+//	}
 
 	//WEBID
 	/**
@@ -157,7 +157,7 @@ public class Node_OLD implements NodeInterface{
 	 * @return The WebID of the Node's Fold
 	 */
 		@Override
-	public Node getFold() {
+	public Node_OLD getFold() {
 		return fold;
 	}
 
@@ -166,7 +166,7 @@ public class Node_OLD implements NodeInterface{
 	 *
 	 * @param f The WebID of the Fold of the Node
 	 */
-	public void setFold(Node f) {
+	public void setFold(Node_OLD f) {
 		fold = f;
 	}
 
@@ -177,7 +177,7 @@ public class Node_OLD implements NodeInterface{
 	 * @return The WebID of the Surrogate Fold of the Node
 	 */
 		@Override
-	public Node getSurrogateFold() {
+	public Node_OLD getSurrogateFold() {
 		return surrogateFold;
 	}
 
@@ -186,7 +186,7 @@ public class Node_OLD implements NodeInterface{
 	 *
 	 * @param sf The WebID of the Surrogate Fold of the Node
 	 */
-	public void setSurrogateFold(Node sf) {
+	public void setSurrogateFold(Node_OLD sf) {
 		surrogateFold = sf;
 	}
 
@@ -197,7 +197,7 @@ public class Node_OLD implements NodeInterface{
 	 * @return The WebID of the Inverse Surrogate Fold of the Node
 	 */
 	@Override
-	public Node getInverseSurrogateFold() {
+	public Node_OLD getInverseSurrogateFold() {
 		return inverseSurrogateFold;
 	}
 
@@ -206,7 +206,7 @@ public class Node_OLD implements NodeInterface{
 	 *
 	 * @param sf The WebID of the Inverse Surrogate Fold of the Node
 	 */
-	public void setInverseSurrogateFold(Node sf) {
+	public void setInverseSurrogateFold(Node_OLD sf) {
 		inverseSurrogateFold = sf;
 	}
 
@@ -227,7 +227,7 @@ public class Node_OLD implements NodeInterface{
 	 * @param al An ArrayList containing the new list of Neighbors. If al is
 	 * null nothing will be changed
 	 */
-	public void setNeighbors(ArrayList<Node> al) {
+	public void setNeighbors(ArrayList<Node_OLD> al) {
 		if (al != null) {
 			neighbors = al;
 		}
@@ -239,7 +239,7 @@ public class Node_OLD implements NodeInterface{
 	 *
 	 * @param n The WebID of the Neighbor
 	 */
-	public void addNeighbor(Node n) {
+	public void addNeighbor(Node_OLD n) {
 		if (!isNeighbor(n)) {
 			neighbors.add(n);
 		}
@@ -251,7 +251,7 @@ public class Node_OLD implements NodeInterface{
 	 * @param n The WebID to check
 	 * @return True if found, false otherwise
 	 */
-	public boolean isNeighbor(Node n) {
+	public boolean isNeighbor(Node_OLD n) {
 		return neighbors.contains(n);
 	}
 
@@ -281,7 +281,7 @@ public class Node_OLD implements NodeInterface{
 	 * @param al An ArrayList containing the new list of Surrogate Neighbors If
 	 * al is null nothing will be changed
 	 */
-	public void setSurrogateNeighbors(ArrayList<Node> al) {
+	public void setSurrogateNeighbors(ArrayList<Node_OLD> al) {
 		if (al != null) {
 			surrogateNeighbors = al;
 		}
@@ -293,7 +293,7 @@ public class Node_OLD implements NodeInterface{
 	 *
 	 * @param sn The WebID of the Surrogate Neighbor
 	 */
-	public void addSurrogateNeighbor(Node sn) {
+	public void addSurrogateNeighbor(Node_OLD sn) {
 		if (!isSurrogateNeighbor(sn)) {
 			surrogateNeighbors.add(sn);
 		}
@@ -305,7 +305,7 @@ public class Node_OLD implements NodeInterface{
 	 * @param sn The WebID to check
 	 * @return True if found, false otherwise
 	 */
-	public boolean isSurrogateNeighbor(Node sn) {
+	public boolean isSurrogateNeighbor(Node_OLD sn) {
 		return surrogateNeighbors.contains(sn);
 	}
 
@@ -336,7 +336,7 @@ public class Node_OLD implements NodeInterface{
 	 * @param al An ArrayList containing the new list of Inverse Surrogate
 	 * Neighbors. If al is null nothing will be changed
 	 */
-	public void setInverseSurrogateNeighbors(ArrayList<Node> al) {
+	public void setInverseSurrogateNeighbors(ArrayList<Node_OLD> al) {
 		if (al != null) {
 			inverseSurrogateNeighbors = al;
 		}
@@ -348,7 +348,7 @@ public class Node_OLD implements NodeInterface{
 	 *
 	 * @param isn The WebID of the Inverse Surrogate Neighbor
 	 */
-	public void addInverseSurrogateNeighbor(Node isn) {
+	public void addInverseSurrogateNeighbor(Node_OLD isn) {
 		if (!isInverseSurrogateNeighbor(isn)) {
 			inverseSurrogateNeighbors.add(isn);
 		}
@@ -360,7 +360,7 @@ public class Node_OLD implements NodeInterface{
 	 * @param isn The WebID to check
 	 * @return True if found, false otherwise
 	 */
-	public boolean isInverseSurrogateNeighbor(Node isn) {
+	public boolean isInverseSurrogateNeighbor(Node_OLD isn) {
 		return inverseSurrogateNeighbors.contains(isn);
 	}
 
@@ -369,16 +369,16 @@ public class Node_OLD implements NodeInterface{
 	 *
 	 * @param isn The WebID to delete
 	 */
-	public void deleteInverseSurrogateNeighbor(Node isn) {
+	public void deleteInverseSurrogateNeighbor(Node_OLD isn) {
 		inverseSurrogateNeighbors.remove(isn);
 	}
 
 	@Override
-	public Node getParent() {
+	public Node_OLD getParent() {
 
-		Node lowest = this;
+		Node_OLD lowest = this;
 
-		for (Node n : neighbors) {
+		for (Node_OLD n : neighbors) {
 			if (n.webID < lowest.webID) {
 				lowest = n;
 			}
@@ -408,39 +408,39 @@ public class Node_OLD implements NodeInterface{
 		//Set neighbours (Guy)
 		NeighborDatabaseChanges ndc = new NeighborDatabaseChanges();
 		//child neighbors
-		for (Node n: inverseSurrogateNeighbors)
-			ndc.updateDirect(child, n);
-		//adds a neighbor of parent as a surrogate neighbor of child if nieghbor is childless
-		//and makes child an isn of neighbor
-		for(Node n: neighbors){
-			if (!n.hasChild){ 
-				ndc.updateSurrogate(child, n);
-				ndc.updateInverse(n, child);
-			}
-		}
-		ndc.updateDirect(this, child);
-		ndc.updateDirect(child, this);
-		
-		//Set folds (Brian/Isaac)
-		FoldDatabaseChanges fdc = new FoldDatabaseChanges();
-		if (inverseSurrogateFold != null){
-			//Stable-state fold references
-			fdc.updateDirect(child, inverseSurrogateFold);
-			fdc.updateDirect(inverseSurrogateFold, child);
-			//Remove surrogate references
-			fdc.updateSurrogate(inverseSurrogateFold, null);
-			fdc.updateInverse(this, null);
-		}
-		else{
-			//Update reflexive folds
-			fdc.updateDirect(child, fold);
-			fdc.updateDirect(fold, child);
-			//Insert surrogates for non-existant node
-			fdc.updateSurrogate(this, fold);
-			fdc.updateInverse(fold, this);
-			//Remove stable state reference
-			fdc.updateDirect(this, null);
-		}
+//		for (Node_OLD n: inverseSurrogateNeighbors)
+//			ndc.updateDirect(child, n);
+//		//adds a neighbor of parent as a surrogate neighbor of child if nieghbor is childless
+//		//and makes child an isn of neighbor
+//		for(Node_OLD n: neighbors){
+//			//if (!n.hasChild){ 
+//				ndc.updateSurrogate(child, n);
+//				ndc.updateInverse(n, child);
+//			//}
+//		}
+//		ndc.updateDirect(this, child);
+//		ndc.updateDirect(child, this);
+//		
+//		//Set folds (Brian/Isaac)
+//		FoldDatabaseChanges fdc = new FoldDatabaseChanges();
+//		if (inverseSurrogateFold != null){
+//			//Stable-state fold references
+//			fdc.updateDirect(child, inverseSurrogateFold);
+//			fdc.updateDirect(inverseSurrogateFold, child);
+//			//Remove surrogate references
+//			fdc.updateSurrogate(inverseSurrogateFold, null);
+//			fdc.updateInverse(this, null);
+//		}
+//		else{
+//			//Update reflexive folds
+//			fdc.updateDirect(child, fold);
+//			fdc.updateDirect(fold, child);
+//			//Insert surrogates for non-existant node
+//			fdc.updateSurrogate(this, fold);
+//			fdc.updateInverse(fold, this);
+//			//Remove stable state reference
+//			fdc.updateDirect(this, null);
+//		}
 		
 		//Attempt to add the node to the database
 		//If it fails, we cannot proceed
@@ -450,7 +450,7 @@ public class Node_OLD implements NodeInterface{
 			db.addNode(childWebID, childHeight, null, null, null);
 			//Set neighbors and folds
 			ndc.commitToDatabase(db);
-			fdc.commitToDatabase(db);
+			//fdc.commitToDatabase(db);
 			//Commit changes to database
 			if (!db.endCommit())
 				return null;
@@ -460,10 +460,10 @@ public class Node_OLD implements NodeInterface{
 		{
 			//Update parent
 			this.height = childHeight;
-			this.hasChild = true;
+			//this.hasChild = true;
 			//Update neighbors and folds
 			ndc.commitToHyPeerWeb();
-			fdc.commitToHyPeerWeb();
+			//fdc.commitToHyPeerWeb();
 			return child;
 		}
 		
@@ -475,7 +475,7 @@ public class Node_OLD implements NodeInterface{
 	 * @param index The value to get as close as possible to
 	 * @author John
 	 */
-	public Node searchForNode(long index)
+	public Node_OLD searchForNode(long index)
 	{
 		long closeness = index & webID, c;
 		for (int i=0; i < neighbors.size(); i++){
@@ -536,41 +536,41 @@ public class Node_OLD implements NodeInterface{
 	 * Extension of DatabaseChanges class to handle folds
 	 * @author isaac
 	 */
-	private static class FoldDatabaseChanges extends DatabaseChanges implements DatabaseChangesInterface{
-		@Override
-		public void commitToDatabase(Database db) {
-			for (NodeUpdate nu: updates){
-				switch (nu.type){
-					case DIRECT:
-						db.setFold(nu.node.webID, nu.value.height);
-						break;
-					case SURROGATE:
-						db.setSurrogateFold(nu.node.webID, nu.value.webID);
-						break;
-					case INVERSE:
-						db.setInverseSurrogateFold(nu.node.webID, nu.value.webID);
-						break;
-				}
-			}
-		}
+//	private static class FoldDatabaseChanges extends DatabaseChanges implements DatabaseChangesInterface{
+//		@Override
+//		public void commitToDatabase(Database db) {
+//			for (NodeUpdate nu: updates){
+//				switch (nu.type){
+//					case DIRECT:
+//						db.setFold(nu.node.webID, nu.value.height);
+//						break;
+//					case SURROGATE:
+//						db.setSurrogateFold(nu.node.webID, nu.value.webID);
+//						break;
+//					case INVERSE:
+//						db.setInverseSurrogateFold(nu.node.webID, nu.value.webID);
+//						break;
+//				}
+//			}
+//		}
 
-		@Override
-		public void commitToHyPeerWeb() {
-			for (NodeUpdate nu: updates){
-				switch (nu.type){
-					case DIRECT:
-						nu.node.fold = nu.value;
-						break;
-					case SURROGATE:
-						nu.node.surrogateFold = nu.value;
-						break;
-					case INVERSE:
-						nu.node.inverseSurrogateFold = nu.value;
-						break;
-				}
-			}
-		}
-	}
+//		@Override
+//		public void commitToHyPeerWeb() {
+//			for (NodeUpdate nu: updates){
+//				switch (nu.type){
+//					case DIRECT:
+//						nu.node.fold = nu.value;
+//						break;
+//					case SURROGATE:
+//						nu.node.surrogateFold = nu.value;
+//						break;
+//					case INVERSE:
+//						nu.node.inverseSurrogateFold = nu.value;
+//						break;
+//				}
+//			}
+//		}
+//	}
 	/**
 	 * Extension of DatabaseChanges to handle neighbors
 	 * @author guy
