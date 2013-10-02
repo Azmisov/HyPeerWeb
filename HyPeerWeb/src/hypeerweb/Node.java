@@ -9,7 +9,7 @@ import validator.NodeInterface;
  */
 public class Node implements NodeInterface{
 	//NODE ATTRIBUTES	
-	private boolean hasChild;
+	private boolean hasChild = false;
 	protected int webID;
 	protected int height;
 	protected Node fold = null;
@@ -79,7 +79,7 @@ public class Node implements NodeInterface{
 			childWebID <<= 1;
 		childWebID |= webID;
 		Node child = new Node(childWebID, childHeight);
-		
+                
 		//Set neighbours (Guy)
 		NeighborDatabaseChanges ndc = new NeighborDatabaseChanges();
 		//child neighbors
@@ -87,8 +87,10 @@ public class Node implements NodeInterface{
 			ndc.updateDirect(child, n);
 			//Remove surrogate reference to parent
 			ndc.removeSurrogate(n, fold);
+                        ndc.removeSurrogate(n, this);
+                        ndc.removeInverse(this, n);
 		}
-		//adds a neighbor of parent as a surrogate neighbor of child if nieghbor is childless
+		//adds a neighbor of parent as a surrogate neighbor of child if neighbor is childless
 		//and makes child an isn of neighbor
 		for (Node n: neighbors){
 			if (!n.hasChild){ 
@@ -139,8 +141,8 @@ public class Node implements NodeInterface{
 		//Add the node to the Java structure
 		{
 			//Update parent
+                        hasChild = true;
 			height = childHeight;
-			hasChild = true;
 			inverseSurrogateNeighbors.clear();
 			//Update neighbors and folds
 			ndc.commitToHyPeerWeb();

@@ -59,34 +59,33 @@ public class Validator {
             valid = valid && validateNode(node);
         }
         
-        if(!valid) {
-            System.err.println("\nNodes in HyPeerWeb of size " + nodes.length + ":");
+        //if(!valid) {
+            System.out.println("\nNodes in HyPeerWeb of size " + nodes.length + ":");
             for(NodeInterface node : nodes) {
-                System.err.println("WebId: " + node.getWebId() + 
+                System.out.println("WebId: " + node.getWebId() + 
                         " Height: " + node.getHeight() + 
                         " Fold: " + node.getFold() +
                         " SFold: " + node.getSurrogateFold() + 
                         " ISFold: " + node.getInverseSurrogateFold());
-                System.err.print("Ns: ");
+                System.out.print("Ns: ");
                 NodeInterface[] neighbors = node.getNeighbors();
                 for(NodeInterface n : neighbors){
-                    System.err.print(n.getWebId() + " ");
+                    System.out.print(n.getWebId() + " ");
                 }
-                System.err.print(" SNs: ");
+                System.out.print(" SNs: ");
                 NodeInterface[] sneighbors = node.getSurrogateNeighbors();
                 for(NodeInterface n : sneighbors){
-                    System.err.print(n.getWebId() + " ");
+                    System.out.print(n.getWebId() + " ");
                 }
-                System.err.print(" ISNs: ");
+                System.out.print(" ISNs: ");
                 NodeInterface[] isneighbors = node.getInverseSurrogateNeighbors();
                 for(NodeInterface n : isneighbors){
-                    System.err.print(n.getWebId() + " ");
+                    System.out.print(n.getWebId() + " ");
                 }
-                System.err.println();
-                System.err.println();
+                System.out.println();
             }
-            System.err.println();
-        }
+            System.out.println();
+        //}
 
         return valid;
     }
