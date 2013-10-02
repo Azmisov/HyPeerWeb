@@ -452,9 +452,6 @@ public final class Database {
 		List<Integer> neighbors = new ArrayList<>();
 		while (set.next())
 			neighbors.add(set.getInt(1));
-                set = sqlQuery("SELECT WebId FROM Neighbors WHERE Neighbor = "+webid+";");
-                while (set.next())
-			neighbors.add(set.getInt(1));
 		return neighbors;
 	}
 	/**
