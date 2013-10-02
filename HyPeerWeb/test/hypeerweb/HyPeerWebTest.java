@@ -40,7 +40,7 @@ public class HyPeerWebTest {
 	public void testAddNode() throws Exception {
 		HyPeerWeb web = HyPeerWeb.getInstance();
 		Node n;
-                //I put the testHyPeerWeb code here because it was always running after testAddNode as so wasn't testing anything.
+                //I put the testHyPeerWeb code here because it was always running after testAddNode and so wasn't testing anything.
                 System.out.println("Testing restore");
 		assertTrue((new Validator(web)).validate());//comment out this line to get new HyPeerWeb
                 System.out.println("Done testing restore");
