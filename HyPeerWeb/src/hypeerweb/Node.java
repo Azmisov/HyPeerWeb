@@ -126,7 +126,8 @@ public class Node implements NodeInterface{
 			db.beginCommit();
 			//Create the child node
 			db.addNode(child);
-			//Remove parent surrogates
+			//Update parent
+			db.setHeight(webID, childHeight);
 			db.removeAllInverseSurrogateNeighbors(webID);
 			//Set neighbors and folds
 			ndc.commitToDatabase(db);

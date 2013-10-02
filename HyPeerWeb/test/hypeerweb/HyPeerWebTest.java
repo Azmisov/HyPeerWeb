@@ -14,14 +14,19 @@ import validator.Validator;
  */
 public class HyPeerWebTest {
 	//Validation variables
-	private int MAX_TESTS = 50;
-	private int TEST_EVERY = 10;
+	private int MAX_TESTS = 10;
+	private int TEST_EVERY = 5;
+	private HyPeerWeb web;
+	
+	public HyPeerWebTest() throws Exception{
+		web = HyPeerWeb.getInstance();
+	}
 	
 	@Test
 	public void testHyPeerWeb(){
 		//Validate the web prior to adding to make sure
 		//it is extracting from the Database correctly
-//		assertTrue(new Validator(web)).validate());
+		assertTrue((new Validator(web)).validate());
 	}
 	
 	/**
