@@ -59,7 +59,7 @@ public class Validator {
             valid = valid && validateNode(node);
         }
         
-        //if(!valid) {
+        if(!valid) {
             System.out.println("\nNodes in HyPeerWeb of size " + nodes.length + ":");
             for(NodeInterface node : nodes) {
                 System.out.println("WebId: " + node.getWebId() + 
@@ -85,7 +85,7 @@ public class Validator {
                 System.out.println();
             }
             System.out.println();
-        //}
+        }
 
         return valid;
     }

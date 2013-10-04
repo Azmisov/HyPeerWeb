@@ -13,6 +13,7 @@ public class HyPeerWeb implements HyPeerWebInterface {
 	private static HyPeerWeb instance;
 	private static Database db;
 	private static TreeSet<Node> nodes;
+	private static boolean disableDB;
 	//Random number generator for getting random nodes
 	private static Random rand;
 	//Error messages
@@ -27,6 +28,7 @@ public class HyPeerWeb implements HyPeerWebInterface {
 		nodes = db.getAllNodes();
 		rand = new Random();
 		addNodeErr = new Exception("Failed to add a new node");
+		disableDB = false;
 	}
 	/**
 	 * Retrieve the HyPeerWeb singleton
@@ -40,11 +42,20 @@ public class HyPeerWeb implements HyPeerWebInterface {
 		return instance;
 	}
 	/**
+	 * Disables any writes to the database
+	 * @author isaac
+	 */
+	public void disableDatabase(){
+		disableDB = true;
+	}
+	
+	/**
 	 * Removes all nodes from HyPeerWeb
 	 * @author isaac
 	 */
 	public void deleteAllNodes(){
-		db.clear();
+		if (!disableDB)
+			db.clear();
 		nodes = new TreeSet<>();
 	}
 	
@@ -63,7 +74,7 @@ public class HyPeerWeb implements HyPeerWebInterface {
 			return addSecondNode();
 		
 		//Otherwise, use the normal insertion algorithm
-		Node child = this.getRandomInsertionNode().addChild(db);
+		Node child = this.getRandomInsertionNode().addChild(disableDB ? null : db);
 		if (child == null)
 			throw addNodeErr;
 		//Node successfully added!
@@ -78,7 +89,7 @@ public class HyPeerWeb implements HyPeerWebInterface {
 	 */
 	private Node addFirstNode() throws Exception{
 		Node first = new Node(0, 0);
-		if (!db.addNode(first))
+		if (!disableDB && !db.addNode(first))
 			throw addNodeErr;
 		nodes.add(first);
 		return first;
@@ -92,7 +103,7 @@ public class HyPeerWeb implements HyPeerWebInterface {
 		Node sec = new Node(1, 1),
 			first = nodes.first();
 		//Update the database first
-		{
+		if (!disableDB) {
 			int firstID = first.getWebId(),
 				secID = sec.getWebId();
 			db.beginCommit();

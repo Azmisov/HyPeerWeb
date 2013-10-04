@@ -113,7 +113,7 @@ public class Node implements NodeInterface{
 		
 		//Attempt to add the node to the database
 		//If it fails, we cannot proceed
-		{
+		if (db != null) {
 			db.beginCommit();
 			//Create the child node
 			db.addNode(child);

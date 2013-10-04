@@ -14,12 +14,15 @@ import validator.Validator;
  */
 public class HyPeerWebTest {
 	//Validation variables
-	private int MAX_TESTS = 10;
-	private int TEST_EVERY = 5;
+	private int MAX_TESTS = 10000;
+	private int TEST_EVERY = 1;
+	private boolean TEST_DATABASE = false;
 	private HyPeerWeb web;
 	
 	public HyPeerWebTest() throws Exception{
 		web = HyPeerWeb.getInstance();
+		if (!TEST_DATABASE)
+			web.disableDatabase();
 	}
 	
 	/*
@@ -38,12 +41,13 @@ public class HyPeerWebTest {
 	 */
 	@Test
 	public void testAddNode() throws Exception {
-		HyPeerWeb web = HyPeerWeb.getInstance();
 		Node n;
-		//I put the testHyPeerWeb code here because it was always running after testAddNode and so wasn't testing anything.
-		System.out.println("Testing restore");
-		//assertTrue((new Validator(web)).validate());//comment out this line to get new HyPeerWeb
-		System.out.println("Done testing restore");
+		if (TEST_DATABASE){
+			//I put the testHyPeerWeb code here because it was always running after testAddNode and so wasn't testing anything.
+			System.out.println("Testing restore");
+			assertTrue((new Validator(web)).validate());//comment out this line to get new HyPeerWeb
+			System.out.println("Done testing restore");
+		}
 		
 		//Add a bunch of nodes; if it validates afterwards, addNode should be working
 		//We cannot do simulated tests, since addNode inserts at arbitrary places
