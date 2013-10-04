@@ -14,11 +14,13 @@ public class Node implements NodeInterface{
 	protected Node fold;
 	protected Node surrogateFold;
 	protected Node inverseSurrogateFold;
-	protected ArrayList<Node> neighbors;
-	protected ArrayList<Node> surrogateNeighbors;
-	protected ArrayList<Node> inverseSurrogateNeighbors;
+	protected ArrayList<Node> neighbors = new ArrayList();
+	protected ArrayList<Node> surrogateNeighbors = new ArrayList();
+	protected ArrayList<Node> inverseSurrogateNeighbors = new ArrayList();
 	//Neighbor insertion states
 	private ArrayList<Node> insertableNodes;
+        //Fold state
+        private FoldState foldState = new FoldState(false);
 	//Hash code prime
 	private static long prime = Long.parseLong("2654435761");
 
@@ -31,10 +33,6 @@ public class Node implements NodeInterface{
 	public Node(int id, int height) {
 		webID = id;
 		this.height = height;
-		inverseSurrogateNeighbors = new ArrayList();
-		surrogateNeighbors = new ArrayList();
-		neighbors = new ArrayList();
-		insertableNodes = new ArrayList();
 	}
 
 	/**
@@ -107,24 +105,7 @@ public class Node implements NodeInterface{
 		
 		//Set folds (Brian/Isaac)
 		FoldDatabaseChanges fdc = new FoldDatabaseChanges();
-		if (inverseSurrogateFold != null){
-			//Stable-state fold references
-			fdc.updateDirect(child, inverseSurrogateFold);
-			fdc.updateDirect(inverseSurrogateFold, child);
-			//Remove surrogate references
-			fdc.removeSurrogate(inverseSurrogateFold, null);
-			fdc.removeInverse(this, null);
-		}
-		else{
-			//Update reflexive folds
-			fdc.updateDirect(child, fold);
-			fdc.updateDirect(fold, child);
-			//Insert surrogates for non-existant node
-			fdc.updateSurrogate(this, fold);
-			fdc.updateInverse(fold, this);
-			//Remove stable state reference
-			fdc.removeDirect(this, null);
-		}
+		foldState.updateFolds(fdc, this, child);
 		
 		//Attempt to add the node to the database
 		//If it fails, we cannot proceed
@@ -228,7 +209,7 @@ public class Node implements NodeInterface{
 	 * Sub-Class to keep track of Fold updates
 	 * @author isaac
 	 */
-	private static class DatabaseChanges{
+	protected static class DatabaseChanges{
 		//Valid types of changes
 		protected enum NodeUpdateType{
 			DIRECT, SURROGATE, INVERSE
@@ -282,7 +263,7 @@ public class Node implements NodeInterface{
 	 * Interface for implementing node-specific commit actions
 	 * @author isaac
 	 */
-	private interface DatabaseChangesInterface{
+	protected interface DatabaseChangesInterface{
 		public void commitToDatabase(Database db);
 		public void commitToHyPeerWeb();
 	}
@@ -290,7 +271,7 @@ public class Node implements NodeInterface{
 	 * Extension of DatabaseChanges class to handle folds
 	 * @author isaac
 	 */
-	private static class FoldDatabaseChanges extends DatabaseChanges implements DatabaseChangesInterface{
+	protected static class FoldDatabaseChanges extends DatabaseChanges implements DatabaseChangesInterface{
 		@Override
 		public void commitToDatabase(Database db) {
 			for (NodeUpdate nu: updates){
@@ -330,7 +311,7 @@ public class Node implements NodeInterface{
 	 * Extension of DatabaseChanges to handle neighbors
 	 * @author guy
 	 */
-	private static class NeighborDatabaseChanges extends DatabaseChanges implements DatabaseChangesInterface{
+	protected static class NeighborDatabaseChanges extends DatabaseChanges implements DatabaseChangesInterface{
 		@Override
 		public void commitToDatabase(Database db) {
 			for (NodeUpdate nu: updates){
@@ -552,7 +533,6 @@ public class Node implements NodeInterface{
 
 	   }
 	}
-	private class FoldState{
-		
-	}
+       
+        
 }
