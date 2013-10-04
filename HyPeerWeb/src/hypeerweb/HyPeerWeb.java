@@ -91,26 +91,27 @@ public class HyPeerWeb implements HyPeerWebInterface {
 	private Node addSecondNode() throws Exception{
 		Node sec = new Node(1, 1),
 			first = nodes.first();
-		sec.fold = first;
 		//Update the database first
 		{
+			int firstID = first.getWebId(),
+				secID = sec.getWebId();
 			db.beginCommit();
 			db.addNode(sec);
-			db.setHeight(first.webID, 1);
+			db.setHeight(firstID, 1);
 			//reflexive folds
-			db.setFold(first.webID, sec.webID);
-			db.setFold(sec.webID, first.webID);
+			db.setFold(firstID, secID);
+			db.setFold(secID, firstID);
 			//reflexive neighbors
-			db.addNeighbor(first.webID, sec.webID);
-			db.addNeighbor(sec.webID, first.webID);
+			db.addNeighbor(firstID, secID);
+			db.addNeighbor(secID, firstID);
 			if (!db.endCommit())
 				throw addNodeErr;
 		}
 		//Update java struct
 		{
-			first.height = 1;
-			first.fold = sec;
-			sec.fold = first;
+			first.setHeight(1);
+			first.setFold(sec);
+			sec.setFold(first);
 			first.addNeighbor(sec);
 			sec.addNeighbor(first);
 			nodes.add(sec);
