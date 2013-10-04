@@ -97,7 +97,7 @@ public class Node implements NodeInterface{
 		//adds a neighbor of parent as a surrogate neighbor of child if neighbor is childless
 		//and makes child an isn of neighbor
 		for (Node n: neighbors){
-			if (n.height < childHeight){
+			if (n.getHeight() < childHeight){
 				ndc.updateSurrogate(child, n);
 				ndc.updateInverse(n, child);
 			}
