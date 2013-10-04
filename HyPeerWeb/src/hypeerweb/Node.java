@@ -11,12 +11,14 @@ public class Node implements NodeInterface{
 	//NODE ATTRIBUTES
 	protected int webID;
 	protected int height;
-	protected Node fold = null;
-	protected Node surrogateFold = null;
-	protected Node inverseSurrogateFold = null;
-	protected ArrayList<Node> neighbors = new ArrayList();
-	protected ArrayList<Node> surrogateNeighbors = new ArrayList();
-	protected ArrayList<Node> inverseSurrogateNeighbors = new ArrayList();
+	protected Node fold;
+	protected Node surrogateFold;
+	protected Node inverseSurrogateFold;
+	protected ArrayList<Node> neighbors;
+	protected ArrayList<Node> surrogateNeighbors;
+	protected ArrayList<Node> inverseSurrogateNeighbors;
+	//Neighbor insertion states
+	private ArrayList<Node> insertableNodes;
 	//Hash code prime
 	private static long prime = Long.parseLong("2654435761");
 
@@ -29,6 +31,10 @@ public class Node implements NodeInterface{
 	public Node(int id, int height) {
 		webID = id;
 		this.height = height;
+		inverseSurrogateNeighbors = new ArrayList();
+		surrogateNeighbors = new ArrayList();
+		neighbors = new ArrayList();
+		insertableNodes = new ArrayList();
 	}
 
 	/**
@@ -533,5 +539,20 @@ public class Node implements NodeInterface{
 	@Override
 	public String toString(){
 		return webID+"("+height+")";
+	}
+	
+	///STATE PATTERNS
+	private class InsertableState{
+		/**
+		* Signal handler that alerts a neighbor is full
+		* @param full_node which node is now full
+		* @param level how many times to recursively call the method
+		*/
+	   private void signalChange(Node full_node, int level){
+
+	   }
+	}
+	private class FoldState{
+		
 	}
 }
