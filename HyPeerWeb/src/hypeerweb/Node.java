@@ -18,7 +18,7 @@ public class Node implements NodeInterface{
 	protected ArrayList<Node> surrogateNeighbors;
 	protected ArrayList<Node> inverseSurrogateNeighbors;
 	//Neighbor insertion states
-	private ArrayList<Node> insertableNodes;
+        private InsertableState insertableState;
 	//Hash code prime
 	private static long prime = Long.parseLong("2654435761");
 
@@ -34,7 +34,7 @@ public class Node implements NodeInterface{
 		inverseSurrogateNeighbors = new ArrayList();
 		surrogateNeighbors = new ArrayList();
 		neighbors = new ArrayList();
-		insertableNodes = new ArrayList();
+		insertableState = new InsertableState();
 	}
 
 	/**
@@ -370,6 +370,8 @@ public class Node implements NodeInterface{
 						else nu.node.inverseSurrogateNeighbors.add(nu.value);
 						break;
 				}
+                                if (nu.delete)
+                                else nu.node
 			}
 		}
 	
@@ -540,17 +542,62 @@ public class Node implements NodeInterface{
 	public String toString(){
 		return webID+"("+height+")";
 	}
+        
+        protected InsertableState getInsertableState(){
+            return insertableState;
+        }
 	
 	///STATE PATTERNS
 	private class InsertableState{
+            
+            private ArrayList<Node> holeyNodes;
+            boolean isFull;
+            
+            private InsertableState(){
+                insertableNodes = new ArrayList<Node>();
+            }
 		/**
-		* Signal handler that alerts a neighbor is full
+		* Signal handler that alerts state has changed
 		* @param full_node which node is now full
 		* @param level how many times to recursively call the method
 		*/
-	   private void signalChange(Node full_node, int level){
-
+	   private void signalChange(Node node, boolean isFull, int level){
+               if(isFull) {
+                   holeyNodes.remove(node);    
+               } else {
+                   holeyNodes.add(node);
+               }
+               if(level == 0)
+                   return;
+               for (Node n : neighbors) {
+                   n.getInsertableState().signalChange(node, isFull, level-1);
+               }
 	   }
+           
+           private void calculateFull(){
+               isFull = true;
+               
+               if(surrogateFold != null)
+                   isFull = false;
+               if(!surrogateNeighbors.isEmpty())
+                   isFull = false;
+               for(Node n : neighbors)
+                   if(n.height < height)
+                       isFull = false;
+           }
+           
+           private void calculateHoleyNodes(){
+               for(Node n : neighbors){
+                   if(!n.getInsertableState().isFull)
+                       holeyNodes.add(n);
+                   for(Node n2:n.getNeighbors()){
+                       if(n2 != Node.this){
+                           if(!n2.getInsertableState().isFull)
+                               holeyNodes.add(n2);
+                       }
+                   }
+               }
+           }
 	}
 	private class FoldState{
 		
