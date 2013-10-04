@@ -18,6 +18,12 @@ public class HyPeerWeb implements HyPeerWebInterface {
 	private static Random rand;
 	//Error messages
 	private static Exception addNodeErr;
+	//Initialize static variables
+	static{
+		disableDB = false;
+		rand = new Random();
+		addNodeErr = new Exception("Failed to add a new node");
+	}
 	
 	/**
 	 * Private constructor for initializing the HyPeerWeb
@@ -26,9 +32,6 @@ public class HyPeerWeb implements HyPeerWebInterface {
 	private HyPeerWeb() throws Exception{
 		db = Database.getInstance();
 		nodes = db.getAllNodes();
-		rand = new Random();
-		addNodeErr = new Exception("Failed to add a new node");
-		disableDB = false;
 	}
 	/**
 	 * Retrieve the HyPeerWeb singleton
@@ -54,8 +57,7 @@ public class HyPeerWeb implements HyPeerWebInterface {
 	 * @author isaac
 	 */
 	public void deleteAllNodes(){
-		if (!disableDB)
-			db.clear();
+		if (!disableDB) db.clear();
 		nodes = new TreeSet<>();
 	}
 	
