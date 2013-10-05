@@ -163,48 +163,23 @@ public class Node implements NodeInterface{
 	 * @author josh
 	 */
 	public Node findInsertionNode() {
-
-		Node result = findInsertionNode(this, 2);
-
-		if (result == null) {
-			return this;
-		}
-
-		return result;
-	}
-	private Node findInsertionNode(Node original, int times) {
-		if (surrogateFold != null) {
-			return surrogateFold;
-		}
-
-		if (surrogateNeighbors != null && !surrogateNeighbors.isEmpty()) {
-			return surrogateNeighbors.get(0);
-		}
-
-		for (Node n : neighbors) {
-			if (n != original && n.height < height) {
-				return n;
-			}
-		}
-
-		if (times == 0) {
-			return null;
-		}
-
-		for (Node n : neighbors) {
-
-			if (n == original) {
-				continue;
-			}
-
-			Node result = n.findInsertionNode(this, times - 1);
-
-			if (result != null) {
-				return result;
-			}
-		}
-
-		return null;
+            
+            if (insertableState.isHoley()) {
+                if (surrogateFold != null)
+                    return surrogateFold;
+                if (surrogateNeighbors != null && !surrogateNeighbors.isEmpty())
+                    return surrogateNeighbors.get(0);
+                for (Node n : neighbors) {
+                    if (n.getHeight() < height)
+                        return n;
+                }
+                insertableState.calculateHoleyness();
+            }
+           
+            if (insertableState.getHoleyNodes() != null && !insertableState.getHoleyNodes().isEmpty())
+                return insertableState.getHoleyNodes().get(0).findInsertionNode();
+            
+            return this;
 	}
 	
 	//EN-MASSE DATABASE CHANGE HANDLING
@@ -591,12 +566,11 @@ public class Node implements NodeInterface{
 	public class InsertableState{
 			
 		private ArrayList<Node> holeyNodes;//list of nodes with holes
-		boolean isFull;//is this node full, i.e. no sneighbors or sfolds
-                boolean fullCalculated = false;//has full already been calculated for this node
-                boolean amIHoley = true;//state, true if this node is not ready to be a parent
+		boolean isHoley;//is this node holey, i.e. has sneighbors or sfold or lesser neighbors
+                boolean holeynessCalculated = false;//has isHoley already been calculated for this node
 
 		private InsertableState(){
-			holeyNodes = new ArrayList<Node>();
+			holeyNodes = new ArrayList<>();
 		}
 		
 		/**
@@ -604,8 +578,8 @@ public class Node implements NodeInterface{
 		* @param node which node is now full
 		* @param isOriginalCall node originating this call sets this to true
 		*/
-		private void signalChange(Node node, boolean isFullNow, boolean isOriginalCall){
-			if(isFullNow) {
+		private void signalChange(Node node, boolean isHoleyNow, boolean isOriginalCall){
+			if(!isHoleyNow) {
 			    if(holeyNodes.contains(node))
 				holeyNodes.remove(node);
 			    else
@@ -613,64 +587,66 @@ public class Node implements NodeInterface{
 			} else {
 			    holeyNodes.add(node);
 			}
-			if(holeyNodes.isEmpty()){//if this node is now not holey, announce it
-			    amIHoley = false;
-			    signalChange(Node.this, true, true); 
-			}
+
 			if(!isOriginalCall)
 				return;
 			for (Node n : neighbors) {
-			    if(n != Node.this)
-				n.getInsertableState().signalChange(node, isFullNow, false);
+			    if(n != node)
+				n.getInsertableState().signalChange(node, isHoleyNow, false);
 			}
-		}
-		
-		/**
-		 * gets insertion state
-		 * @return true if this node is not a valid insertion point
-		 */
-		public boolean amIHoley(){
-		    return amIHoley;
 		}
 		
 		/*
 		 * @return true if node is full
 		 */
-                public boolean isNodeFull(){
-                    if(!fullCalculated)
-                        calculateFull();//this will only be called once by this function
-                    return isFull;
+                public boolean isHoley(){
+                    if(!holeynessCalculated)
+                        calculateHoleyness();//this will only be called once by this function
+                    return isHoley;
+                }
+                
+                public ArrayList<Node> getHoleyNodes(){
+                    return holeyNodes;
                 }
                 
 		/*
-		 * Finds out if this node has a SF, any SNs, and is the same height or greater than its neighbors
+		 * Finds out if this node has holes, and calls signalChange if its holeyness has changed
 		 */
-		private void calculateFull(){
-			isFull = true;
+		private void calculateHoleyness(){
+                    
+                    boolean wasHoley = isHoley;
+                    
+			isHoley = false;
 
 			if(surrogateFold != null)
-				isFull = false;
+				isHoley = true;
 			if(!surrogateNeighbors.isEmpty())
-				isFull = false;
+				isHoley = true;
 			for(Node n : neighbors)
 				if(n.height < height)
-					isFull = false;
+					isHoley = true;
+                    
+                        if(isHoley != wasHoley && holeynessCalculated) {
+                            for (Node n : neighbors) {
+                                n.getInsertableState().signalChange(Node.this, isHoley, true);
+                            }
+                        }
+                        
+                        holeynessCalculated = true;
 		}
 		
 		/*
-		 * Queries all neighbors and neighbors' neighbors if they are full
+		 * Queries all neighbors and neighbors' neighbors if they are full; called only when initializing hypeerweb
 		 */
 		public void calculateHoleyNodes(){
 		    for(Node n : neighbors){//find out if neighbors are full
-			if(!n.getInsertableState().isNodeFull()){
+			if(n.getInsertableState().isHoley()){
 			    holeyNodes.add(n);
-			    amIHoley = false;
 			}
 			for(Node n2:n.getNeighbors()){//find out if neighbors' neighbors are full
 			    if(n2 != Node.this)
-				if(!n2.getInsertableState().isNodeFull()){
+				if(n2.getInsertableState().isHoley()){
 				    holeyNodes.add(n2);
-				    amIHoley = false;
 				}  
 			}
 		    }
