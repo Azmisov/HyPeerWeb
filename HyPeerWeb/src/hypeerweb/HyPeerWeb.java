@@ -37,6 +37,9 @@ public class HyPeerWeb implements HyPeerWebInterface {
 	private HyPeerWeb() throws Exception{
 		db = Database.getInstance();
 		nodes = db.getAllNodes();
+		for(Node n : nodes){
+		    n.getInsertableState().calculateHoleyNodes();
+		}
 	}
 	/**
 	 * Retrieve the HyPeerWeb singleton

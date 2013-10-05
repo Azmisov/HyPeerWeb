@@ -455,7 +455,7 @@ public class Node implements NodeInterface{
 	 * Gets the node's insertable state
 	 * @return the insertable state
 	 */
-	private InsertableState getInsertableState(){
+	public InsertableState getInsertableState(){
 		return insertableState;
 	}
 	/**
@@ -588,33 +588,63 @@ public class Node implements NodeInterface{
 	}
 			
 	///STATE PATTERNS
-	private class InsertableState{
+	public class InsertableState{
 			
-		private ArrayList<Node> holeyNodes;
-		boolean isFull;
+		private ArrayList<Node> holeyNodes;//list of nodes with holes
+		boolean isFull;//is this node full, i.e. no sneighbors or sfolds
+                boolean fullCalculated = false;//has full already been calculated for this node
+                boolean amIHoley = true;//state, true if this node is not ready to be a parent
 
 		private InsertableState(){
 			holeyNodes = new ArrayList<Node>();
 		}
 		
 		/**
-		* Signal handler that alerts state has changed
-		* @param full_node which node is now full
-		* @param level how many times to recursively call the method
+		* Signal handler that alerts Ns and NsNs that the state of this node has changed
+		* @param node which node is now full
+		* @param isOriginalCall node originating this call sets this to true
 		*/
-		private void signalChange(Node node, boolean isFull, int level){
-			if(isFull) {
-				holeyNodes.remove(node);	
+		private void signalChange(Node node, boolean isFullNow, boolean isOriginalCall){
+			if(isFullNow) {
+			    if(holeyNodes.contains(node))
+				holeyNodes.remove(node);
+			    else
+				System.out.println("Problem! node " + node.webID + " is not in holeyNodes list, but an attemp was just made to remove it.");
 			} else {
-				holeyNodes.add(node);
+			    holeyNodes.add(node);
 			}
-			if(level == 0)
+			if(holeyNodes.isEmpty()){//if this node is now not holey, announce it
+			    amIHoley = false;
+			    signalChange(Node.this, true, true); 
+			}
+			if(!isOriginalCall)
 				return;
 			for (Node n : neighbors) {
-				n.getInsertableState().signalChange(node, isFull, level-1);
+			    if(n != Node.this)
+				n.getInsertableState().signalChange(node, isFullNow, false);
 			}
 		}
-		   
+		
+		/**
+		 * gets insertion state
+		 * @return true if this node is not a valid insertion point
+		 */
+		public boolean amIHoley(){
+		    return amIHoley;
+		}
+		
+		/*
+		 * @return true if node is full
+		 */
+                public boolean isNodeFull(){
+                    if(!fullCalculated)
+                        calculateFull();//this will only be called once by this function
+                    return isFull;
+                }
+                
+		/*
+		 * Finds out if this node has a SF, any SNs, and is the same height or greater than its neighbors
+		 */
 		private void calculateFull(){
 			isFull = true;
 
@@ -626,20 +656,27 @@ public class Node implements NodeInterface{
 				if(n.height < height)
 					isFull = false;
 		}
-		   
-		private void calculateHoleyNodes(){
-			for(Node n : neighbors){
-				if(!n.getInsertableState().isFull)
-					holeyNodes.add(n);
-				for(Node n2:n.getNeighbors()){
-					if(n2 != Node.this){
-						if(!n2.getInsertableState().isFull)
-							holeyNodes.add(n2);
-					}
-				}
+		
+		/*
+		 * Queries all neighbors and neighbors' neighbors if they are full
+		 */
+		public void calculateHoleyNodes(){
+		    for(Node n : neighbors){//find out if neighbors are full
+			if(!n.getInsertableState().isNodeFull()){
+			    holeyNodes.add(n);
+			    amIHoley = false;
 			}
+			for(Node n2:n.getNeighbors()){//find out if neighbors' neighbors are full
+			    if(n2 != Node.this)
+				if(!n2.getInsertableState().isNodeFull()){
+				    holeyNodes.add(n2);
+				    amIHoley = false;
+				}  
+			}
+		    }
 		}
 	}
+	
 	private class FoldState{
 		private boolean isStable;
 		
