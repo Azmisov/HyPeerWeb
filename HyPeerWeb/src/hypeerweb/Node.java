@@ -165,15 +165,20 @@ public class Node implements NodeInterface{
 	public Node findInsertionNode() {
             
             if (insertableState.isHoley()) {
-                if (surrogateFold != null)
+                if (surrogateFold != null){
+                    insertableState.calculateHoleynessAfterInsertion(surrogateFold);
                     return surrogateFold;
-                if (surrogateNeighbors != null && !surrogateNeighbors.isEmpty())
-                    return surrogateNeighbors.get(0);
-                for (Node n : neighbors) {
-                    if (n.getHeight() < height)
-                        return n;
                 }
-                insertableState.calculateHoleyness();
+                if (surrogateNeighbors != null && !surrogateNeighbors.isEmpty()){
+                    insertableState.calculateHoleynessAfterInsertion(surrogateNeighbors.get(0));
+                    return surrogateNeighbors.get(0);
+                }
+                for (Node n : neighbors) {
+                    if (n.getHeight() < height){
+                        insertableState.calculateHoleynessAfterInsertion(n);
+                        return n;
+                    }
+                }
             }
            
             if (insertableState.getHoleyNodes() != null && !insertableState.getHoleyNodes().isEmpty())
@@ -607,6 +612,28 @@ public class Node implements NodeInterface{
                 
                 public ArrayList<Node> getHoleyNodes(){
                     return holeyNodes;
+                }
+                
+                private void calculateHoleynessAfterInsertion(Node insertionNode){
+                    boolean wasHoley = isHoley;
+                    
+			isHoley = false;
+
+			if(insertionNode != surrogateFold && surrogateFold != null)
+				isHoley = true;
+			if(!surrogateNeighbors.isEmpty() && !(surrogateNeighbors.size() == 1 && insertionNode == surrogateNeighbors.get(0)))
+				isHoley = true;
+			for(Node n : neighbors)
+				if(insertionNode != n && n.height < height)
+					isHoley = true;
+                    
+                        if(isHoley != wasHoley && holeynessCalculated) {
+                            for (Node n : neighbors) {
+                                n.getInsertableState().signalChange(Node.this, isHoley, true);
+                            }
+                        }
+                        
+                        holeynessCalculated = true;
                 }
                 
 		/*
