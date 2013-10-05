@@ -16,12 +16,21 @@ public class HyPeerWebTest {
 	private final int MAX_TESTS = 1000;
 	private final int TEST_EVERY = 1;
 	private final boolean TEST_DATABASE = false;
+	private final boolean USE_TRACE_LOG = false;
 	private HyPeerWeb web;
 	
 	public HyPeerWebTest() throws Exception{
 		web = HyPeerWeb.getInstance();
 		if (!TEST_DATABASE)
 			web.disableDatabase();
+		if (USE_TRACE_LOG){
+			if (!web.loadTrace()){
+				System.out.println("Could not load insertion trace from log file!!!");
+				System.out.println("Try again or disable USE_TRACE_LOG");
+				fail();
+			}
+		}
+		else web.startTrace();
 	}
 	
 	/**
@@ -54,6 +63,9 @@ public class HyPeerWebTest {
 			System.out.println(e);
 			System.out.println(e.getMessage());
 			fail();
+		} finally{
+			if (!web.endTrace())
+				System.out.println("WARNING!!! Could not save the insertion trace to log file");
 		}
 	}
 	
