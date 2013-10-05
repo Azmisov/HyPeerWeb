@@ -146,9 +146,9 @@ public class HyPeerWeb implements HyPeerWebInterface {
 		long index;
 		if (traceMode == TraceMode.READ){
 			index = randTraceIter.next();
-			//We've reached the end of the log file; disable trace reading
+			//We've reached the end of the log file; start recording
 			if (!randTraceIter.hasNext())
-				traceMode = TraceMode.OFF;
+				traceMode = TraceMode.ON;
 		}
 		else{
 			index = rand.nextInt(Integer.MAX_VALUE);
