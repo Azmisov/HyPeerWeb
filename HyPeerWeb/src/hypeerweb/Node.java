@@ -158,7 +158,8 @@ public class Node implements NodeInterface{
 	
 	/**
 	 * Finds the closest valid insertion point (the parent
-	 * of the child to add) from a starting node
+	 * of the child to add) from a starting node, automatically deals with
+         * the node's holes and insertable state
 	 * @return the parent of the child to add
 	 * @author josh
 	 */
@@ -166,6 +167,7 @@ public class Node implements NodeInterface{
             
             if (insertableState.isHoley()) {
                 if (surrogateFold != null){
+                    // Calculate if this node will be holey after the new insertion
                     insertableState.calculateHoleynessAfterInsertion(surrogateFold);
                     return surrogateFold;
                 }
@@ -576,6 +578,8 @@ public class Node implements NodeInterface{
 
 		private InsertableState(){
 			holeyNodes = new ArrayList<>();
+                        isHoley = false;
+                        calculateHoleyness(); // Not sure if this is really needed but just in case for new nodes
 		}
 		
 		/**
@@ -588,7 +592,8 @@ public class Node implements NodeInterface{
 			    if(holeyNodes.contains(node))//I think it's not a problem is this is false.
 				holeyNodes.remove(node);
 			} else {
-			    holeyNodes.add(node);
+                            if(!holeyNodes.contains(node)) // Just in case?
+                                holeyNodes.add(node);
 			}
 
 			if(!isOriginalCall)
@@ -600,7 +605,7 @@ public class Node implements NodeInterface{
 		}
 		
 		/*
-		 * @return true if node is full
+		 * @return true if node is holey
 		 */
                 public boolean isHoley(){
                     if(!holeynessCalculated)
@@ -611,7 +616,10 @@ public class Node implements NodeInterface{
                 public ArrayList<Node> getHoleyNodes(){
                     return holeyNodes;
                 }
-                
+                /*
+                 * Finds out if this node will have holes after the insertion point has been determined
+                 * and gets a child, signals a change if necessary
+                 */
                 private void calculateHoleynessAfterInsertion(Node insertionNode){
                     boolean wasHoley = isHoley;
                     
@@ -625,7 +633,7 @@ public class Node implements NodeInterface{
 				if(insertionNode != n && n.height < height)
 					isHoley = true;
                     
-                        if(isHoley != wasHoley && holeynessCalculated) {
+                        if(isHoley != wasHoley) {
                             for (Node n : neighbors) {
                                 n.getInsertableState().signalChange(Node.this, isHoley, true);
                             }
@@ -651,7 +659,7 @@ public class Node implements NodeInterface{
 				if(n.height < height)
 					isHoley = true;
                     
-                        if(isHoley != wasHoley && holeynessCalculated) {
+                        if(isHoley != wasHoley) {
                             for (Node n : neighbors) {
                                 n.getInsertableState().signalChange(Node.this, isHoley, true);
                             }
@@ -661,7 +669,7 @@ public class Node implements NodeInterface{
 		}
 		
 		/*
-		 * Queries all neighbors and neighbors' neighbors if they are full; called only when initializing hypeerweb
+		 * Queries all neighbors and neighbors' neighbors if they are holey; called only when initializing hypeerweb
 		 */
 		public void calculateHoleyNodes(){
 		    for(Node n : neighbors){//find out if neighbors are full
