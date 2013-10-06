@@ -585,10 +585,8 @@ public class Node implements NodeInterface{
 		*/
 		private void signalChange(Node node, boolean isHoleyNow, boolean isOriginalCall){
 			if(!isHoleyNow) {
-			    if(holeyNodes.contains(node))
+			    if(holeyNodes.contains(node))//I think it's not a problem is this is false.
 				holeyNodes.remove(node);
-			    else
-				System.out.println("Problem! node " + node.webID + " is not in holeyNodes list, but an attemp was just made to remove it.");
 			} else {
 			    holeyNodes.add(node);
 			}
@@ -639,7 +637,7 @@ public class Node implements NodeInterface{
 		/*
 		 * Finds out if this node has holes, and calls signalChange if its holeyness has changed
 		 */
-		private void calculateHoleyness(){
+		private void calculateHoleyness(){//lol
                     
                     boolean wasHoley = isHoley;
                     
@@ -719,12 +717,14 @@ public class Node implements NodeInterface{
 		}
 		//Update folds if in stable state
 		private void goUnstable(Node.FoldDatabaseChanges fdc, Node caller, Node child){
-			Node fold = caller.getFold();
+			Node fold = caller.getFold();//fold ends up null sometimes, not sure why
 			//Update reflexive folds
 			fdc.updateDirect(child, fold);
+			if(fold != null)
 			fdc.updateDirect(fold, child);
 			//Insert surrogates for non-existant node
 			fdc.updateSurrogate(caller, fold);
+			if(fold != null)
 			fdc.updateInverse(fold, caller);
 			//Remove stable state reference
 			fdc.removeDirect(caller, null);
