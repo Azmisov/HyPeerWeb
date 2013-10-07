@@ -9,16 +9,17 @@ import validator.NodeInterface;
  */
 public class Node implements NodeInterface{
 	//NODE ATTRIBUTES
-	protected int webID;
-	protected int height;
-	protected Node fold;
-	protected Node surrogateFold;
-	protected Node inverseSurrogateFold;
-	protected ArrayList<Node> neighbors;
-	protected ArrayList<Node> surrogateNeighbors;
-	protected ArrayList<Node> inverseSurrogateNeighbors;
-	//Neighbor insertion states
-	private ArrayList<Node> insertableNodes;
+	private int webID;
+	private int height;
+	private Node fold;
+	private Node surrogateFold;
+	private Node inverseSurrogateFold;
+	private ArrayList<Node> neighbors = new ArrayList();
+	private ArrayList<Node> surrogateNeighbors = new ArrayList();
+	private ArrayList<Node> inverseSurrogateNeighbors = new ArrayList();
+	//State machines
+	private InsertableState insertableState;
+	private FoldState foldState; 
 	//Hash code prime
 	private static long prime = Long.parseLong("2654435761");
 
@@ -29,12 +30,10 @@ public class Node implements NodeInterface{
 	 * @param id The WebID of the Node
 	 */
 	public Node(int id, int height) {
-		webID = id;
+		this.webID = id;
 		this.height = height;
-		inverseSurrogateNeighbors = new ArrayList();
-		surrogateNeighbors = new ArrayList();
-		neighbors = new ArrayList();
-		insertableNodes = new ArrayList();
+		
+		NodeInit();
 	}
 
 	/**
@@ -60,15 +59,18 @@ public class Node implements NodeInterface{
 		surrogateFold = sFold;
 		inverseSurrogateFold = isFold;
 
-		if (Neighbors != null) {
+		if (Neighbors != null)
 			neighbors = Neighbors;
-		}
-		if (sNeighbors != null) {
+		if (sNeighbors != null)
 			surrogateNeighbors = sNeighbors;
-		}
-		if (isNeighbors != null) {
+		if (isNeighbors != null)
 			inverseSurrogateNeighbors = isNeighbors;
-		}
+		
+		NodeInit();
+	}
+	private void NodeInit(){
+		insertableState = new InsertableState();
+		foldState = new FoldState();
 	}
 
 	/**
@@ -78,13 +80,13 @@ public class Node implements NodeInterface{
 	 */
 	public Node addChild(Database db){
 		//Get new height and child's WebID
-		int childHeight = height+1,
+		int childHeight = this.getHeight()+1,
 			childWebID = 1;
 		for (int i=1; i<childHeight; i++)
 			childWebID <<= 1;
-		childWebID |= webID;
+		childWebID |= this.getWebId();
 		Node child = new Node(childWebID, childHeight);
-                
+				
 		//Set neighbours (Guy)
 		NeighborDatabaseChanges ndc = new NeighborDatabaseChanges();
 		//child neighbors
@@ -97,7 +99,7 @@ public class Node implements NodeInterface{
 		//adds a neighbor of parent as a surrogate neighbor of child if neighbor is childless
 		//and makes child an isn of neighbor
 		for (Node n: neighbors){
-			if (n.height < childHeight){
+			if (n.getHeight() < childHeight){
 				ndc.updateSurrogate(child, n);
 				ndc.updateInverse(n, child);
 			}
@@ -107,28 +109,11 @@ public class Node implements NodeInterface{
 		
 		//Set folds (Brian/Isaac)
 		FoldDatabaseChanges fdc = new FoldDatabaseChanges();
-		if (inverseSurrogateFold != null){
-			//Stable-state fold references
-			fdc.updateDirect(child, inverseSurrogateFold);
-			fdc.updateDirect(inverseSurrogateFold, child);
-			//Remove surrogate references
-			fdc.removeSurrogate(inverseSurrogateFold, null);
-			fdc.removeInverse(this, null);
-		}
-		else{
-			//Update reflexive folds
-			fdc.updateDirect(child, fold);
-			fdc.updateDirect(fold, child);
-			//Insert surrogates for non-existant node
-			fdc.updateSurrogate(this, fold);
-			fdc.updateInverse(fold, this);
-			//Remove stable state reference
-			fdc.removeDirect(this, null);
-		}
+		foldState.updateFolds(fdc, this, child);
 		
 		//Attempt to add the node to the database
 		//If it fails, we cannot proceed
-		{
+		if (db != null) {
 			db.beginCommit();
 			//Create the child node
 			db.addNode(child);
@@ -146,14 +131,13 @@ public class Node implements NodeInterface{
 		//Add the node to the Java structure
 		{
 			//Update parent
-			height = childHeight;
-			inverseSurrogateNeighbors.clear();
+			this.setHeight(childHeight);
+			this.removeAllInverseSurrogateNeighbors();
 			//Update neighbors and folds
 			ndc.commitToHyPeerWeb();
 			fdc.commitToHyPeerWeb();
 			return child;
 		}
-		
 	}
 	
 	/**
@@ -163,9 +147,9 @@ public class Node implements NodeInterface{
 	 * @author John
 	 */
 	public Node searchForNode(long index){
-		long closeness = index & webID, c;
+		long closeness = index & this.getWebId(), c;
 		for (int i=0; i < neighbors.size(); i++){
-			c = index & neighbors.get(i).webID;
+			c = index & neighbors.get(i).getWebId();
 			if (c > closeness)
 				return neighbors.get(i).searchForNode(index);
 		}
@@ -174,55 +158,46 @@ public class Node implements NodeInterface{
 	
 	/**
 	 * Finds the closest valid insertion point (the parent
-	 * of the child to add) from a starting node
+	 * of the child to add) from a starting node, automatically deals with
+         * the node's holes and insertable state
 	 * @return the parent of the child to add
 	 * @author josh
 	 */
-	public Node findInsertionNode() {
-
-		Node result = findInsertionNode(this, 2);
-
-		if (result == null) {
-			return this;
-		}
-
-		return result;
-	}
-	private Node findInsertionNode(Node original, int times) {
-		if (surrogateFold != null) {
-			return surrogateFold;
-		}
-
-		if (surrogateNeighbors != null && !surrogateNeighbors.isEmpty()) {
-			return surrogateNeighbors.get(0);
-		}
-
+	public Node findInsertionNode(ArrayList<Integer> visited) {
+	    visited.add(webID);
+	    if (!surrogateNeighbors.isEmpty()) {//find a spot distance 1 away
+			return surrogateNeighbors.get(0).findInsertionNode(visited);
+	    }
+	    else if (surrogateFold != null) {
+		    return surrogateFold.findInsertionNode(visited);
+	    }
+	    else{
 		for (Node n : neighbors) {
-			if (n != original && n.height < height) {
-				return n;
-			}
+		    if (n.getHeight() < height) {
+			    return n.findInsertionNode(visited);
+		    }
 		}
-
-		if (times == 0) {
-			return null;
-		}
-
-		for (Node n : neighbors) {
-
-			if (n == original) {
-				continue;
-			}
-
-			Node result = n.findInsertionNode(this, times - 1);
-
-			if (result != null) {
-				return result;
-			}
-		}
-
-		return null;
+	    }
+		
+	    //find a spot distance 2 away
+	    if(insertableState.isHoley()){
+		Node n = insertableState.getLowestHoleyNode();
+		    if(!visited.contains(n.getWebId()))
+			if(n.getHeight() < height || 
+			    (n.getHeight() == height && 
+			    n.getSurrogateFold() != this &&
+			    !n.getSNeighbors().contains(this))){
+			    return n.findInsertionNode(visited);
+		    }
+		else
+		    return this;
+	    }
+	    else{
+		return this;
+	    }
+	    return this;
 	}
-	
+	    
 	//EN-MASSE DATABASE CHANGE HANDLING
 	/**
 	 * Sub-Class to keep track of Fold updates
@@ -314,13 +289,15 @@ public class Node implements NodeInterface{
 				Node value = nu.delete ? null : nu.value;
 				switch (nu.type){
 					case DIRECT:
-						nu.node.fold = value;
+						nu.node.setFold(value);
 						break;
 					case SURROGATE:
-						nu.node.surrogateFold = value;
+						nu.node.setSurrogateFold(value);
 						break;
 					case INVERSE:
-						nu.node.inverseSurrogateFold = value;
+						nu.node.setInverseSurrogateFold(value);
+						//Update node FoldState
+						nu.node.getFoldState().setStable(nu.delete);
 						break;
 				}
 			}
@@ -370,12 +347,19 @@ public class Node implements NodeInterface{
 						else nu.node.inverseSurrogateNeighbors.add(nu.value);
 						break;
 				}
+				//Update insertable state
+				if (nu.delete){
+					//UPDATE
+				}
+				else{
+					//UPDATE
+				}
 			}
 		}
 	
 	}
 	
-	//ACCESS METHODS FOR 
+	//GETTERS
 	/**
 	 * Gets the WebID of the Node
 	 *
@@ -439,6 +423,11 @@ public class Node implements NodeInterface{
 	public Node[] getSurrogateNeighbors() {
 		return surrogateNeighbors.toArray(new Node[0]);
 	}
+	
+	public ArrayList<Node> getSNeighbors(){
+	    return surrogateNeighbors;
+	}
+		
 	/**
 	 * Gets an ArrayList containing the Inverse Surrogate Neighbors of the Node
 	 *
@@ -457,6 +446,20 @@ public class Node implements NodeInterface{
 				lowest = n;
 		}
 		return lowest == this ? null : lowest;
+	}
+	/**
+	 * Gets the node's insertable state
+	 * @return the insertable state
+	 */
+	public InsertableState getInsertableState(){
+		return insertableState;
+	}
+	/**
+	 * Gets the node's fold state
+	 * @return the fold state
+	 */
+	private FoldState getFoldState(){
+		return foldState;
 	}
 		
 	//Setters
@@ -517,7 +520,46 @@ public class Node implements NodeInterface{
 	private boolean isInverseSurrogateNeighbor(Node isn) {
 		return inverseSurrogateNeighbors.contains(isn);
 	}
-		
+	/**
+	 * Sets the Height of the Node
+	 *
+	 * @param h The new height
+	 */
+	public void setHeight(int h) {
+		height = h;
+	}
+	/**
+	 * Removes all the IS neighbors from the node
+	 */
+	public void removeAllInverseSurrogateNeighbors(){
+		this.inverseSurrogateNeighbors.clear();
+	}
+	/**
+	 * Sets the WebID of the Fold of the Node
+	 *
+	 * @param f The WebID of the Fold of the Node
+	 */
+	public void setFold(Node f) {
+		fold = f;
+	}
+	/**
+	 * Sets the WebID of the Surrogate Fold of the Node
+	 *
+	 * @param sf The WebID of the Surrogate Fold of the Node
+	 */
+	public void setSurrogateFold(Node sf) {
+		surrogateFold = sf;
+	}
+	/**
+	 * Sets the WebID of the Inverse Surrogate Fold of the Node
+	 *
+	 * @param sf The WebID of the Inverse Surrogate Fold of the Node
+	 */
+	public void setInverseSurrogateFold(Node sf) {
+		inverseSurrogateFold = sf;
+	}
+	
+	//CLASS OVERRIDES
 	@Override
 	public int compareTo(NodeInterface node) {
 		if (webID < node.getWebId())
@@ -540,19 +582,129 @@ public class Node implements NodeInterface{
 	public String toString(){
 		return webID+"("+height+")";
 	}
-	
+			
 	///STATE PATTERNS
-	private class InsertableState{
-		/**
-		* Signal handler that alerts a neighbor is full
-		* @param full_node which node is now full
-		* @param level how many times to recursively call the method
-		*/
-	   private void signalChange(Node full_node, int level){
+	public class InsertableState{
+			
+		private ArrayList<Node> holeyNodes;//list of nodes with holes
+		boolean isHoley;//is this node holey, i.e. has sneighbors or sfold or lesser neighbors
 
-	   }
-	}
-	private class FoldState{
+		private InsertableState(){
+		    holeyNodes = new ArrayList<>();
+		    isHoley = false;
+		}	
 		
+		/*
+		 * @return true if node is holey
+		 */
+                public boolean isHoley(){
+		    calculateIfThisNodeIsHoley();
+                    return isHoley;
+                }
+		
+		/*
+		 * gets a node from holeyNodes that is lower than the current node or has a sFold or sNeighbor
+		 */
+		public Node getLowestHoleyNode(){
+		    if(holeyNodes.isEmpty())
+			return Node.this;
+		    Node lowest = holeyNodes.get(0);
+		    for(Node n : holeyNodes){
+			if(n.getHeight() <= lowest.getHeight() &&
+				n.getHeight() < lowest.getHeight() || 
+				n.surrogateFold != null ||
+				!n.surrogateNeighbors.isEmpty())
+			    lowest = n;
+		    }
+                    return lowest;
+                }
+		
+		/*
+		 * Finds out if this node has holes, i.e. a sFold, a sNeighbor, or a neighbor of lower height
+		 */
+		private boolean calculateHoleyness(){
+		    isHoley = false;
+
+		    if(surrogateFold != null)
+			    isHoley = true;
+		    if(!surrogateNeighbors.isEmpty())
+			    isHoley = true;
+		    for(Node n : neighbors)
+			    if(n.height < height)
+				    isHoley = true;
+		    return isHoley;
+		}
+		
+		/*
+		 * Queries all neighbors and neighbors' neighbors if they have holes;
+		 */
+		public void calculateIfThisNodeIsHoley(){
+		    for(Node n : neighbors){//find out if neighbors are full
+			if(n.getInsertableState().calculateHoleyness()){
+			    holeyNodes.add(n);
+			}
+			for(Node n2:n.getNeighbors()){//find out if neighbors' neighbors are full
+			    if(n2 != Node.this)
+				if(n2.getInsertableState().calculateHoleyness()){
+				    holeyNodes.add(n2);
+				}  
+			}
+		    }
+		    if(!holeyNodes.isEmpty())
+			isHoley = true;
+		    else
+			isHoley = false;
+		}
+	}
+	
+	private class FoldState{
+		private boolean isStable;
+		
+		public FoldState(){
+			isStable = true;
+		}
+		
+		/**
+		 * Sets whether we're in the stable fold state
+		 * @param isStable are we in the stable state?
+		 */
+		public void setStable(boolean isStable){
+			this.isStable = isStable;
+		}
+		/**
+		 * Update the folds of a node
+		 * @param fdc Database changes object, to update folds with
+		 * @param caller the node who's folds we should update
+		 * @param child the new child of this node
+		 */
+		public void updateFolds(Node.FoldDatabaseChanges fdc, Node caller, Node child){
+			//Equivalent to: caller.getInverseSurrogateFold() == null
+			if (isStable)
+				goUnstable(fdc, caller, child);
+			else goStable(fdc, caller, child);
+		}
+
+		//Update folds if in unstable state
+		private void goStable(Node.FoldDatabaseChanges fdc, Node caller, Node child){
+			//Stable-state fold references
+			Node isfold = caller.getInverseSurrogateFold();
+			fdc.updateDirect(child, isfold);
+			fdc.updateDirect(isfold, child);
+			//Remove surrogate references
+			fdc.removeSurrogate(isfold, null);
+			fdc.removeInverse(caller, null);
+		}
+		//Update folds if in stable state
+		private void goUnstable(Node.FoldDatabaseChanges fdc, Node caller, Node child){
+			Node fold = caller.getFold();//fold ends up null sometimes, not sure why
+			//Update reflexive folds
+			fdc.updateDirect(child, fold);
+			fdc.updateDirect(fold, child);
+			//Insert surrogates for non-existant node
+			fdc.updateSurrogate(caller, fold);
+			fdc.updateInverse(fold, caller);
+			//Remove stable state reference
+			fdc.removeDirect(caller, null);
+		}
 	}
 }
