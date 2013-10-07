@@ -62,7 +62,7 @@ public class HyPeerWeb implements HyPeerWebInterface {
 	 * @author isaac
 	 */
 	public void deleteAllNodes(){
-		if (!disableDB) db.clear();
+		db.clear();
 		nodes = new TreeSet<>();
 	}
 	
