@@ -164,38 +164,7 @@ public class Node implements NodeInterface{
 	 * @author josh
 	 */
 	public Node findInsertionNode(ArrayList<Integer> visited) {
-	    visited.add(webID);
-	    if (!surrogateNeighbors.isEmpty()) {//find a spot distance 1 away
-			return surrogateNeighbors.get(0).findInsertionNode(visited);
-	    }
-	    else if (surrogateFold != null) {
-		    return surrogateFold.findInsertionNode(visited);
-	    }
-	    else{
-		for (Node n : neighbors) {
-		    if (n.getHeight() < height) {
-			    return n.findInsertionNode(visited);
-		    }
-		}
-	    }
-		
-	    //find a spot distance 2 away
-	    if(insertableState.isHoley()){
-		Node n = insertableState.getLowestHoleyNode();
-		    if(!visited.contains(n.getWebId()))
-			if(n.getHeight() < height || 
-			    (n.getHeight() == height && 
-			    n.getSurrogateFold() != this &&
-			    !n.getSNeighbors().contains(this))){
-			    return n.findInsertionNode(visited);
-		    }
-		else
-		    return this;
-	    }
-	    else{
-		return this;
-	    }
-	    return this;
+	   return insertableState.findInsertionNode(this);
 	}
 	    
 	//EN-MASSE DATABASE CHANGE HANDLING
@@ -589,80 +558,108 @@ public class Node implements NodeInterface{
 	public String toString(){
 		return webID+"("+height+")";
 	}
-			
-	///STATE PATTERNS
-	public class InsertableState{
-			
-		private ArrayList<Node> holeyNodes;//list of nodes with holes
-		boolean isHoley;//is this node holey, i.e. has sneighbors or sfold or lesser neighbors
-
-		private InsertableState(){
-		    holeyNodes = new ArrayList<>();
-		    isHoley = false;
-		}	
-		
-		/*
-		 * @return true if node is holey
-		 */
-                public boolean isHoley(){
-		    calculateIfThisNodeIsHoley();
-                    return isHoley;
+        
+        public abstract class InsertableState{
+            
+            public InsertableState(){
+                calculateState();
+            }
+                        
+            public final void calculateState(){
+                
+                insertableState = FullState.getSingleton();
+                                
+                if(surrogateFold != null) {
+			    insertableState = HoleyState.getSingleton();
+                            return;
                 }
-		
-		/*
-		 * gets a node from holeyNodes that is lower than the current node or has a sFold or sNeighbor
-		 */
-		public Node getLowestHoleyNode(){
-		    if(holeyNodes.isEmpty())
-			return Node.this;
-		    Node lowest = holeyNodes.get(0);
-		    for(Node n : holeyNodes){
-			if(n.getHeight() <= lowest.getHeight() &&
-				n.getHeight() < lowest.getHeight() || 
-				n.surrogateFold != null ||
-				!n.surrogateNeighbors.isEmpty())
-			    lowest = n;
-		    }
-                    return lowest;
-                }
-		
-		/*
-		 * Finds out if this node has holes, i.e. a sFold, a sNeighbor, or a neighbor of lower height
-		 */
-		private boolean calculateHoleyness(){
-		    isHoley = false;
-
-		    if(surrogateFold != null)
-			    isHoley = true;
-		    if(!surrogateNeighbors.isEmpty())
-			    isHoley = true;
+		    if(!surrogateNeighbors.isEmpty()) {
+			    insertableState = HoleyState.getSingleton();
+                            return;
+                    }
 		    for(Node n : neighbors)
-			    if(n.height < height)
-				    isHoley = true;
-		    return isHoley;
-		}
-		
-		/*
-		 * Queries all neighbors and neighbors' neighbors if they have holes;
-		 */
-		public void calculateIfThisNodeIsHoley(){
-		    for(Node n : neighbors){//find out if neighbors are full
-			if(n.getInsertableState().calculateHoleyness()){
-			    holeyNodes.add(n);
-			}
-			for(Node n2:n.getNeighbors()){//find out if neighbors' neighbors are full
-			    if(n2 != Node.this)
-				if(n2.getInsertableState().calculateHoleyness()){
-				    holeyNodes.add(n2);
-				}  
-			}
-		    }
-		    if(!holeyNodes.isEmpty())
-			isHoley = true;
-		    else
-			isHoley = false;
-		}
-	}
+			    if(n.height < height){
+				    insertableState = HoleyState.getSingleton();
+                                    return;
+                            }
+            }
+            
+            public abstract Node findInsertionNode(Node node);
+        }
+        
+        public static class HoleyState extends InsertableState{
+            
+            private static HoleyState state;
+                        
+            public static InsertableState getSingleton(){
+                if(state==null){
+                    state = new HoleyState();
+                }
+                return state;
+            }
+            
+            @Override
+            public Node findInsertionNode(Node node){
+                
+                if(node.surrogateFold != null){
+                    Node surrogateFold = node.surrogateFold;
+                    node.setSurrogateFold(null);
+                    calculateState();
+                    node.setSurrogateFold(surrogateFold);
+                    return surrogateFold;
+                }
+                if(node.surrogateNeighbors != null && !node.surrogateNeighbors.isEmpty()){
+                    Node surrogateNeighbor = node.surrogateNeighbors.get(0);
+                    node.surrogateNeighbors.remove(surrogateNeighbor);
+                    calculateState();
+                    node.surrogateNeighbors.add(surrogateNeighbor);
+                    return surrogateNeighbor;
+                }
+                for(Node n : node.neighbors)
+                    if(n.height < node.height){
+                        n.setHeight(n.getHeight() + 1);
+                        calculateState();
+                        n.setHeight(n.getHeight() - 1);
+                        return n;
+                    }
+                
+                return null;
+            }
+        }
+        
+        public static class FullState extends InsertableState{
+            
+            private static FullState state;
+			private static boolean exists = false;
+                        
+            public static InsertableState getSingleton(){
+                if(!exists){
+					exists = true;
+                    state = new FullState();
+                }
+                return state;
+            }
+            
+            @Override
+            public Node findInsertionNode(Node node){
+                
+                for(Node n : node.neighbors){
+                   Node result = n.getInsertableState().findInsertionNode(n);
+                   if(result != null)
+                       return result;
+                }
+                
+                for(Node n : node.neighbors){
+                    for(Node n2 : n.neighbors) {
+                        Node result = n2.getInsertableState().findInsertionNode(n2);
+                        if(result != null)
+                            return result;
+                    }
+                }
+                
+                return null;
+            }
+        }
 	
 	private static interface FoldStateInterface{
 		public void updateFolds(Node.FoldDatabaseChanges fdc, Node caller, Node child);
@@ -683,7 +680,6 @@ public class Node implements NodeInterface{
 			fdc.updateDirect(fold, child);
 			//Insert surrogates for non-existant node
 			fdc.updateSurrogate(caller, fold);
-			System.out.println("SHOULD ADD INVERSE");
 			fdc.updateInverse(fold, caller);
 			//Remove stable state reference
 			fdc.removeDirect(caller, null);
