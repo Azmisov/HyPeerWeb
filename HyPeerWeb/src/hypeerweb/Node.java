@@ -70,7 +70,7 @@ public class Node implements NodeInterface{
 	}
 	private void NodeInit(){
 		insertableState = new FullState();
-		foldState = new FoldState();
+		foldState = new FoldStateStable();
 	}
 
 	/**
