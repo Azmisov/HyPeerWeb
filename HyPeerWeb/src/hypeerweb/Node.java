@@ -69,8 +69,8 @@ public class Node implements NodeInterface{
 		NodeInit();
 	}
 	private void NodeInit(){
-		insertableState = new InsertableState();
-		foldState = new FoldStateStable();
+		insertableState = new FullState();
+		foldState = new FoldState();
 	}
 
 	/**
@@ -634,7 +634,7 @@ public class Node implements NodeInterface{
                         
             public static InsertableState getSingleton(){
                 if(!exists){
-					exists = true;
+                    exists = true;
                     state = new FullState();
                 }
                 return state;
