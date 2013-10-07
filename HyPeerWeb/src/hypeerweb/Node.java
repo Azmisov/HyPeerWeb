@@ -200,31 +200,6 @@ public class Node implements NodeInterface{
 	    return this;
 	}
 	    
-            /*
-            if (insertableState.isHoley()) {
-                if (surrogateFold != null){
-                    // Calculate if this node will be holey after the new insertion
-                    insertableState.calculateHoleynessAfterInsertion(surrogateFold);
-                    return surrogateFold;
-                }
-                if (surrogateNeighbors != null && !surrogateNeighbors.isEmpty()){
-                    insertableState.calculateHoleynessAfterInsertion(surrogateNeighbors.get(0));
-                    return surrogateNeighbors.get(0);
-                }
-                for (Node n : neighbors) {
-                    if (n.getHeight() < height){
-                        insertableState.calculateHoleynessAfterInsertion(n);
-                        return n;
-                    }
-                }
-            }
-           
-            if (insertableState.getHoleyNodes() != null && !insertableState.getHoleyNodes().isEmpty())
-                return insertableState.getHoleyNodes().get(0).findInsertionNode();
-            
-            return this;*/
-	
-	
 	//EN-MASSE DATABASE CHANGE HANDLING
 	/**
 	 * Sub-Class to keep track of Fold updates
@@ -771,11 +746,9 @@ public class Node implements NodeInterface{
 			Node fold = caller.getFold();//fold ends up null sometimes, not sure why
 			//Update reflexive folds
 			fdc.updateDirect(child, fold);
-			if(fold != null)
 			fdc.updateDirect(fold, child);
 			//Insert surrogates for non-existant node
 			fdc.updateSurrogate(caller, fold);
-			if(fold != null)
 			fdc.updateInverse(fold, caller);
 			//Remove stable state reference
 			fdc.removeDirect(caller, null);

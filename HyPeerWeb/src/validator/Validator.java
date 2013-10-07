@@ -392,7 +392,7 @@ public class Validator {
                 } else if(node.getHeight() + 1 == fold.getHeight()) {
                     if(hypeerWeb.getNode(getComplement(node,node.getHeight() + 1)).getWebId() != fold.getWebId()) {
                         validationFailed = printErrorMessage(validationFailed, node,
-                                "    Node " + node.getWebId() + "(0" + Long.toBinaryString(node.getWebId()) + ") with height " + node.getHeight() + " has the fold " + fold + " with a height that is one higher(" + Long.toBinaryString(fold.getWebId()) +
+                                "    Node " + node.getWebId() + "(00" + Long.toBinaryString(node.getWebId()) + ") with height " + node.getHeight() + " has the fold " + fold + " with a height that is one higher(" + Long.toBinaryString(fold.getWebId()) +
                                 "). The fold should be the complement of the node");
                     }
                 } else {
