@@ -37,9 +37,6 @@ public class HyPeerWeb implements HyPeerWebInterface {
 	private HyPeerWeb() throws Exception{
 		db = Database.getInstance();
 		nodes = db.getAllNodes();
-		for(Node n : nodes){
-		    n.getInsertableState().calculateHoleyNodes();
-		}
 	}
 	/**
 	 * Retrieve the HyPeerWeb singleton
@@ -88,6 +85,7 @@ public class HyPeerWeb implements HyPeerWebInterface {
 			throw addNodeErr;
 		//Node successfully added!
 		nodes.add(child);
+		System.out.println();
 		return child;
 	}
 	
@@ -147,6 +145,7 @@ public class HyPeerWeb implements HyPeerWebInterface {
 	 */
 	private Node getRandomInsertionNode(){
 		long index;
+		ArrayList<Integer> visited = new ArrayList();
 		if (traceMode == TraceMode.READ){
 			index = randTraceIter.next();
 			//We've reached the end of the log file; start recording
@@ -162,7 +161,7 @@ public class HyPeerWeb implements HyPeerWebInterface {
 				randTrace.add(index);
 		}
 		//Always start at Node with WebID = 0
-		return nodes.first().searchForNode(index).findInsertionNode();
+		return nodes.first().searchForNode(index).findInsertionNode(visited);
 	}
 	
 	//DEBUGGING

@@ -83,6 +83,7 @@ public class Validator {
                     System.out.print(n.getWebId() + " ");
                 }
                 System.out.println();
+		System.out.println();
             }
             System.out.println();
         }
