@@ -623,9 +623,11 @@ public class Node implements NodeInterface{
         public static class FullState extends InsertableState{
             
             private static FullState state;
+			private static boolean exists = false;
                         
             public static InsertableState getSingleton(){
-                if(state==null){
+                if(!exists){
+					exists = true;
                     state = new FullState();
                 }
                 return state;
