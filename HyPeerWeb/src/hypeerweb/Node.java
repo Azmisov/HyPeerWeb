@@ -69,7 +69,7 @@ public class Node implements NodeInterface{
 		NodeInit();
 	}
 	private void NodeInit(){
-		insertableState = new InsertableState();
+		insertableState = new FullState();
 		foldState = new FoldState();
 	}
 
@@ -164,38 +164,7 @@ public class Node implements NodeInterface{
 	 * @author josh
 	 */
 	public Node findInsertionNode(ArrayList<Integer> visited) {
-	    visited.add(webID);
-	    if (!surrogateNeighbors.isEmpty()) {//find a spot distance 1 away
-			return surrogateNeighbors.get(0).findInsertionNode(visited);
-	    }
-	    else if (surrogateFold != null) {
-		    return surrogateFold.findInsertionNode(visited);
-	    }
-	    else{
-		for (Node n : neighbors) {
-		    if (n.getHeight() < height) {
-			    return n.findInsertionNode(visited);
-		    }
-		}
-	    }
-		
-	    //find a spot distance 2 away
-	    if(insertableState.isHoley()){
-		Node n = insertableState.getLowestHoleyNode();
-		    if(!visited.contains(n.getWebId()))
-			if(n.getHeight() < height || 
-			    (n.getHeight() == height && 
-			    n.getSurrogateFold() != this &&
-			    !n.getSNeighbors().contains(this))){
-			    return n.findInsertionNode(visited);
-		    }
-		else
-		    return this;
-	    }
-	    else{
-		return this;
-	    }
-	    return this;
+	   return insertableState.findInsertionNode(this);
 	}
 	    
 	//EN-MASSE DATABASE CHANGE HANDLING

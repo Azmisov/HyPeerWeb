@@ -85,7 +85,7 @@ public class HyPeerWeb implements HyPeerWebInterface {
 			throw addNodeErr;
 		//Node successfully added!
 		nodes.add(child);
-		System.out.println();
+		//System.out.println();
 		return child;
 	}
 	
