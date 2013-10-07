@@ -19,7 +19,7 @@ public class Node implements NodeInterface{
 	private ArrayList<Node> inverseSurrogateNeighbors = new ArrayList();
 	//State machines
 	private InsertableState insertableState;
-	private FoldState foldState; 
+	private FoldStateInterface foldState; 
 	//Hash code prime
 	private static long prime = Long.parseLong("2654435761");
 
@@ -70,7 +70,7 @@ public class Node implements NodeInterface{
 	}
 	private void NodeInit(){
 		insertableState = new InsertableState();
-		foldState = new FoldState();
+		foldState = new FoldStateStable();
 	}
 
 	/**
@@ -296,8 +296,8 @@ public class Node implements NodeInterface{
 						break;
 					case INVERSE:
 						nu.node.setInverseSurrogateFold(value);
-						//Update node FoldState
-						nu.node.getFoldState().setStable(nu.delete);
+						//Update node FoldState; nu.delete corresponds directly to a Stable state
+						nu.node.setFoldState(nu.delete);
 						break;
 				}
 			}
@@ -458,7 +458,7 @@ public class Node implements NodeInterface{
 	 * Gets the node's fold state
 	 * @return the fold state
 	 */
-	private FoldState getFoldState(){
+	private FoldStateInterface getFoldState(){
 		return foldState;
 	}
 		
@@ -558,7 +558,14 @@ public class Node implements NodeInterface{
 	public void setInverseSurrogateFold(Node sf) {
 		inverseSurrogateFold = sf;
 	}
-	
+	/**
+	 * Switches the Fold State pattern state
+	 * @param stable whether or not to switch to the stable state
+	 */
+	public void setFoldState(boolean stable){
+		foldState = stable ? new FoldStateStable() : new FoldStateUnstable();
+	}
+			
 	//CLASS OVERRIDES
 	@Override
 	public int compareTo(NodeInterface node) {
@@ -657,35 +664,41 @@ public class Node implements NodeInterface{
 		}
 	}
 	
-	private class FoldState{
-		private boolean isStable;
-		
-		public FoldState(){
-			isStable = true;
+	private static interface FoldStateInterface{
+		public void updateFolds(Node.FoldDatabaseChanges fdc, Node caller, Node child);
+	}
+	private static class FoldStateStable implements FoldStateInterface{
+		/*
+		private static FoldStateInterface instance = new FoldStateStable();
+		public static FoldStateInterface getInstance(){
+			return instance;
 		}
-		
-		/**
-		 * Sets whether we're in the stable fold state
-		 * @param isStable are we in the stable state?
-		 */
-		public void setStable(boolean isStable){
-			this.isStable = isStable;
+		*/
+		@Override
+		//After running we should be in an unstable state
+		public void updateFolds(FoldDatabaseChanges fdc, Node caller, Node child) {
+			Node fold = caller.getFold();//fold ends up null sometimes, not sure why
+			//Update reflexive folds
+			fdc.updateDirect(child, fold);
+			fdc.updateDirect(fold, child);
+			//Insert surrogates for non-existant node
+			fdc.updateSurrogate(caller, fold);
+			System.out.println("SHOULD ADD INVERSE");
+			fdc.updateInverse(fold, caller);
+			//Remove stable state reference
+			fdc.removeDirect(caller, null);
 		}
-		/**
-		 * Update the folds of a node
-		 * @param fdc Database changes object, to update folds with
-		 * @param caller the node who's folds we should update
-		 * @param child the new child of this node
-		 */
-		public void updateFolds(Node.FoldDatabaseChanges fdc, Node caller, Node child){
-			//Equivalent to: caller.getInverseSurrogateFold() == null
-			if (isStable)
-				goUnstable(fdc, caller, child);
-			else goStable(fdc, caller, child);
+	}
+	private static class FoldStateUnstable implements FoldStateInterface{
+		/*
+		private static FoldStateInterface instance = new FoldStateStable();
+		public static FoldStateInterface getInstance(){
+			return instance;
 		}
-
-		//Update folds if in unstable state
-		private void goStable(Node.FoldDatabaseChanges fdc, Node caller, Node child){
+		*/
+		@Override
+		//After running, we should be in a stable state
+		public void updateFolds(FoldDatabaseChanges fdc, Node caller, Node child) {
 			//Stable-state fold references
 			Node isfold = caller.getInverseSurrogateFold();
 			fdc.updateDirect(child, isfold);
@@ -693,18 +706,6 @@ public class Node implements NodeInterface{
 			//Remove surrogate references
 			fdc.removeSurrogate(isfold, null);
 			fdc.removeInverse(caller, null);
-		}
-		//Update folds if in stable state
-		private void goUnstable(Node.FoldDatabaseChanges fdc, Node caller, Node child){
-			Node fold = caller.getFold();//fold ends up null sometimes, not sure why
-			//Update reflexive folds
-			fdc.updateDirect(child, fold);
-			fdc.updateDirect(fold, child);
-			//Insert surrogates for non-existant node
-			fdc.updateSurrogate(caller, fold);
-			fdc.updateInverse(fold, caller);
-			//Remove stable state reference
-			fdc.removeDirect(caller, null);
 		}
 	}
 }
