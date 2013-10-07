@@ -131,8 +131,6 @@ public class Node implements NodeInterface{
 		//Add the node to the Java structure
 		{
 			//Update parent
-			//child.getInsertableState().calculateHoleyNodes();
-			//this.getInsertableState().calculateHoleyNodes();
 			this.setHeight(childHeight);
 			this.removeAllInverseSurrogateNeighbors();
 			//Update neighbors and folds
@@ -592,42 +590,9 @@ public class Node implements NodeInterface{
 		boolean isHoley;//is this node holey, i.e. has sneighbors or sfold or lesser neighbors
 
 		private InsertableState(){
-			holeyNodes = new ArrayList<>();
-                        isHoley = false;
-                        calculateHoleyness(); // Not sure if this is really needed but just in case for new nodes
-		}
-		
-		/**
-		* Signal handler that alerts Ns and NsNs that the state of this node has changed
-		* @param node which node is now full
-		* @param isOriginalCall node originating this call sets this to true
-		*/
-		private void signalChange(Node node, boolean isHoleyNow, boolean isOriginalCall){
-			if(!isHoleyNow) {
-			    if(holeyNodes.contains(node)){//I think it's not a problem is this is false.
-				holeyNodes.remove(node);
-				if(holeyNodes.isEmpty() && Node.this.surrogateFold == null && Node.this.surrogateNeighbors.isEmpty()){
-				    isHoley = false;
-				    signalChange(Node.this, false, true);
-				}
-			    }
-			} else {
-                            if(!holeyNodes.contains(node)) // Just in case?
-                                holeyNodes.add(node);
-			    if(!isHoley && holeyNodes.size() == 1){
-			    isHoley = true;
-			    signalChange(Node.this, true, true);
-			    }
-			}
-
-			if(!isOriginalCall)
-				return;
-			for (Node n : neighbors) {
-			    if(n != node)
-				n.insertableState.signalChange(node, isHoleyNow, false);
-			}
-		}
-			
+		    holeyNodes = new ArrayList<>();
+		    isHoley = false;
+		}	
 		
 		/*
 		 * @return true if node is holey
@@ -655,7 +620,7 @@ public class Node implements NodeInterface{
                 }
 		
 		/*
-		 * Finds out if this node has holes, and calls signalChange if its holeyness has changed
+		 * Finds out if this node has holes, i.e. a sFold, a sNeighbor, or a neighbor of lower height
 		 */
 		private boolean calculateHoleyness(){
 		    isHoley = false;
@@ -671,7 +636,7 @@ public class Node implements NodeInterface{
 		}
 		
 		/*
-		 * Queries all neighbors and neighbors' neighbors if they are holey;
+		 * Queries all neighbors and neighbors' neighbors if they have holes;
 		 */
 		public void calculateIfThisNodeIsHoley(){
 		    for(Node n : neighbors){//find out if neighbors are full
@@ -689,7 +654,6 @@ public class Node implements NodeInterface{
 			isHoley = true;
 		    else
 			isHoley = false;
-		    signalChange(Node.this, isHoley, true);
 		}
 	}
 	
