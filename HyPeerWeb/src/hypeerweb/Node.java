@@ -590,7 +590,6 @@ public class Node implements NodeInterface{
 			
 		private ArrayList<Node> holeyNodes;//list of nodes with holes
 		boolean isHoley;//is this node holey, i.e. has sneighbors or sfold or lesser neighbors
-                boolean holeynessCalculated = false;//has isHoley already been calculated for this node
 
 		private InsertableState(){
 			holeyNodes = new ArrayList<>();
@@ -637,15 +636,10 @@ public class Node implements NodeInterface{
 		    calculateIfThisNodeIsHoley();
                     return isHoley;
                 }
-                
-                public ArrayList<Node> getHoleyNodes(){
-                    return holeyNodes;
-                }
-                /*
-                 * Finds out if this node will have holes after the insertion point has been determined
-                 * and gets a child, signals a change if necessary
-                 */
 		
+		/*
+		 * gets a node from holeyNodes that is lower than the current node or has a sFold or sNeighbor
+		 */
 		public Node getLowestHoleyNode(){
 		    if(holeyNodes.isEmpty())
 			return Node.this;
@@ -664,9 +658,6 @@ public class Node implements NodeInterface{
 		 * Finds out if this node has holes, and calls signalChange if its holeyness has changed
 		 */
 		private boolean calculateHoleyness(){
-                    
-                    boolean wasHoley = isHoley;
-                    
 		    isHoley = false;
 
 		    if(surrogateFold != null)
@@ -676,8 +667,6 @@ public class Node implements NodeInterface{
 		    for(Node n : neighbors)
 			    if(n.height < height)
 				    isHoley = true;
-
-		    //holeynessCalculated = true;
 		    return isHoley;
 		}
 		
