@@ -627,7 +627,7 @@ public class Node implements NodeInterface{
                         
             public static InsertableState getSingleton(){
                 if(!exists){
-					exists = true;
+                    exists = true;
                     state = new FullState();
                 }
                 return state;
