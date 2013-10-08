@@ -13,7 +13,7 @@ import validator.Validator;
  */
 public class HyPeerWebTest {
 	//Validation variables
-	private final int MAX_TESTS = 1000;//use <=100 if testing database
+	private final int MAX_TESTS = 10000;//use <=100 if testing database
 	private final int TEST_EVERY = 100;
 	private final boolean TEST_DATABASE = false;
 	private final boolean USE_TRACE_LOG = false;
@@ -24,11 +24,13 @@ public class HyPeerWebTest {
 		if (!TEST_DATABASE)
 			web.disableDatabase();
 		if (USE_TRACE_LOG){
+			/*
 			if (!web.loadTrace()){
 				System.out.println("Could not load insertion trace from log file!!!");
 				System.out.println("Try again or disable USE_TRACE_LOG");
 				fail();
 			}
+			//*/
 		}
 		else web.startTrace();
 	}
@@ -62,6 +64,7 @@ public class HyPeerWebTest {
 			System.out.println("Fatal Error from HyPeerWeb:");
 			System.out.println(e);
 			System.out.println(e.getMessage());
+			e.printStackTrace();
 			fail();
 		} finally{
 			if (!web.endTrace())

@@ -79,6 +79,7 @@ public class HyPeerWeb implements HyPeerWebInterface {
 		//2) One node
 		if (nodes.size() == 1)
 			return addSecondNode();
+		
 		//Otherwise, use the normal insertion algorithm
 		Node child = this.getRandomInsertionNode().addChild(disableDB ? null : db);
 		if (child == null)
@@ -145,7 +146,6 @@ public class HyPeerWeb implements HyPeerWebInterface {
 	 */
 	private Node getRandomInsertionNode(){
 		long index;
-		ArrayList<Integer> visited = new ArrayList();
 		if (traceMode == TraceMode.READ){
 			index = randTraceIter.next();
 			//We've reached the end of the log file; start recording
@@ -161,7 +161,7 @@ public class HyPeerWeb implements HyPeerWebInterface {
 				randTrace.add(index);
 		}
 		//Always start at Node with WebID = 0
-		return nodes.first().searchForNode(index).findInsertionNode(visited);
+		return nodes.first().searchForNode(index).findInsertionNode();
 	}
 	
 	//DEBUGGING
