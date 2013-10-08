@@ -1,6 +1,7 @@
 package hypeerweb;
 
 import java.util.ArrayList;
+import java.util.TreeSet;
 import validator.NodeInterface;
 
 /**
@@ -18,7 +19,7 @@ public class Node implements NodeInterface{
 	private ArrayList<Node> surrogateNeighbors = new ArrayList();
 	private ArrayList<Node> inverseSurrogateNeighbors = new ArrayList();
 	//State machines
-	private InsertableState insertableState;
+	private InsertState insertState;
 	private FoldStateInterface foldState; 
 	//Hash code prime
 	private static long prime = Long.parseLong("2654435761");
@@ -69,7 +70,7 @@ public class Node implements NodeInterface{
 		NodeInit();
 	}
 	private void NodeInit(){
-		insertableState = new FullState();
+		insertState = new InsertState();
 		foldState = new FoldStateStable();
 	}
 
@@ -163,8 +164,8 @@ public class Node implements NodeInterface{
 	 * @return the parent of the child to add
 	 * @author josh
 	 */
-	public Node findInsertionNode(ArrayList<Integer> visited) {
-	   return insertableState.findInsertionNode(this);
+	public Node findInsertionNode() {
+	   return insertState.findInsertionNode(this);
 	}
 	    
 	//EN-MASSE DATABASE CHANGE HANDLING
@@ -261,6 +262,8 @@ public class Node implements NodeInterface{
 						nu.node.setFold(value);
 						break;
 					case SURROGATE:
+						//Surrogate fold has changed; update InsertState
+						nu.node.updateInsertState(nu.delete ? nu.node.getSurrogateFold() : value, !nu.delete, 2);
 						nu.node.setSurrogateFold(value);
 						break;
 					case INVERSE:
@@ -306,9 +309,18 @@ public class Node implements NodeInterface{
 						else nu.node.neighbors.add(nu.value);
 						break;
 					case SURROGATE:
-						if (nu.delete)
+						if (nu.delete){
 							nu.node.surrogateNeighbors.remove(nu.value);
-						else nu.node.surrogateNeighbors.add(nu.value);
+							//We no longer have surrogate neighbors; update InsertState
+							if (!nu.node.surrogateNeighbors.isEmpty())
+								nu.node.updateInsertState(nu.value, false, 2);
+						}
+						else{
+							//We now have surrogate neighbors; updateInsertState
+							if (nu.node.surrogateNeighbors.isEmpty())
+								nu.node.updateInsertState(nu.value, true, 2);
+							nu.node.surrogateNeighbors.add(nu.value);
+						}
 						break;
 					case INVERSE:
 						if (nu.delete)
@@ -316,16 +328,8 @@ public class Node implements NodeInterface{
 						else nu.node.inverseSurrogateNeighbors.add(nu.value);
 						break;
 				}
-				//Update insertable state
-				if (nu.delete){
-					//UPDATE
-				}
-				else{
-					//UPDATE
-				}
 			}
 		}
-	
 	}
 	
 	//GETTERS
@@ -417,13 +421,6 @@ public class Node implements NodeInterface{
 		return lowest == this ? null : lowest;
 	}
 	/**
-	 * Gets the node's insertable state
-	 * @return the insertable state
-	 */
-	public InsertableState getInsertableState(){
-		return insertableState;
-	}
-	/**
 	 * Gets the node's fold state
 	 * @return the fold state
 	 */
@@ -496,6 +493,9 @@ public class Node implements NodeInterface{
 	 */
 	public void setHeight(int h) {
 		height = h;
+		//Height has changed, update InsertState
+		if (!insertState.isHoley())
+			this.updateInsertState(this, false, webID);
 	}
 	/**
 	 * Removes all the IS neighbors from the node
@@ -534,7 +534,20 @@ public class Node implements NodeInterface{
 	public void setFoldState(boolean stable){
 		foldState = stable ? new FoldStateStable() : new FoldStateUnstable();
 	}
-			
+	/**
+	 * Changes the Insertable state pattern's state
+	 * @param holey is this node holey
+	 */
+	public void updateInsertState(Node check, boolean isHole, int level){
+		//If we don't know if it is holey, we need to compare the node's height
+		insertState.updateState(check, isHole || check.getHeight() < height);
+		//Recursively update for neighbor's neighbors
+		if (--level != 0){
+			for (Node n: neighbors)
+				n.updateInsertState(check, isHole, level);
+		}
+	}
+	
 	//CLASS OVERRIDES
 	@Override
 	public int compareTo(NodeInterface node) {
@@ -558,109 +571,108 @@ public class Node implements NodeInterface{
 	public String toString(){
 		return webID+"("+height+")";
 	}
-        
-        public abstract class InsertableState{
-            
-            public InsertableState(){
-                calculateState();
-            }
-                        
-            public final void calculateState(){
-                
-                insertableState = FullState.getSingleton();
-                                
-                if(surrogateFold != null) {
-			    insertableState = HoleyState.getSingleton();
-                            return;
-                }
-		    if(!surrogateNeighbors.isEmpty()) {
-			    insertableState = HoleyState.getSingleton();
-                            return;
-                    }
-		    for(Node n : neighbors)
-			    if(n.height < height){
-				    insertableState = HoleyState.getSingleton();
-                                    return;
-                            }
-            }
-            
-            public abstract Node findInsertionNode(Node node);
-        }
-        
-        public static class HoleyState extends InsertableState{
-            
-            private static HoleyState state;
-                        
-            public static InsertableState getSingleton(){
-                if(state==null){
-                    state = new HoleyState();
-                }
-                return state;
-            }
-            
-            @Override
-            public Node findInsertionNode(Node node){
-                
-                if(node.surrogateFold != null){
-                    Node surrogateFold = node.surrogateFold;
-                    node.setSurrogateFold(null);
-                    calculateState();
-                    node.setSurrogateFold(surrogateFold);
-                    return surrogateFold;
-                }
-                if(node.surrogateNeighbors != null && !node.surrogateNeighbors.isEmpty()){
-                    Node surrogateNeighbor = node.surrogateNeighbors.get(0);
-                    node.surrogateNeighbors.remove(surrogateNeighbor);
-                    calculateState();
-                    node.surrogateNeighbors.add(surrogateNeighbor);
-                    return surrogateNeighbor;
-                }
-                for(Node n : node.neighbors)
-                    if(n.height < node.height){
-                        n.setHeight(n.getHeight() + 1);
-                        calculateState();
-                        n.setHeight(n.getHeight() - 1);
-                        return n;
-                    }
-                
-                return null;
-            }
-        }
-        
-        public static class FullState extends InsertableState{
-            
-            private static FullState state;
-			private static boolean exists = false;
-                        
-            public static InsertableState getSingleton(){
-                if(!exists){
-                    exists = true;
-                    state = new FullState();
-                }
-                return state;
-            }
-            
-            @Override
-            public Node findInsertionNode(Node node){
-                
-                for(Node n : node.neighbors){
-                   Node result = n.getInsertableState().findInsertionNode(n);
-                   if(result != null)
-                       return result;
-                }
-                
-                for(Node n : node.neighbors){
-                    for(Node n2 : n.neighbors) {
-                        Node result = n2.getInsertableState().findInsertionNode(n2);
-                        if(result != null)
-                            return result;
-                    }
-                }
-                
-                return null;
-            }
-        }
+
+	//INSERT STATE PATTERN
+	private static class InsertState{
+		private InsertStateInterface state;
+		/**
+		 * Updates the Insert State, depending on the
+		 * whether the updated node is a hole or not
+		 * @param node the updated node
+		 * @param isHole whether it is a hole or not
+		 */
+		public void updateState(Node node, boolean isHole){
+			//Change to holey state
+			if (isHole && !state.addHole(node))
+				state = new InsertStateHoley(node);
+			//Change to full state
+			else if (!isHole && !state.removeHole(node))
+				state = new InsertStateFull();
+		}
+		/**
+		 * Returns a valid parent node that can add a child
+		 * @param node the starting point node (given by HyPeerWeb class)
+		 */
+		public Node findInsertionNode(Node node){
+			return state.findInsertionNode(node);
+		}
+		/**
+		 * Check whether we're in the holey state
+		 * @return true, if we're holey
+		 */
+		public boolean isHoley(){
+		    if(state != null)
+			return state.getClass().isInstance(InsertStateHoley.class);
+		    else{
+			System.out.println("Tried to get instance type of state in isHoley(), but state is null");
+			return true;
+		    }
+		}
+		
+		/**
+		 * Generic state for this state machine
+		 */
+		private static interface InsertStateInterface{
+			public Node findInsertionNode(Node node);
+			/**
+			 * Adds a holey node to the optimized cache;
+			 * @param node
+			 * @return false, if this state does not have a cache
+			 */
+			public boolean addHole(Node node);
+			/**
+			 * Removes a holey node from the optimized cache
+			 * @param node
+			 * @return false, if there are no more nodes in the cache
+			 */
+			public boolean removeHole(Node node);
+		}
+		/**
+		 * The "full" state; no surrogate neighbors/folds or
+		 * nodes less than parent height
+		 */
+		private static class InsertStateFull implements InsertStateInterface{
+			@Override
+			public Node findInsertionNode(Node node) {
+				return node;
+			}
+			@Override
+			public boolean addHole(Node node){
+				return false;
+			}
+			@Override
+			public boolean removeHole(Node node){
+				return true;
+			}
+		}
+		/**
+		 * The "holey" state; there are surrogate neighbors/folds or
+		 * nodes less than parent height
+		 */
+		private class InsertStateHoley implements InsertStateInterface{
+			private TreeSet<Node> holes;
+			public InsertStateHoley(Node startHole){
+				holes = new TreeSet<>();
+				holes.add(startHole);
+			}
+			@Override
+			public Node findInsertionNode(Node node) {
+				return holes.first();
+			}
+			@Override
+			public boolean addHole(Node node){
+				holes.add(node);
+				return true;
+			}
+			@Override
+			public boolean removeHole(Node node) {
+				holes.remove(node);
+				return !holes.isEmpty();
+			}
+		}
+	}
 	
+	//FOLD STATE PATTERN
 	private static interface FoldStateInterface{
 		public void updateFolds(Node.FoldDatabaseChanges fdc, Node caller, Node child);
 	}
