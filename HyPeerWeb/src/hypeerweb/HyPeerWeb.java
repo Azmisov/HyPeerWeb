@@ -145,7 +145,6 @@ public class HyPeerWeb implements HyPeerWebInterface {
 	 */
 	private Node getRandomInsertionNode(){
 		long index;
-		ArrayList<Integer> visited = new ArrayList();
 		if (traceMode == TraceMode.READ){
 			index = randTraceIter.next();
 			//We've reached the end of the log file; start recording

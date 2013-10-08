@@ -583,6 +583,10 @@ public class Node implements NodeInterface{
 		 */
 		public void updateState(Node node, boolean isHole){
 			//Change to holey state
+		    if(state == null){
+			System.out.println("updateState called, but state is null");
+			return;
+		    }
 			if (isHole && !state.addHole(node))
 				state = new InsertStateHoley(node);
 			//Change to full state
@@ -594,7 +598,12 @@ public class Node implements NodeInterface{
 		 * @param node the starting point node (given by HyPeerWeb class)
 		 */
 		public Node findInsertionNode(Node node){
+		    if(state != null)
 			return state.findInsertionNode(node);
+		    else{
+			System.out.println("updateState called, but state is null");
+			return node;
+		    }
 		}
 		/**
 		 * Check whether we're in the holey state
