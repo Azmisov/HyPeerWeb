@@ -695,7 +695,11 @@ public class Node implements NodeInterface{
 		@Override
 		//After running we should be in an unstable state
 		public void updateFolds(FoldDatabaseChanges fdc, Node caller, Node child) {
-			Node fold = caller.getFold();//fold ends up null sometimes, not sure why
+			Node fold = caller.getFold();
+			if(fold == null){
+			    System.out.println("updateFolds caller.getFold() returned null");
+			    return;
+			}
 			//Update reflexive folds
 			fdc.updateDirect(child, fold);
 			fdc.updateDirect(fold, child);
@@ -718,6 +722,10 @@ public class Node implements NodeInterface{
 		public void updateFolds(FoldDatabaseChanges fdc, Node caller, Node child) {
 			//Stable-state fold references
 			Node isfold = caller.getInverseSurrogateFold();
+			if(isfold == null){
+			    System.out.println("updateFolds caller.getInverseSurrogateFold() returned null");
+			    return;
+			}
 			fdc.updateDirect(child, isfold);
 			fdc.updateDirect(isfold, child);
 			//Remove surrogate references
