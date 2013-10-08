@@ -161,7 +161,7 @@ public class HyPeerWeb implements HyPeerWebInterface {
 				randTrace.add(index);
 		}
 		//Always start at Node with WebID = 0
-		return nodes.first().searchForNode(index).findInsertionNode(visited);
+		return nodes.first().searchForNode(index).findInsertionNode();
 	}
 	
 	//DEBUGGING
