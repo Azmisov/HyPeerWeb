@@ -160,6 +160,21 @@ public class Node implements NodeInterface{
 		}
 	}
 	
+        public void disconnectNode(Node node){
+            //get parent
+            
+            //decrement parent height
+            
+            //all of the neighbors of node except parent will have parent as surrogateNeighbor and
+            //parent will have all neighbors except itself as isn
+            
+            //remove node from parent child list
+            
+            //all SNs of node will have node removed from their ISN list
+            
+            //fold stuff
+        }
+        
 	/**
 	 * Finds and returns the node whose WebID is closest to the given long
 	 * Assumed to always start with the node with WebID of zero
