@@ -171,9 +171,9 @@ public class Node implements NodeInterface{
             //parent will have all neighbors except itself as isn
             for(Node neighbor: neighbors){
                 if(!neighbor.equals(parent)){
-                    neighbor.addSurrogateNeighbor(parent);
-                    parent.addInverseSurrogateNeighbor(neighbor);
-                    neighbor.removeNeighbor(this);
+                    ndc.updateSurrogate(neighbor, parent);
+                    ndc.updateInverse(parent, neighbor);
+                    ndc.removeDirect(neighbor, this);
                 }
             }    
             
