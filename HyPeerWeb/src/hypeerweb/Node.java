@@ -161,19 +161,25 @@ public class Node implements NodeInterface{
 	}
 	
         public void disconnectNode(Node node){
-			Node parent = getParent();
-			parent.setHeight(parent.getHeight()-1);
+            Node parent = getParent();
+            parent.setHeight(parent.getHeight()-1);
             
             //all of the neighbors of node except parent will have parent as surrogateNeighbor and
             //parent will have all neighbors except itself as isn
+            for(Node neighbor: neighbors){
+                if(!neighbor.equals(parent)){
+                    neighbor.addSurrogateNeighbor(parent);
+                    parent.addInverseSurrogateNeighbor(neighbor);
+                }
+            }    
             
             //remove node from parent neighbor list
             
             //all SNs of node will have node removed from their ISN list
-			for (int i=0; i < surrogateNeighbors.size(); i++)
-			{
-				surrogateNeighbors.get(i).removeInverseSurrogateNeighbor(this);
-			}
+            for (int i=0; i < surrogateNeighbors.size(); i++)
+            {
+                surrogateNeighbors.get(i).removeInverseSurrogateNeighbor(this);
+            }
             
             //fold stuff
         }
