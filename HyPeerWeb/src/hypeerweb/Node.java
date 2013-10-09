@@ -183,7 +183,10 @@ public class Node implements NodeInterface{
                 surrogateNeighbors.get(i).removeInverseSurrogateNeighbor(this);
             }
             
-            //fold stuff
+            //determine fold state
+            //if stable
+            
+            //if unstable
         }
         
 	/**
