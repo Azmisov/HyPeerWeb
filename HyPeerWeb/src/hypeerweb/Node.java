@@ -170,6 +170,7 @@ public class Node implements NodeInterface{
                 if(!neighbor.equals(parent)){
                     neighbor.addSurrogateNeighbor(parent);
                     parent.addInverseSurrogateNeighbor(neighbor);
+                    neighbor.removeNeighbor(node);
                 }
             }    
             
