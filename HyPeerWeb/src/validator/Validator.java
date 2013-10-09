@@ -59,7 +59,7 @@ public class Validator {
             valid = valid && validateNode(node);
         }
         
-        //if(!valid) {
+        if(!valid) {
             System.out.println("\nNodes in HyPeerWeb of size " + nodes.length + ":");
             for(NodeInterface node : nodes) {
                 System.out.println("WebId: " + node.getWebId() + 
@@ -83,9 +83,10 @@ public class Validator {
                     System.out.print(n.getWebId() + " ");
                 }
                 System.out.println();
+		System.out.println();
             }
             System.out.println();
-        //}
+        }
 
         return valid;
     }
@@ -382,7 +383,7 @@ public class Validator {
                 } else if(node.getHeight() == fold.getHeight() + 1) {
                     if(node.getWebId() != hypeerWeb.getNode(getComplement(fold, fold.getHeight() + 1)).getWebId()) {
                         validationFailed = printErrorMessage(validationFailed, node,
-                            "    Node " + node.getWebId() + " with height " + node.getHeight() + " has the fold " + fold.getWebId() +
+                            "    Node " + node.getWebId() + "(" + Long.toBinaryString(node.getWebId()) + ") with height " + node.getHeight() + " has the fold " + fold.getWebId() +
                             " with a height that is one lower(" + Long.toBinaryString(fold.getWebId()) + "). The fold should be the complement of the node");
                     }
                     
@@ -391,7 +392,7 @@ public class Validator {
                 } else if(node.getHeight() + 1 == fold.getHeight()) {
                     if(hypeerWeb.getNode(getComplement(node,node.getHeight() + 1)).getWebId() != fold.getWebId()) {
                         validationFailed = printErrorMessage(validationFailed, node,
-                                "    Node " + node.getWebId() + " with height " + node.getHeight() + " has the fold " + fold + " with a height that is one higher(" + Long.toBinaryString(fold.getWebId()) +
+                                "    Node " + node.getWebId() + "(00" + Long.toBinaryString(node.getWebId()) + ") with height " + node.getHeight() + " has the fold " + fold + " with a height that is one higher(" + Long.toBinaryString(fold.getWebId()) +
                                 "). The fold should be the complement of the node");
                     }
                 } else {

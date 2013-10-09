@@ -1,6 +1,5 @@
 package hypeerweb;
 
-
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
@@ -202,20 +201,24 @@ public final class Database {
 		beginCommit();
 
 		//Nodes table
+		Node tempFold = node.getFold(),
+			 tempSFold = node.getSurrogateFold(),
+			 tempISFold = node.getInverseSurrogateFold();
 		sqlUpdate("INSERT INTO `Nodes` VALUES ("+
-					node.webID + "," +
-					node.height + "," +
-					(node.fold == null ? -1 : node.fold.webID) + "," +
-					(node.surrogateFold == null ? -1 : node.surrogateFold.webID) + "," +
-					(node.inverseSurrogateFold == null ? -1 : node.inverseSurrogateFold.webID) + ");");
+					node.getWebId() + "," +
+					node.getHeight() + "," +
+					(tempFold == null ? -1 : tempFold.getWebId()) + "," +
+					(tempSFold == null ? -1 : tempSFold.getWebId()) + "," +
+					(tempISFold == null ? -1 : tempISFold.getWebId()) + ");");
 
 		//Neighbors table
-		for (Node n : node.neighbors)
-			addNeighbor(node.webID, n.webID);
+		Node[] temp = node.getNeighbors();
+		for (Node n : temp)
+			addNeighbor(node.getWebId(), n.getWebId());
 
 		//Surrogates table (Inverse is reflexive)
-		for (Node n: node.surrogateNeighbors)
-			addSurrogateNeighbor(node.webID, n.webID);
+		for (Node n: node.getSurrogateNeighbors())
+			addSurrogateNeighbor(node.getWebId(), n.getWebId());
 
 		return endCommit();
 	}
@@ -274,7 +277,7 @@ public final class Database {
 				nodes.put(id, raw);
 			}
 			//Update a temporary node
-			else raw.height = rs.getInt("Height");
+			else raw.setHeight(rs.getInt("Height"));
 			//Initialize folds
 			if ((id = rs.getInt("Fold")) != -1){
 				n = nodes.get(id);
@@ -282,7 +285,7 @@ public final class Database {
 					n = new Node(id, -1);
 					nodes.put(id, n);
 				}
-				raw.fold = n;
+				raw.setFold(n);
 			}
 			if ((id = rs.getInt("SurrogateFold")) != -1){
 				n = nodes.get(id);
@@ -290,7 +293,7 @@ public final class Database {
 					n = new Node(id, -1);
 					nodes.put(id, n);
 				}
-				raw.surrogateFold = n;
+				raw.setSurrogateFold(n);
 			}
 			if ((id = rs.getInt("InverseSurrogateFold")) != -1){
 				n = nodes.get(id);
@@ -298,7 +301,7 @@ public final class Database {
 					n = new Node(id, -1);
 					nodes.put(id, n);
 				}
-				raw.inverseSurrogateFold = n;
+				raw.setInverseSurrogateFold(n);
 			}
 		}
 		if (nodes.isEmpty())
