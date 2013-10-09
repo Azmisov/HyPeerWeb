@@ -165,7 +165,7 @@ public class Node implements NodeInterface{
             FoldDatabaseChanges fdc = new FoldDatabaseChanges();
             
             Node parent = getParent();
-            parent.setHeight(parent.getHeight()-1);
+            parent.setHeight(parent.getHeight()-1);//ndc.???
             
             //all of the neighbors of node except parent will have parent as surrogateNeighbor and
             //parent will have all neighbors except itself as isn
