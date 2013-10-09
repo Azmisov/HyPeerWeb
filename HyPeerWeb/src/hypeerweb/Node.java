@@ -161,7 +161,7 @@ public class Node implements NodeInterface{
 	}
 	
         public void disconnectNode(Node node){
-            //get parent
+			Node parent = getParent();
             
             //decrement parent height
             
