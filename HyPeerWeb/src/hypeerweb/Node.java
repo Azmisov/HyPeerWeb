@@ -161,6 +161,9 @@ public class Node implements NodeInterface{
 	}
 	
         public void disconnectNode(){
+            NeighborDatabaseChanges ndc = new NeighborDatabaseChanges();
+            FoldDatabaseChanges fdc = new FoldDatabaseChanges();
+            
             Node parent = getParent();
             parent.setHeight(parent.getHeight()-1);
             
