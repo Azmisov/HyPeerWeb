@@ -184,6 +184,8 @@ public class Node implements NodeInterface{
             for (int i=0; i < surrogateNeighbors.size(); i++)
             {
                 surrogateNeighbors.get(i).removeInverseSurrogateNeighbor(this);
+				ndc.removeSurrogate(this, surrogateNeighbors.get(i));
+				ndc.removeInverse(surrogateNeighbors.get(i), this);
             }
             
             //determine fold state
