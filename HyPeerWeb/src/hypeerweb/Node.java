@@ -165,18 +165,15 @@ public class Node implements NodeInterface{
 			parent.setHeight(parent.getHeight()-1);
             
             //all of the neighbors of node except parent will have parent as surrogateNeighbor and
-            //parent will have all neighbors except itself as isn (Brian)
-            for(Node neighbor: neighbors){
-                if(!neighbor.equals(parent)){
-                    neighbor.addSurrogateNeighbor(parent);
-                    parent.addInverseSurrogateNeighbor(neighbor);
-                }
-            }
-                
+            //parent will have all neighbors except itself as isn
             
             //remove node from parent neighbor list
             
             //all SNs of node will have node removed from their ISN list
+			for (int i=0; i < surrogateNeighbors.size(); i++)
+			{
+				surrogateNeighbors.get(i).removeInverseSurrogateNeighbor(this);
+			}
             
             //fold stuff
         }
@@ -687,6 +684,22 @@ public class Node implements NodeInterface{
 	 */
 	private boolean isInverseSurrogateNeighbor(Node isn) {
 		return inverseSurrogateNeighbors.contains(isn);
+	}
+	/**
+	 * Removes the given node as an inverse surrogate neighbor
+	 * 
+	 * @param isn Node to remove from inverse surrogate neighbor list
+	 */
+		public void removeInverseSurrogateNeighbor(Node isn)
+	{
+		for (int i=0; i < inverseSurrogateNeighbors.size(); i++)
+		{
+			if (isn == inverseSurrogateNeighbors.get(i))
+			{
+				inverseSurrogateNeighbors.remove(i);
+				return;
+			}
+		}
 	}
 	/**
 	 * Sets the Height of the Node
