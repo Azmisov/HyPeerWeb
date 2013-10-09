@@ -168,7 +168,7 @@ public class Node implements NodeInterface{
             //all of the neighbors of node except parent will have parent as surrogateNeighbor and
             //parent will have all neighbors except itself as isn
             
-            //remove node from parent child list
+            //remove node from parent neighbor list
             
             //all SNs of node will have node removed from their ISN list
             
