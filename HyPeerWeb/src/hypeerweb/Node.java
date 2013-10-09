@@ -161,12 +161,19 @@ public class Node implements NodeInterface{
 	}
 	
         public void disconnectNode(Node node){
-			Node parent = getParent();
+            Node parent = getParent();
             
             //decrement parent height
             
             //all of the neighbors of node except parent will have parent as surrogateNeighbor and
-            //parent will have all neighbors except itself as isn
+            //parent will have all neighbors except itself as isn (Brian)
+            for(Node neighbor: neighbors){
+                if(!neighbor.equals(parent)){
+                    neighbor.addSurrogateNeighbor(parent);
+                    parent.addInverseSurrogateNeighbor(neighbor);
+                }
+            }
+                
             
             //remove node from parent neighbor list
             
