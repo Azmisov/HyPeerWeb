@@ -160,7 +160,7 @@ public class Node implements NodeInterface{
 		}
 	}
 	
-        public void disconnectNode(Node node){
+        public void disconnectNode(){
             Node parent = getParent();
             parent.setHeight(parent.getHeight()-1);
             
@@ -170,12 +170,12 @@ public class Node implements NodeInterface{
                 if(!neighbor.equals(parent)){
                     neighbor.addSurrogateNeighbor(parent);
                     parent.addInverseSurrogateNeighbor(neighbor);
-                    neighbor.removeNeighbor(node);
+                    neighbor.removeNeighbor(this);
                 }
             }    
             
             //remove node from parent neighbor list
-            parent.removeNeighbor(node);
+            parent.removeNeighbor(this);
             
             //all SNs of node will have node removed from their ISN list
             for (int i=0; i < surrogateNeighbors.size(); i++)
