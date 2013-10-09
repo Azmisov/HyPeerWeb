@@ -174,7 +174,7 @@ public class Node implements NodeInterface{
             }    
             
             //remove node from parent neighbor list
-            parent.re
+            parent.removeNeighbor(node);
             
             //all SNs of node will have node removed from their ISN list
             for (int i=0; i < surrogateNeighbors.size(); i++)
