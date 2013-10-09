@@ -174,6 +174,7 @@ public class Node implements NodeInterface{
             }    
             
             //remove node from parent neighbor list
+            parent.re
             
             //all SNs of node will have node removed from their ISN list
             for (int i=0; i < surrogateNeighbors.size(); i++)
@@ -644,6 +645,10 @@ public class Node implements NodeInterface{
 			neighbors.add(n);
 		}
 	}
+        public void removeNeighbor(Node n){
+            if(isNeighbor(n))
+                neighbors.remove(n);
+        }
 	/**
 	 * Checks to see if a WebID is in the list of Neighbors
 	 *
