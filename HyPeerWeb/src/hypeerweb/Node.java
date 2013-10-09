@@ -160,7 +160,7 @@ public class Node implements NodeInterface{
 		}
 	}
 	
-        public void disconnectNode(){
+        public Node disconnectNode(Database db){
             NeighborDatabaseChanges ndc = new NeighborDatabaseChanges();
             FoldDatabaseChanges fdc = new FoldDatabaseChanges();
             
@@ -178,7 +178,7 @@ public class Node implements NodeInterface{
             }    
             
             //remove node from parent neighbor list
-            parent.removeNeighbor(this);
+            ndc.removeDirect(parent, this);
             
             //all SNs of node will have node removed from their ISN list
             for (int i=0; i < surrogateNeighbors.size(); i++)
@@ -190,6 +190,24 @@ public class Node implements NodeInterface{
             //if stable
             
             //if unstable
+            
+            //Attempt to add the node to the database
+		//If it fails, we cannot proceed
+		if (db != null) {
+			ndc.commitToDatabase(db);
+			fdc.commitToDatabase(db);
+			//Commit changes to database
+			if (!db.endCommit())
+				return null;
+		}
+		
+		//Add the node to the Java structure
+		{
+			//Update neighbors and folds
+			ndc.commitToHyPeerWeb();
+			fdc.commitToHyPeerWeb();
+			return this;
+		}
         }
         
 	/**
