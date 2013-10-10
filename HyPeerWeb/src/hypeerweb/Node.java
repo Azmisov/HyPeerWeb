@@ -165,27 +165,24 @@ public class Node implements NodeInterface{
             FoldDatabaseChanges fdc = new FoldDatabaseChanges();
             
             Node parent = getParent();
-            parent.setHeight(parent.getHeight()-1);//ndc.???
             
-            //all of the neighbors of node except parent will have parent as surrogateNeighbor and
-            //parent will have all neighbors except itself as isn
+            //all of the neighbors of this except parent will have parent as surrogateNeighbor instead of neighbor, and
+            //parent will have all neighbors of this except itself as inverse surrogate neighbor
             for(Node neighbor: neighbors){
-                if(!neighbor.equals(parent)){
+                if(neighbor != parent){
                     ndc.updateSurrogate(neighbor, parent);
                     ndc.updateInverse(parent, neighbor);
                     ndc.removeDirect(neighbor, this);
                 }
             }    
             
-            //remove node from parent neighbor list
+            //remove this from parent neighbor list
             ndc.removeDirect(parent, this);
             
-            //all SNs of node will have node removed from their ISN list
-            for (int i=0; i < surrogateNeighbors.size(); i++)
+            //all SNs of this will have this removed from their ISN list
+            for (Node sn : surrogateNeighbors)
             {
-                surrogateNeighbors.get(i).removeInverseSurrogateNeighbor(this);
-		ndc.removeSurrogate(this, surrogateNeighbors.get(i));
-		ndc.removeInverse(surrogateNeighbors.get(i), this);
+                ndc.removeInverse(sn, this);
             }
             
             //determine fold state
@@ -193,23 +190,27 @@ public class Node implements NodeInterface{
             
             //if unstable
             
-            //Attempt to add the node to the database
-		//If it fails, we cannot proceed
-		if (db != null) {
-			ndc.commitToDatabase(db);
-			fdc.commitToDatabase(db);
-			//Commit changes to database
-			if (!db.endCommit())
-				return null;
-		}
-		
-		//Add the node to the Java structure
-		{
-			//Update neighbors and folds
-			ndc.commitToHyPeerWeb();
-			fdc.commitToHyPeerWeb();
-			return this;
-		}
+            //Attempt to update the database
+            //If it fails, we cannot proceed
+            if (db != null) {
+                db.beginCommit();
+                //reduce parent height by 1
+                db.setHeight(parent.getWebId(), parent.getHeight() - 1);
+                ndc.commitToDatabase(db);
+                fdc.commitToDatabase(db);
+                //Commit changes to database
+                if (!db.endCommit())
+                    return null;
+            }
+
+            //Update the Java structure
+            {
+                //reduce parent height by 1
+                parent.setHeight(parent.getHeight() - 1);
+                ndc.commitToHyPeerWeb();
+                fdc.commitToHyPeerWeb();
+                return this;
+            }
         }
         
 	/**
