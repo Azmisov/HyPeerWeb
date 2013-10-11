@@ -3,6 +3,7 @@ package hypeerweb;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map.Entry;
 import java.util.TreeMap;
 import java.util.TreeSet;
@@ -304,7 +305,38 @@ public class Node implements NodeInterface{
 	 * @author Josh
 	 */
 	protected Node findDisconnectNode(){
-		return null;
+            
+            Node result = findDisconnectNode(new ArrayList<Node>(), 2);
+            if (result != null)
+                return result;
+            return this;
+        }
+        
+        private Node findDisconnectNode(List<Node> visited, int level) {
+            
+            visited.add(this);
+            
+            if (inverseSurrogateNeighbors != null && !inverseSurrogateNeighbors.isEmpty())
+                return inverseSurrogateNeighbors.get(0);
+            if (fold.getHeight() > height)
+                return fold;
+            for (Node n : neighbors) {
+                if (n.getHeight() > height)
+                    return n;
+            }
+            
+            if (level == 0)
+                return null;
+            
+            for (Node n : neighbors) {
+                if (!visited.contains(n)){
+                    Node result = n.findDisconnectNode(visited, level - 1);
+                    if (result != null)
+                        return result;
+                }
+            }
+            
+            return null;
 	}
 		
 	//EN-MASSE DATABASE CHANGE HANDLING
