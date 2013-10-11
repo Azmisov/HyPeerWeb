@@ -1,8 +1,6 @@
 package hypeerweb;
 
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map.Entry;
@@ -28,7 +26,6 @@ public class Node implements NodeInterface{
 	private ArrayList<Node> inverseSurrogateNeighbors = new ArrayList();
 	//State machines
 	private static final int recurseLevel = 2;
-	private InsertState insertState;
 	private FoldStateInterface foldState; 
 	//Hash code prime
 	private static long prime = Long.parseLong("2654435761");
@@ -79,7 +76,6 @@ public class Node implements NodeInterface{
 		NodeInit();
 	}
 	private void NodeInit(){
-		insertState = new InsertState();
 		foldState = new FoldStateStable();
 	}
 
@@ -87,6 +83,7 @@ public class Node implements NodeInterface{
 	 * Adds a child node to the current one
 	 * @param db the Database associated with the HyPeerWeb
 	 * @return the new child node; null if the node couldn't be added
+	 * @author Guy, Isaac, Brian
 	 */
 	public Node addChild(Database db){
 		//Get new height and child's WebID
@@ -100,11 +97,6 @@ public class Node implements NodeInterface{
 		//Set neighbours (Guy)
 		NeighborDatabaseChanges ndc = new NeighborDatabaseChanges();
 		//child neighbors
-		/* WARNING:
-			updateDirect must come before surr/inv_surr neighbor definitions
-			that way, all child's neighbors will recieve state change
-			broadcast signals (if surrogateNeighbors/folds/etc. change)
-		*/
 		ndc.updateDirect(this, child);
 		ndc.updateDirect(child, this);
 		for (Node n: inverseSurrogateNeighbors){
@@ -147,10 +139,6 @@ public class Node implements NodeInterface{
 		//Add the node to the Java structure
 		{
 			//Update parent
-			/* WARNING:
-				must come before ndc/fdc commits
-				for broadcastInsertStateChange to work (I think)
-			*/
 			this.setHeight(childHeight);
 			this.removeAllInverseSurrogateNeighbors();
 			//Update neighbors and folds
@@ -160,59 +148,66 @@ public class Node implements NodeInterface{
 		}
 	}
 	
-        public Node disconnectNode(Database db){
-            NeighborDatabaseChanges ndc = new NeighborDatabaseChanges();
-            FoldDatabaseChanges fdc = new FoldDatabaseChanges();
-            
-            Node parent = getParent();
-            
-            //all of the neighbors of this except parent will have parent as surrogateNeighbor instead of neighbor, and
-            //parent will have all neighbors of this except itself as inverse surrogate neighbor
-            for(Node neighbor: neighbors){
-                if(neighbor != parent){
-                    ndc.updateSurrogate(neighbor, parent);
-                    ndc.updateInverse(parent, neighbor);
-                    ndc.removeDirect(neighbor, this);
-                }
-            }    
-            
-            //remove this from parent neighbor list
-            ndc.removeDirect(parent, this);
-            
-            //all SNs of this will have this removed from their ISN list
-            for (Node sn : surrogateNeighbors)
-            {
-                ndc.removeInverse(sn, this);
-            }
-            
-            //determine fold state
-            //if stable
-            
-            //if unstable
-            
-            //Attempt to update the database
-            //If it fails, we cannot proceed
-            if (db != null) {
-                db.beginCommit();
-                //reduce parent height by 1
-                db.setHeight(parent.getWebId(), parent.getHeight() - 1);
-                ndc.commitToDatabase(db);
-                fdc.commitToDatabase(db);
-                //Commit changes to database
-                if (!db.endCommit())
-                    return null;
-            }
+	/**
+	 * Disconnects an edge node to replace a node that
+	 * will be deleted
+	 * @param db the database connection
+	 * @return the disconnected node
+	 * @author John, Brian, Guy
+	 */
+	private Node disconnectNode(Database db){
+		NeighborDatabaseChanges ndc = new NeighborDatabaseChanges();
+		FoldDatabaseChanges fdc = new FoldDatabaseChanges();
 
-            //Update the Java structure
-            {
-                //reduce parent height by 1
-                parent.setHeight(parent.getHeight() - 1);
-                ndc.commitToHyPeerWeb();
-                fdc.commitToHyPeerWeb();
-                return this;
-            }
-        }
-        
+		Node parent = getParent();
+
+		//all of the neighbors of this except parent will have parent as surrogateNeighbor instead of neighbor, and
+		//parent will have all neighbors of this except itself as inverse surrogate neighbor
+		for(Node neighbor: neighbors){
+			if(neighbor != parent){
+				ndc.updateSurrogate(neighbor, parent);
+				ndc.updateInverse(parent, neighbor);
+				ndc.removeDirect(neighbor, this);
+			}
+		}	
+
+		//remove this from parent neighbor list
+		ndc.removeDirect(parent, this);
+
+		//all SNs of this will have this removed from their ISN list
+		for (Node sn : surrogateNeighbors)
+		{
+			ndc.removeInverse(sn, this);
+		}
+
+		//determine fold state
+		//if stable
+
+		//if unstable
+
+		//Attempt to update the database
+		//If it fails, we cannot proceed
+		if (db != null) {
+			db.beginCommit();
+			//reduce parent height by 1
+			db.setHeight(parent.getWebId(), parent.getHeight() - 1);
+			ndc.commitToDatabase(db);
+			fdc.commitToDatabase(db);
+			//Commit changes to database
+			if (!db.endCommit())
+				return null;
+		}
+
+		//Update the Java structure
+		{
+			//reduce parent height by 1
+			parent.setHeight(parent.getHeight() - 1);
+			ndc.commitToHyPeerWeb();
+			fdc.commitToHyPeerWeb();
+			return this;
+		}
+	}
+		
 	/**
 	 * Finds and returns the node whose WebID is closest to the given long
 	 * Assumed to always start with the node with WebID of zero
@@ -233,36 +228,53 @@ public class Node implements NodeInterface{
 	/**
 	 * Finds the closest valid insertion point (the parent
 	 * of the child to add) from a starting node, automatically deals with
-     * the node's holes and insertable state
+	 * the node's holes and insertable state
 	 * @return the parent of the child to add
 	 * @author josh
 	 */
 	public Node findInsertionNode() {
-		Node temp = findInsertionNode(recurseLevel);
-		//System.out.println("Adding at point = "+temp);
-		return temp;
+		return findInsertionNode(recurseLevel);
 	}
 	private Node findInsertionNode(int level){
-		//*
-		TreeSet<Node> set = this.getRecursiveNeighbors(level+1);
-		Iterator<Node> iter = set.iterator();
-		Node temp, temp2;
-		while (iter.hasNext()){
-			temp = iter.next();
-			if (temp.getHeight() < height)
-				return temp;
-			temp2 = temp.getSurrogateFold();
-			if (temp2 != null)
-				return temp2;
-			temp2 = temp.getFirstSurrogateNeighbor();
-			if (temp2 != null)
-				return temp2;
-		}
+		//Which nodes have we checked already
+		HashSet<Node> visited = new HashSet<>();
+		//Parents of this level
+		ArrayList<Node> parents = new ArrayList<>();
+		//Neighbors of the parents that have not been visited
+		ArrayList<Node> friendSet;
+		//Start by checking this node
+		parents.add(this);
+		visited.add(this);
+		Node temp;
+		do{
+			//Check all parents for valid nodes
+			for (Node parent: parents){
+				if (parent.getHeight() < height)
+					return parent;
+				temp = parent.getSurrogateFold();
+				if (temp != null)
+					return temp;
+				temp = parent.getFirstSurrogateNeighbor();
+				if (temp != null)
+					return temp;
+			}
+			//If no parents are valid, return
+			friendSet = new ArrayList<>();
+			for (Node parent: parents){
+				ArrayList<Node> friendLst = parent.getNeighborsList();
+				for (Node friend: friendLst){
+					if (!visited.contains(friend))
+						friendSet.add(friend);
+				}
+			}
+			parents = friendSet;
+			visited.addAll(parents);
+		} while (level-- != 0);
+		
+		//Everything is flat and filled; return self
 		return this;
-		//*/
-		//return insertState.findInsertionNode(this, level);
 	}
-	    
+		
 	//EN-MASSE DATABASE CHANGE HANDLING
 	/**
 	 * Sub-Class to keep track of Fold updates
@@ -357,8 +369,6 @@ public class Node implements NodeInterface{
 						nu.node.setFold(value);
 						break;
 					case SURROGATE:
-						//Surrogate fold has changed; update InsertState
-						nu.node.broadcastInsertStateChange(!nu.delete, InsertState.InsertStateHoley.MASK_FOLD);
 						nu.node.setSurrogateFold(value);
 						break;
 					case INVERSE:
@@ -404,18 +414,9 @@ public class Node implements NodeInterface{
 						else nu.node.neighbors.add(nu.value);
 						break;
 					case SURROGATE:
-						if (nu.delete){
+						if (nu.delete)
 							nu.node.surrogateNeighbors.remove(nu.value);
-							//We no longer have surrogate neighbors; update InsertState
-							if (!nu.node.surrogateNeighbors.isEmpty())
-								nu.node.broadcastInsertStateChange(false, InsertState.InsertStateHoley.MASK_NEIGHBOR);
-						}
-						else{
-							//We now have surrogate neighbors; updateInsertState
-							if (nu.node.surrogateNeighbors.isEmpty())
-								nu.node.broadcastInsertStateChange(true, InsertState.InsertStateHoley.MASK_NEIGHBOR);
-							nu.node.surrogateNeighbors.add(nu.value);
-						}
+						else nu.node.surrogateNeighbors.add(nu.value);
 						break;
 					case INVERSE:
 						if (nu.delete)
@@ -562,22 +563,6 @@ public class Node implements NodeInterface{
 		} while (--levels != 0);
 		return full;
 	}
-	/**
-	 * Gets the type-mask/hole-mask for what type of holes this
-	 * node has (will return 0, if not a holey node)
-	 * @param checkHeight the node's height to check against, otherwise -1
-	 * @return the hole type mask
-	 */
-	public int getHoleMask(int checkHeight){
-		int mask = 0;
-		if (checkHeight != -1 && height < checkHeight)
-			mask |= InsertState.InsertStateHoley.MASK_HEIGHT;
-		if (surrogateFold != null)
-			mask |= InsertState.InsertStateHoley.MASK_FOLD;
-		if (!surrogateNeighbors.isEmpty())
-			mask |= InsertState.InsertStateHoley.MASK_NEIGHBOR;
-		return mask;
-	}
 	
 	//Setters
 	/**
@@ -587,96 +572,13 @@ public class Node implements NodeInterface{
 	 * @param n The WebID of the Neighbor
 	 */
 	public void addNeighbor(Node n) {
-		if (!isNeighbor(n)){
-			//Update holey nodes list to reflect added neighbor
-			ArrayList<ArrayList<Node>> addTree = n.getRecursiveNeighborsList(recurseLevel-1);
-			ArrayList<ArrayList<Node>> connectTree = this.getRecursiveNeighborsList(recurseLevel-1);
-			ArrayList<ArrayList<Integer>> addTreeMask = new ArrayList<>();
-			ArrayList<ArrayList<Integer>> connectTreeMask = new ArrayList<>();
-			ArrayList<ArrayList<Integer>> addTreeHeight = new ArrayList<>();
-			ArrayList<ArrayList<Integer>> connectTreeHeight = new ArrayList<>();
-			//Build mask tables
-			ArrayList<Integer> temp, temp2;
-			for (ArrayList<Node> addTreeEntry: addTree){
-				temp = new ArrayList<>();
-				temp2 = new ArrayList<>();
-				for (Node entryNode: addTreeEntry){
-					temp.add(entryNode.getHoleMask(-1));
-					temp2.add(entryNode.getHeight());
-				}
-				addTreeMask.add(temp);
-				addTreeHeight.add(temp2);
-			}
-			for (ArrayList<Node> connectTreeEntry: connectTree){
-				temp = new ArrayList<>();
-				temp2 = new ArrayList<>();
-				for (Node entryNode: connectTreeEntry){
-					temp.add(entryNode.getHoleMask(-1));
-					temp2.add(entryNode.getHeight());
-				}
-				connectTreeMask.add(temp);
-				connectTreeHeight.add(temp2);
-			}
-			//Update references
-			int maxIters = connectTree.size(),
-				maxAdd = addTree.size(),
-				maxAddLevel, maxConnectLevel,
-				maskAdd, maskConnect,
-				heightAdd, heightConnect,
-				maskAddHeight, maskConnectHeight;
-			Node addNode, connectNode;
-			ArrayList<Node> addLevel, connectLevel;
-			//each add level
-			for (int i=0; i<maxAdd; i++){
-				//a corresponding connect level
-				for (int j=0; j<maxIters; j++){
-					//Loop through all permutations of add/connect nodes
-					addLevel = addTree.get(i);
-					connectLevel = connectTree.get(j);
-					maxAddLevel = addLevel.size();
-					maxConnectLevel = connectLevel.size();
-					for (int ii=0; ii<maxAddLevel; ii++){
-						for (int jj=0; jj<maxConnectLevel; jj++){
-							maskAdd = addTreeMask.get(i).get(ii);
-							maskConnect = connectTreeMask.get(j).get(jj);
-							addNode = addLevel.get(ii);
-							connectNode = connectLevel.get(jj);
-							//Account for heights in masks
-							heightAdd = addTreeHeight.get(i).get(ii);
-							heightConnect = connectTreeHeight.get(j).get(jj);
-							//System.out.println("Comparing "+addNode+" to "+connectNode);
-							if (heightAdd < heightConnect){
-								maskAdd |= InsertState.InsertStateHoley.MASK_HEIGHT;
-							//	System.out.println("at least it is running");
-							}
-							else if (heightConnect < heightAdd){
-								maskConnect |= InsertState.InsertStateHoley.MASK_HEIGHT;
-							//	System.out.println("at least it is running");
-							}
-							//Exchange masks
-							if (maskAdd != 0){
-								connectNode.updateInsertState(
-									addNode, heightAdd, true, maskAdd
-								);
-							}
-							if (maskConnect != 0){
-								addNode.updateInsertState(
-									connectNode, heightConnect, true, maskConnect
-								);
-							}
-						}
-					}
-				}
-				maxIters--;
-			}
-			//Add the actual node
+		if (!isNeighbor(n))
 			neighbors.add(n);
-		}
 	}
-        public void removeNeighbor(Node n){
-            if(isNeighbor(n))
-                neighbors.remove(n);
-        }
+	public void removeNeighbor(Node n){
+		if(isNeighbor(n))
+			neighbors.remove(n);
+	}
 	/**
 	 * Checks to see if a WebID is in the list of Neighbors
 	 *
@@ -729,16 +631,8 @@ public class Node implements NodeInterface{
 	 * 
 	 * @param isn Node to remove from inverse surrogate neighbor list
 	 */
-		public void removeInverseSurrogateNeighbor(Node isn)
-	{
-		for (int i=0; i < inverseSurrogateNeighbors.size(); i++)
-		{
-			if (isn == inverseSurrogateNeighbors.get(i))
-			{
-				inverseSurrogateNeighbors.remove(i);
-				return;
-			}
-		}
+	public void removeInverseSurrogateNeighbor(Node isn){
+		inverseSurrogateNeighbors.remove(isn);
 	}
 	/**
 	 * Sets the Height of the Node
@@ -747,8 +641,6 @@ public class Node implements NodeInterface{
 	 */
 	public void setHeight(int h) {
 		height = h;
-		//Height has changed, update InsertState, if we aren't already holey
-		this.broadcastInsertStateChange(false, InsertState.InsertStateHoley.MASK_HEIGHT);
 	}
 	/**
 	 * Removes all the IS neighbors from the node
@@ -787,41 +679,6 @@ public class Node implements NodeInterface{
 	public void setFoldState(boolean stable){
 		foldState = stable ? new FoldStateStable() : new FoldStateUnstable();
 	}
-	/**
-	 * Changes the Insertable state pattern's state
-	 * @param isHole is this node holey; NOTE: this will still check the
-	 * node's height, even if isHole is false
-	 */
-	public void broadcastInsertStateChange(boolean isHole, int typemask){
-		//Get a list of neighbors two levels out
-		TreeSet<Node> updateNodes = getRecursiveNeighbors(2);
-		Iterator<Node> iter = updateNodes.iterator();
-		//Tell neighbors we have updated holeyness
-		Node temp;
-		boolean rev_comp;
-		while (iter.hasNext()){
-			temp = iter.next();
-			rev_comp = temp.updateInsertState(this, this.height, isHole, typemask);
-			//For height changes, we need to check reverse
-			if ((typemask & InsertState.InsertStateHoley.MASK_HEIGHT) != 0)
-				insertState.updateState(temp, rev_comp, InsertState.InsertStateHoley.MASK_HEIGHT);
-		}
-	}
-	/**
-	 * Updates the insert state to account for the new node
-	 * @param check the new node to account for
-	 * @param checkHeight the "check" node's height
-	 * @param isHole whether it is a hole or not
-	 * @param cache a list of valid node insertion points (optional)
-	 * @return true if this node's height is less than checkHeight
-	 */
-	public boolean updateInsertState(Node check, int checkHeight, boolean isHole, int typemask){
-		//If we don't know if it is holey, we need to compare the node's height
-		if (!isHole || checkHeight < this.height)
-			typemask |= InsertState.InsertStateHoley.MASK_HEIGHT;
-		insertState.updateState(check, isHole || checkHeight < this.height, typemask);
-		return this.height < checkHeight;
-	}
 	
 	//CLASS OVERRIDES
 	@Override
@@ -845,148 +702,6 @@ public class Node implements NodeInterface{
 	@Override
 	public String toString(){
 		return String.valueOf(webID)+"("+String.valueOf(height)+")";
-	}
-
-	//INSERT STATE PATTERN
-	private static class InsertState{
-		private InsertStateInterface state;
-		/**
-		 * Constructs a new state machine
-		 * The default state is "full"
-		 */
-		public InsertState(){
-			state = new InsertStateFull();
-		}
-		/**
-		 * Updates the Insert State, depending on the
-		 * whether the updated node is a hole or not
-		 * @param node the updated node
-		 * @param isHole whether it is a hole or not
-		 */
-		public void updateState(Node node, boolean isHole, int typemask){
-			//Change to holey state
-			if (isHole && !state.addHole(node, typemask))
-				state = new InsertStateHoley(node, typemask);
-			//Change to full state
-			else if (!isHole && !state.removeHole(node, typemask))
-				state = new InsertStateFull();
-		}
-		/**
-		 * Returns a valid parent node that can add a child
-		 * @param node the starting point node (given by HyPeerWeb class)
-		 * @param level how far to recurse down looking for holey state nodes
-		 */
-		public Node findInsertionNode(Node node, int level){
-			return state.findInsertionNode(node, level);
-		}
-		/**
-		 * Check whether we're in the holey state
-		 * @return true, if we're holey
-		 */
-		public boolean isHoley(){
-			return state.getClass() == InsertStateHoley.class;
-		}
-		
-		/**
-		 * Generic state for this state machine
-		 */
-		private static interface InsertStateInterface{
-			public Node findInsertionNode(Node node, int level);
-			/**
-			 * Adds a holey node to the optimized cache; This can be a node with
-			 *  - surrogate neighbors
-			 *  - a surrogate fold
-			 *  - height less than neighbor
-			 * @param hole the holey node that can be used for insertion
-			 * @param type a bitmask type (see InsertStateHoley for details)
-			 * @return false, if this state does not have a cache
-			 */
-			public boolean addHole(Node hole, int type);
-			/**
-			 * Removes a holey node from the optimized cache
-			 * @param node the holey node to remove
-			 * @param type bitmask type
-			 * @return false, if there are no more nodes in the cache
-			 */
-			public boolean removeHole(Node node, int type);
-		}
-		/**
-		 * The "full" state; no surrogate neighbors/folds or
-		 * nodes less than parent height
-		 */
-		private static class InsertStateFull implements InsertStateInterface{
-			@Override
-			public Node findInsertionNode(Node node, int level) {
-				if (level-1 == 0)
-					return node;
-				//Recursively search for valid nodes
-				Node temp;
-				for (Node n: node.neighbors){
-					temp = n.findInsertionNode(level-1);
-					if (temp != n)
-						return temp;
-				}
-				return node;
-			}
-			@Override
-			public final boolean addHole(Node node, int type){
-				return false;
-			}
-			@Override
-			public boolean removeHole(Node node, int type){
-				return true;
-			}
-		}
-		/**
-		 * The "holey" state; there are surrogate neighbors/folds or
-		 * nodes less than parent height
-		 */
-		private class InsertStateHoley implements InsertStateInterface{
-			/**
-			 * What kind of hole are we?
-			 * - height less than neighbor
-			 * - has surrogate neighbors
-			 * - has fold
-			 */
-			public static final int MASK_HEIGHT = 1, MASK_NEIGHBOR = 2, MASK_FOLD = 4;
-			private TreeMap<Node, Integer> holes;
-			public InsertStateHoley(Node start_hole, int type){
-				holes = new TreeMap<>();
-				this.addHole(start_hole, type);
-			}
-			@Override
-			public Node findInsertionNode(Node node, int level) {
-				Entry<Node, Integer> hole = holes.firstEntry();
-				Node parent = hole.getKey();
-				int mask = hole.getValue();
-				if ((mask & MASK_FOLD) != 0)
-					return parent.getFold();
-				if ((mask & MASK_NEIGHBOR) != 0)
-					return parent.getFirstSurrogateNeighbor();
-				//Height mask is all that's left
-				return parent;
-			}
-			@Override
-			public boolean addHole(Node hole, int type){
-				//Type is actually a bitmask of all types
-				Integer old = holes.get(hole);
-				if (old != null)
-					type |= old;
-				holes.put(hole, type);
-				return true;
-			}
-			@Override
-			public boolean removeHole(Node node, int type) {
-				Integer mask = holes.get(node);
-				if (mask != null){
-					mask &= ~type;
-					if (mask == 0)
-						holes.remove(node);
-					else holes.put(node, mask);
-				}
-				return !holes.isEmpty();
-			}
-		}
 	}
 	
 	//FOLD STATE PATTERN
