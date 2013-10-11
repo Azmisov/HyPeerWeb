@@ -188,10 +188,8 @@ public class Node implements NodeInterface{
 			ndc.removeInverse(sn, this);
 		}
 
-		//determine fold state
-		//if stable
-		
-		//if unstable
+		//fold state
+		foldState.updateFolds(fdc, parent, this);
 
 		//Attempt to update the database
 		//If it fails, we cannot proceed
