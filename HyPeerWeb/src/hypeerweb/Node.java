@@ -753,11 +753,16 @@ public class Node implements NodeInterface{
 		}
 		@Override
 		public void reverseFolds(FoldDatabaseChanges fdc, Node parent, Node child) {
+			Node fold = child.getFold();
 			//give parent fold back
+			fdc.updateDirect(parent, fold);
 			
 			//remove parent sfold and the corresponding isfold
+			fdc.removeSurrogate(parent, fold);
+			fdc.removeInverse(fold, parent);
 			
 			//child.fold.fold = parent
+			fdc.updateDirect(fold, parent);
 		}
 	}
 }
