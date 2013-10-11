@@ -149,13 +149,21 @@ public class Node implements NodeInterface{
 	}
 	
 	/**
+	 * Replaces a node with this node
+	 * @param toReplace the node to replace
+	 * @author isaac
+	 */
+	protected void replaceNode(Node toReplace){
+		//TODO
+	}
+	/**
 	 * Disconnects an edge node to replace a node that
 	 * will be deleted
 	 * @param db the database connection
 	 * @return the disconnected node
 	 * @author John, Brian, Guy
 	 */
-	private Node disconnectNode(Database db){
+	protected Node disconnectNode(Database db){
 		NeighborDatabaseChanges ndc = new NeighborDatabaseChanges();
 		FoldDatabaseChanges fdc = new FoldDatabaseChanges();
 
@@ -229,8 +237,8 @@ public class Node implements NodeInterface{
 	}
 	/**
 	 * Voodoo magic... don't touch
-	 * @param i the number to count set bits
-	 * @return how many bits are set
+	 * @param i a number
+	 * @return how many bits are set in the number
 	 */
 	private long countSetBits(long i){
 		i = i - ((i >> 1) & 0x55555555);
@@ -245,7 +253,7 @@ public class Node implements NodeInterface{
 	 * @return the parent of the child to add
 	 * @author josh
 	 */
-	public Node findInsertionNode() {
+	protected Node findInsertionNode() {
 		return findInsertionNode(recurseLevel);
 	}
 	private Node findInsertionNode(int level){
@@ -290,6 +298,15 @@ public class Node implements NodeInterface{
 			}
 			else return this;
 		}
+	}
+	
+	/**
+	 * Finds an edge node that can replace a node to be deleted
+	 * @return a Node that can be disconnected
+	 * @author Josh
+	 */
+	protected Node findDisconnectNode(){
+		return null;
 	}
 		
 	//EN-MASSE DATABASE CHANGE HANDLING

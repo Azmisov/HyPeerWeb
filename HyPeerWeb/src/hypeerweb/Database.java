@@ -105,12 +105,12 @@ public final class Database {
 	 * Removes all data from the database, leaving the structure intact.
 	 * @author john
 	 */
-	public void clear(){
+	public boolean clear(){
 		beginCommit();
 		sqlUpdate("delete from `Nodes`;");
 		sqlUpdate("delete from `Neighbors`;");
 		sqlUpdate("delete from `SurrogateNeighbors`;");
-		endCommit();
+		return endCommit();
 	}
 
 	///SQL OPERATIONS

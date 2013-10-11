@@ -22,7 +22,10 @@ public class HyPeerWeb implements HyPeerWebInterface {
 	//Random number generator for getting random nodes
 	private static Random rand = new Random();
 	//Error messages
-	private static Exception addNodeErr = new Exception("Failed to add a new node");
+	private static Exception
+			addNodeErr = new Exception("Failed to add a new node"),
+			removeNodeErr = new Exception("Failed to remove a node"),
+			clearErr = new Exception("Failed to clear the HyPeerWeb");
 	//Trace random insertion for debugging purposes
 	private static ArrayList<Long> randTrace;
 	private static Iterator<Long> randTraceIter;
@@ -58,11 +61,45 @@ public class HyPeerWeb implements HyPeerWebInterface {
 	}
 	
 	/**
-	 * Removes all nodes from HyPeerWeb
+	 * Removes the node of specified webid
+	 * @param webid the webid of the node to remove
+	 * @return the removed node, or null if it doesn't exist
+	 * @throws Exception if it fails to remove the node
 	 * @author isaac
 	 */
-	public void deleteAllNodes(){
-		db.clear();
+	public Node removeNode(int webid) throws Exception{
+		return this.removeNode(getNode(webid));
+	}
+	/**
+	 * Removes the node
+	 * @param webid the node to remove
+	 * @return the removed node, or null if it doesn't exist
+	 * @throws Exception if it fails to remove the node
+	 * @author isaac
+	 */
+	public Node removeNode(Node n) throws Exception{
+		//TODO: special case with 1/2 nodes in HyPeerWeb
+		
+		//Make sure Node exists in HyPeerWeb
+		if (n == null || !nodes.contains(n))
+			return null;		
+		//Find a disconnection point
+		Node replace = this.getRandomNode().findDisconnectNode().disconnectNode(db);
+		if (replace == null)
+			throw removeNodeErr;
+		//Replace the node to be deleted
+		if (n.equals(replace))
+			replace.replaceNode(n);
+		return n;
+	}
+	/**
+	 * Removes all nodes from HyPeerWeb
+	 * @author isaac
+	 * @throws Exception if it fails to clear the HyPeerWeb
+	 */
+	public void removeAllNodes() throws Exception{
+		if (!db.clear())
+			throw clearErr;
 		nodes = new TreeSet<>();
 	}
 	
@@ -70,6 +107,7 @@ public class HyPeerWeb implements HyPeerWebInterface {
 	 * Adds a new node to the HyPeerWeb
 	 * @return the new node
 	 * @author guy, brian, isaac
+	 * @throws Exception if it fails to add a node
 	 */
 	public Node addNode() throws Exception{
 		//There are two special cases:
@@ -81,7 +119,7 @@ public class HyPeerWeb implements HyPeerWebInterface {
 			return addSecondNode();
 		
 		//Otherwise, use the normal insertion algorithm
-		Node child = this.getRandomInsertionNode().addChild(disableDB ? null : db);
+		Node child = this.getRandomNode().findInsertionNode().addChild(disableDB ? null : db);
 		if (child == null)
 			throw addNodeErr;
 		//Node successfully added!
@@ -89,7 +127,6 @@ public class HyPeerWeb implements HyPeerWebInterface {
 		//System.out.println();
 		return child;
 	}
-	
 	/**
 	 * Special case to handle adding the first node
 	 * @return the new node
@@ -144,7 +181,7 @@ public class HyPeerWeb implements HyPeerWebInterface {
 	 * @return a random node that is a valid insertion point
 	 * @author John, Josh
 	 */
-	private Node getRandomInsertionNode(){
+	public Node getRandomNode(){
 		long index;
 		if (traceMode == TraceMode.READ){
 			index = randTraceIter.next();
@@ -161,7 +198,7 @@ public class HyPeerWeb implements HyPeerWebInterface {
 				randTrace.add(index);
 		}
 		//Always start at Node with WebID = 0
-		return nodes.first().searchForNode(index).findInsertionNode();
+		return nodes.first().searchForNode(index);
 	}
 	
 	//DEBUGGING
@@ -213,6 +250,12 @@ public class HyPeerWeb implements HyPeerWebInterface {
 	public Node[] getOrderedListOfNodes() {
 		return nodes.toArray(new Node[nodes.size()]);
 	}
+	/**
+	 * Retrieve a node with the specified webid
+	 * @param webid the webid of the node
+	 * @return the node with the specified webid; otherwise null
+	 * @author isaac
+	 */
 	@Override
 	public Node getNode(int webId){
 		Node n = nodes.floor(new Node(webId, 0));

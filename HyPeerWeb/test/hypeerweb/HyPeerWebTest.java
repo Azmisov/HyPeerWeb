@@ -50,7 +50,7 @@ public class HyPeerWebTest {
 
 			//Add a bunch of nodes; if it validates afterwards, addNode should be working
 			//We cannot do simulated tests, since addNode inserts at arbitrary places
-			web.deleteAllNodes();
+			web.removeAllNodes();
 			boolean valid;
 			for (int i=1; i<=MAX_TESTS; i++){
 				web.addNode();
