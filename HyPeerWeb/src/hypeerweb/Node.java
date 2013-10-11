@@ -190,7 +190,7 @@ public class Node implements NodeInterface{
 
 		//determine fold state
 		//if stable
-
+		
 		//if unstable
 
 		//Attempt to update the database
@@ -706,6 +706,7 @@ public class Node implements NodeInterface{
 	//FOLD STATE PATTERN
 	private static interface FoldStateInterface{
 		public void updateFolds(Node.FoldDatabaseChanges fdc, Node caller, Node child);
+		public void reverseFolds(Node.FoldDatabaseChanges fdc, Node caller, Node child);
 	}
 	private static class FoldStateStable implements FoldStateInterface{
 		/*
@@ -727,6 +728,10 @@ public class Node implements NodeInterface{
 			//Remove stable state reference
 			fdc.removeDirect(caller, null);
 		}
+		@Override
+		public void reverseFolds(FoldDatabaseChanges fdc, Node caller, Node child) {
+			
+		}
 	}
 	private static class FoldStateUnstable implements FoldStateInterface{
 		/*
@@ -745,6 +750,10 @@ public class Node implements NodeInterface{
 			//Remove surrogate references
 			fdc.removeSurrogate(isfold, null);
 			fdc.removeInverse(caller, null);
+		}
+		@Override
+		public void reverseFolds(FoldDatabaseChanges fdc, Node caller, Node child) {
+			
 		}
 	}
 }
