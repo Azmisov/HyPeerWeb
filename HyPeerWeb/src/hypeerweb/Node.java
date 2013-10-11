@@ -730,7 +730,9 @@ public class Node implements NodeInterface{
 		}
 		@Override
 		public void reverseFolds(FoldDatabaseChanges fdc, Node caller, Node child) {
+			//parent.isf = child.fold
 			
+			//parent.isf.sfold = parent
 		}
 	}
 	private static class FoldStateUnstable implements FoldStateInterface{
@@ -753,7 +755,11 @@ public class Node implements NodeInterface{
 		}
 		@Override
 		public void reverseFolds(FoldDatabaseChanges fdc, Node caller, Node child) {
+			//give parent fold back
 			
+			//remove parent sfold and the corresponding isfold
+			
+			//child.fold.fold = parent
 		}
 	}
 }
