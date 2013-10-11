@@ -731,8 +731,9 @@ public class Node implements NodeInterface{
 		@Override
 		public void reverseFolds(FoldDatabaseChanges fdc, Node parent, Node child) {
 			//parent.isf = child.fold
-			
+                        fdc.updateInverse(parent, child.getFold());
 			//parent.isf.sfold = parent
+                        fdc.updateSurrogate(parent.getInverseSurrogateFold(), parent);
 		}
 	}
 	private static class FoldStateUnstable implements FoldStateInterface{
