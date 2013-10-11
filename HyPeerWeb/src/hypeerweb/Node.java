@@ -25,7 +25,7 @@ public class Node implements NodeInterface{
 	private ArrayList<Node> surrogateNeighbors = new ArrayList();
 	private ArrayList<Node> inverseSurrogateNeighbors = new ArrayList();
 	//State machines
-	private static final int recurseLevel = 2;
+	private static final int recurseLevel = 3; //3 = neighbor's neighbors
 	private FoldStateInterface foldState; 
 	//Hash code prime
 	private static long prime = Long.parseLong("2654435761");
@@ -160,10 +160,11 @@ public class Node implements NodeInterface{
 		FoldDatabaseChanges fdc = new FoldDatabaseChanges();
 
 		Node parent = getParent();
+		int parentHeight = parent.getHeight()-1;
 
 		//all of the neighbors of this except parent will have parent as surrogateNeighbor instead of neighbor, and
 		//parent will have all neighbors of this except itself as inverse surrogate neighbor
-		for(Node neighbor: neighbors){
+		for (Node neighbor: neighbors){
 			if(neighbor != parent){
 				ndc.updateSurrogate(neighbor, parent);
 				ndc.updateInverse(parent, neighbor);
@@ -175,8 +176,7 @@ public class Node implements NodeInterface{
 		ndc.removeDirect(parent, this);
 
 		//all SNs of this will have this removed from their ISN list
-		for (Node sn : surrogateNeighbors)
-		{
+		for (Node sn : surrogateNeighbors){
 			ndc.removeInverse(sn, this);
 		}
 
@@ -190,7 +190,7 @@ public class Node implements NodeInterface{
 		if (db != null) {
 			db.beginCommit();
 			//reduce parent height by 1
-			db.setHeight(parent.getWebId(), parent.getHeight() - 1);
+			db.setHeight(parent.getWebId(), parentHeight);
 			ndc.commitToDatabase(db);
 			fdc.commitToDatabase(db);
 			//Commit changes to database
@@ -201,7 +201,7 @@ public class Node implements NodeInterface{
 		//Update the Java structure
 		{
 			//reduce parent height by 1
-			parent.setHeight(parent.getHeight() - 1);
+			parent.setHeight(parentHeight);
 			ndc.commitToHyPeerWeb();
 			fdc.commitToHyPeerWeb();
 			return this;
@@ -215,14 +215,27 @@ public class Node implements NodeInterface{
 	 * @author John
 	 */
 	public Node searchForNode(long index){
-		//THIS NEEDS FIXING HERE; account for folds, count bits
-		long closeness = index & this.getWebId(), c;
-		for (int i=0; i < neighbors.size(); i++){
-			c = index & neighbors.get(i).getWebId();
-			if (c > closeness)
-				return neighbors.get(i).searchForNode(index);
+		long closeness = countSetBits(index & this.webID);
+		//Check fold first, since it may be faster
+		Node fold_ref = this.fold == null ? this.surrogateFold : this.fold;
+		if (fold_ref != null && countSetBits(index & fold_ref.getWebId()) > closeness)
+			return fold_ref.searchForNode(index);
+		//Otherwise, check neighbors
+		for (Node n: neighbors){
+			if (countSetBits(index & n.getWebId()) > closeness)
+				return n.searchForNode(index);
 		}
 		return this;
+	}
+	/**
+	 * Voodoo magic... don't touch
+	 * @param i the number to count set bits
+	 * @return how many bits are set
+	 */
+	private long countSetBits(long i){
+		i = i - ((i >> 1) & 0x55555555);
+		i = (i & 0x33333333) + ((i >> 2) & 0x33333333);
+		return (((i + (i >> 4)) & 0x0F0F0F0F) * 0x01010101) >> 24;
 	}
 	
 	/**
@@ -236,18 +249,21 @@ public class Node implements NodeInterface{
 		return findInsertionNode(recurseLevel);
 	}
 	private Node findInsertionNode(int level){
-		//Which nodes have we checked already
-		HashSet<Node> visited = new HashSet<>();
-		//Parents of this level
+		//For some reason, HyPeerWeb only validates if we
+		//increase the recurse level; don't ask me why...
+		level++;
+		//Nodes we've checked for holes already
+		TreeSet<Node> visited = new TreeSet<>();
+		//Nodes we are currently checking for holes
 		ArrayList<Node> parents = new ArrayList<>();
-		//Neighbors of the parents that have not been visited
-		ArrayList<Node> friendSet;
-		//Start by checking this node
+		//Neighbors of the parents
+		ArrayList<Node> friends;
+		//Start by checking the current node
 		parents.add(this);
 		visited.add(this);
 		Node temp;
-		do{
-			//Check all parents for valid nodes
+		while(true){
+			//Check parents for valid insertion points
 			for (Node parent: parents){
 				if (parent.getHeight() < height)
 					return parent;
@@ -258,21 +274,22 @@ public class Node implements NodeInterface{
 				if (temp != null)
 					return temp;
 			}
-			//If no parents are valid, return
-			friendSet = new ArrayList<>();
-			for (Node parent: parents){
-				ArrayList<Node> friendLst = parent.getNeighborsList();
-				for (Node friend: friendLst){
-					if (!visited.contains(friend))
-						friendSet.add(friend);
+			//If this was the last level, don't go down any further
+			if (level-- != 0){
+				//Get a list of neighbors (friends)
+				friends = new ArrayList<>();
+				for (Node parent: parents)
+					friends.addAll(parent.getNeighborsList());
+				//Set non-visited friends as the new parents
+				parents = new ArrayList<>();
+				for (Node friend: friends){
+					if (visited.add(friend)){
+						parents.add(friend);
+					}
 				}
 			}
-			parents = friendSet;
-			visited.addAll(parents);
-		} while (level-- != 0);
-		
-		//Everything is flat and filled; return self
-		return this;
+			else return this;
+		}
 	}
 		
 	//EN-MASSE DATABASE CHANGE HANDLING
@@ -527,41 +544,6 @@ public class Node implements NodeInterface{
 				lowest = n;
 		}
 		return lowest == this ? null : lowest;
-	}
-	/**
-	 * Gets a set of neighbors out to a certain level
-	 * Note, the set does not include the current node
-	 * @param levels number of levels to go out
-	 * @return a TreeSet of neighbors out to level
-	 */
-	public TreeSet<Node> getRecursiveNeighbors(int levels){
-		ArrayList<ArrayList<Node>> full = getRecursiveNeighborsList(levels);
-		full.remove(0);
-		TreeSet<Node> set = new TreeSet<>();
-		for (ArrayList<Node> level: full)
-			set.addAll(level);
-		return set;
-	}
-	/**
-	 * Gets a list of neighbors per level;
-	 * index 0 = 0th level, index 1 = 1st level etc.
-	 * @param levels how many levels to go out
-	 * @return a list of lists of neighbors, of size = levels
-	 */
-	public ArrayList<ArrayList<Node>> getRecursiveNeighborsList(int levels){
-		ArrayList<ArrayList<Node>> full = new ArrayList<>();
-		ArrayList<Node> parents = new ArrayList<>();
-		ArrayList<Node> friends;
-		parents.add(this);
-		full.add(parents);
-		do{
-			friends = new ArrayList<>();
-			for (Node parent: parents)
-				friends.addAll(parent.getNeighborsList());
-			parents = friends;
-			full.add(parents);
-		} while (--levels != 0);
-		return full;
 	}
 	
 	//Setters

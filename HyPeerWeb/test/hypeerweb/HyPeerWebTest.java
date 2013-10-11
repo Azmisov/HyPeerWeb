@@ -13,9 +13,9 @@ import validator.Validator;
  */
 public class HyPeerWebTest {
 	//Validation variables
-	private final int MAX_TESTS = 5;//use <=100 if testing database
-	private final int TEST_EVERY = 5;
-	private final boolean TEST_DATABASE = true;
+	private final int MAX_TESTS = 1000;//use <=100 if testing database
+	private final int TEST_EVERY = 1;
+	private final boolean TEST_DATABASE = false;
 	private final boolean USE_TRACE_LOG = false;
 	private HyPeerWeb web;
 	
@@ -24,7 +24,7 @@ public class HyPeerWebTest {
 		if (!TEST_DATABASE)
 			web.disableDatabase();
 		if (USE_TRACE_LOG){
-			/*
+			//*
 			if (!web.loadTrace()){
 				System.out.println("Could not load insertion trace from log file!!!");
 				System.out.println("Try again or disable USE_TRACE_LOG");
