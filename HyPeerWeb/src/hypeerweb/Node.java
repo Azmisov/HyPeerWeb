@@ -706,7 +706,7 @@ public class Node implements NodeInterface{
 	//FOLD STATE PATTERN
 	private static interface FoldStateInterface{
 		public void updateFolds(Node.FoldDatabaseChanges fdc, Node caller, Node child);
-		public void reverseFolds(Node.FoldDatabaseChanges fdc, Node caller, Node child);
+		public void reverseFolds(Node.FoldDatabaseChanges fdc, Node parent, Node child);
 	}
 	private static class FoldStateStable implements FoldStateInterface{
 		/*
@@ -729,7 +729,7 @@ public class Node implements NodeInterface{
 			fdc.removeDirect(caller, null);
 		}
 		@Override
-		public void reverseFolds(FoldDatabaseChanges fdc, Node caller, Node child) {
+		public void reverseFolds(FoldDatabaseChanges fdc, Node parent, Node child) {
 			//parent.isf = child.fold
 			
 			//parent.isf.sfold = parent
@@ -754,7 +754,7 @@ public class Node implements NodeInterface{
 			fdc.removeInverse(caller, null);
 		}
 		@Override
-		public void reverseFolds(FoldDatabaseChanges fdc, Node caller, Node child) {
+		public void reverseFolds(FoldDatabaseChanges fdc, Node parent, Node child) {
 			//give parent fold back
 			
 			//remove parent sfold and the corresponding isfold
