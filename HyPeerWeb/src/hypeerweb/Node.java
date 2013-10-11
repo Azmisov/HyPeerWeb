@@ -85,7 +85,7 @@ public class Node implements NodeInterface{
 	 * @return the new child node; null if the node couldn't be added
 	 * @author Guy, Isaac, Brian
 	 */
-	public Node addChild(Database db){
+	protected Node addChild(Database db){
 		//Get new height and child's WebID
 		int childHeight = this.getHeight()+1,
 			childWebID = 1;
