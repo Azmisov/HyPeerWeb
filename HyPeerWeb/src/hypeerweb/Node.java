@@ -331,7 +331,7 @@ public class Node implements NodeInterface{
 			return C.inverseSurrogateNeighbors.first().findDisconnectNode();
 		//Find a child of greater height
 		for (Node n: C.neighbors){
-			if (n.getHeight() > height)
+			if (n.getWebId() > webID)
 				return n.findDisconnectNode();
 		}
 		//If no child has greater height, I am valid
@@ -831,7 +831,6 @@ public class Node implements NodeInterface{
 		@Override
 		public void reverseFolds(FoldDatabaseChanges fdc, Node parent, Node child) {
 			Node fold = child.getFold();
-			assert(fold != null)
 			//give parent fold back
 			fdc.updateDirect(parent, fold);
 			
