@@ -324,37 +324,23 @@ public class Node implements NodeInterface{
 	 * @author Josh
 	 */
 	protected Node findDisconnectNode(){
-			
-			Node result = findDisconnectNode(new ArrayList<Node>(), 2);
-			if (result != null)
-				return result;
-			return this;
-		}	
+		Node result = findDisconnectNode(new ArrayList<Node>(), 2);
+		if (result != null)
+			return result;
+		return this;
+	}	
 	private Node findDisconnectNode(List<Node> visited, int level) {
-
-		visited.add(this);
-
-		if (C.inverseSurrogateNeighbors != null && !C.inverseSurrogateNeighbors.isEmpty())
-			return C.inverseSurrogateNeighbors.first();
-		if (C.fold.getHeight() > height)
-			return C.fold;
+		Node result = findDisconnectNode(new ArrayList<Node>(), 2);
+		if (result != null)
+			return result.getChildlessDescendant();
+		return getChildlessDescendant();
+	}
+	private Node getChildlessDescendant(){
 		for (Node n : C.neighbors) {
-			if (n.getHeight() > height)
-				return n;
+			if (n.getParent() == this)
+				return n.getChildlessDescendant();
 		}
-
-		if (level == 0)
-			return null;
-
-		for (Node n : C.neighbors) {
-			if (!visited.contains(n)){
-				Node result = n.findDisconnectNode(visited, level - 1);
-				if (result != null)
-					return result;
-			}
-		}
-
-		return null;
+		return this;
 	}
 		
 	//EN-MASSE DATABASE CHANGE HANDLING
