@@ -85,8 +85,10 @@ public class HyPeerWeb implements HyPeerWebInterface {
 		//special case with 1/2 nodes in HyPeerWeb
 		//There are two special cases:
 		//1) One node
-		if (nodes.size() == 1)
-			return removeFirstNode(n);
+		if (nodes.size() == 1){
+			removeAllNodes();
+			return n;
+		}
 		//2) Two nodes
 		if (nodes.size() == 2)
 			return removeSecondNode(n);
@@ -107,27 +109,21 @@ public class HyPeerWeb implements HyPeerWebInterface {
 	 * @return
 	 * @throws Exception 
 	 */
-	private Node removeFirstNode(Node n) throws Exception{
-		if(!disableDB)
-			removeAllNodes();
-		else
-			nodes = new TreeSet<>();
-		return n;
-	}
-	/**
-	 * 
-	 * @return
-	 * @throws Exception 
-	 */
 	private Node removeSecondNode(Node n) throws Exception{
 		Node last = n.getNeighbors()[0];
+		if(!disableDB){
+			db.beginCommit();
+			int webID = last.getWebId();
+			db.setHeight(webID, 0);
+			db.setFold(webID, -1);
+			db.removeNeighbor(webID, n.getWebId());
+			if(!db.endCommit())
+				throw removeNodeErr;
+		}
+		
 		last.setHeight(0);
 		last.setFold(null);
-		last.setSurrogateFold(null);
-		last.setInverseSurrogateFold(null);
 		last.removeNeighbor(n);
-		last.removeSurrogateNeighbor(n);
-		last.removeInverseSurrogateNeighbor(n);
 		return n;
 	}
 	/**
@@ -136,7 +132,7 @@ public class HyPeerWeb implements HyPeerWebInterface {
 	 * @throws Exception if it fails to clear the HyPeerWeb
 	 */
 	public void removeAllNodes() throws Exception{
-		if (!db.clear())
+		if (!disableDB && !db.clear())
 			throw clearErr;
 		nodes = new TreeSet<>();
 	}
