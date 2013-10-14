@@ -13,7 +13,7 @@ import validator.Validator;
  */
 public class HyPeerWebTest {
 	//Validation variables
-	private final int MAX_TESTS = 1000;//use <=100 if testing database
+	private final int MAX_TESTS = 3;//use <=100 if testing database
 	private final int TEST_EVERY = 1;
 	private final boolean TEST_DATABASE = false;
 	private final boolean USE_TRACE_LOG = false;
@@ -52,12 +52,20 @@ public class HyPeerWebTest {
 			//We cannot do simulated tests, since addNode inserts at arbitrary places
 			web.removeAllNodes();
 			boolean valid;
-			for (int i=1; i<=MAX_TESTS; i++){
-				web.addNode();
-				//System.out.println("added node "+i);
-				if (i % TEST_EVERY == 0){
-					valid = (new Validator(web)).validate();
-					assertTrue(valid);
+			for (int t=0; t<2; t++){
+				for (int i=1; i<=MAX_TESTS; i++){
+					//Add nodes first time around
+					if (t == 0) web.addNode();
+					//Then delete all nodes
+					else{
+						if (web.removeNode(0) == null)
+							throw new Exception("Removed node should not be null!");
+						System.out.println("DELETING A NODE");
+					}
+					if (i % TEST_EVERY == 0){
+						valid = (new Validator(web)).validate();
+						assertTrue(valid);
+					}
 				}
 			}
 		} catch (Exception e){

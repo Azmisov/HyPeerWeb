@@ -111,19 +111,22 @@ public class HyPeerWeb implements HyPeerWebInterface {
 	 */
 	private Node removeSecondNode(Node n) throws Exception{
 		Node last = n.getNeighbors()[0];
-		if(!disableDB){
+		if (!disableDB){
 			db.beginCommit();
 			int webID = last.getWebId();
+			//TODO database set webid
 			db.setHeight(webID, 0);
 			db.setFold(webID, -1);
 			db.removeNeighbor(webID, n.getWebId());
 			if(!db.endCommit())
 				throw removeNodeErr;
 		}
-		
+		//Remove from java structure
+		last.setWebID(0);
 		last.setHeight(0);
 		last.setFold(null);
 		last.removeNeighbor(n);
+		nodes.remove(n);
 		return n;
 	}
 	/**
@@ -293,7 +296,7 @@ public class HyPeerWeb implements HyPeerWebInterface {
 	@Override
 	public Node getNode(int webId){
 		Node n = nodes.floor(new Node(webId, 0));
-		if (n.getWebId() != webId)
+		if (n == null || n.getWebId() != webId)
 			return null;
 		return n;
 	}

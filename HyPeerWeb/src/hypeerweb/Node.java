@@ -175,6 +175,8 @@ public class Node implements NodeInterface{
 			n.updateConnection(toReplace, this, Connections.ConnectionType.ISNEIGHBOR);
 		for (Node n: C.inverseSurrogateNeighbors)
 			n.updateConnection(toReplace, this, Connections.ConnectionType.SNEIGHBOR);
+		//NOTE: must come after, otherwise "this" and "toReplace" will be equal
+		webID = toReplace.getWebId();
 	}
 	/**
 	 * Disconnects an edge node to replace a node that
@@ -324,10 +326,20 @@ public class Node implements NodeInterface{
 	 * @author Josh
 	 */
 	protected Node findDisconnectNode(){
+		//Find a child of greater height
+		for (Node n: C.neighbors){
+			if (n.getHeight() > height)
+				return n.findDisconnectNode();
+		}
+		//If no child has greater height, I am valid
+		return this;
+		/*
+		
 		Node result = findDisconnectNode(new ArrayList<Node>(), 2);
 		if (result != null)
 			return result;
 		return this;
+		*/
 	}	
 	private Node findDisconnectNode(List<Node> visited, int level) {
 		Node result = findDisconnectNode(new ArrayList<Node>(), 2);
@@ -605,6 +617,13 @@ public class Node implements NodeInterface{
 	}
 	
 	//Setters
+	/**
+	 * Sets the node's webid
+	 * @param id the new webid
+	 */
+	protected void setWebID(int id){
+		this.webID = id;
+	}
 	/**
 	 * Adds a Neighbor WebID to the list of Neighbors if it is not already in
 	 * the list
