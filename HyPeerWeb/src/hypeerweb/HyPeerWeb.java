@@ -88,7 +88,7 @@ public class HyPeerWeb implements HyPeerWebInterface {
 		if (replace == null)
 			throw removeNodeErr;
 		//Replace the node to be deleted
-		if (n.equals(replace))
+		if (!n.equals(replace))
 			replace.replaceNode(n);
 		return n;
 	}
