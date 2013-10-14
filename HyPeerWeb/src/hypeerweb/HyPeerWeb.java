@@ -95,6 +95,8 @@ public class HyPeerWeb implements HyPeerWebInterface {
 		Node replace = this.getRandomNode().findDisconnectNode().disconnectNode(db);
 		if (replace == null)
 			throw removeNodeErr;
+		//Remove node from list of nodes
+		nodes.remove(replace);
 		//Replace the node to be deleted
 		if (!n.equals(replace))
 			replace.replaceNode(n);
