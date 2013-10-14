@@ -86,7 +86,7 @@ public class HyPeerWeb implements HyPeerWebInterface {
 		//There are two special cases:
 		//1) One node
 		if (nodes.size() == 1)
-			return removeFirstNode();
+			return removeFirstNode(n);
 		//2) Two nodes
 		if (nodes.size() == 2)
 			return removeSecondNode(n);
@@ -107,11 +107,12 @@ public class HyPeerWeb implements HyPeerWebInterface {
 	 * @return
 	 * @throws Exception 
 	 */
-	private void removeFirstNode() throws Exception{
+	private Node removeFirstNode(Node n) throws Exception{
 		if(!disableDB)
 			removeAllNodes();
 		else
 			nodes = new TreeSet<>();
+		return n;
 	}
 	/**
 	 * 
@@ -123,7 +124,11 @@ public class HyPeerWeb implements HyPeerWebInterface {
 		last.setHeight(0);
 		last.setFold(null);
 		last.setSurrogateFold(null);
-		last.setInverseSurrogateFold(n);
+		last.setInverseSurrogateFold(null);
+		last.removeNeighbor(n);
+		last.removeSurrogateNeighbor(n);
+		last.removeInverseSurrogateNeighbor(n);
+		return n;
 	}
 	/**
 	 * Removes all nodes from HyPeerWeb
