@@ -78,11 +78,19 @@ public class HyPeerWeb implements HyPeerWebInterface {
 	 * @author isaac
 	 */
 	public Node removeNode(Node n) throws Exception{
-		//TODO: special case with 1/2 nodes in HyPeerWeb
-		
 		//Make sure Node exists in HyPeerWeb
 		if (n == null || !nodes.contains(n))
-			return null;		
+			return null;
+		
+		//special case with 1/2 nodes in HyPeerWeb
+		//There are two special cases:
+		//1) One node
+		if (nodes.size() == 1)
+			return removeFirstNode();
+		//2) Two nodes
+		if (nodes.size() == 2)
+			return removeSecondNode(n);
+		
 		//Find a disconnection point
 		Node replace = this.getRandomNode().findDisconnectNode().disconnectNode(db);
 		if (replace == null)
@@ -91,6 +99,29 @@ public class HyPeerWeb implements HyPeerWebInterface {
 		if (!n.equals(replace))
 			replace.replaceNode(n);
 		return n;
+	}
+	/**
+	 * 
+	 * @return
+	 * @throws Exception 
+	 */
+	private void removeFirstNode() throws Exception{
+		if(!disableDB)
+			removeAllNodes();
+		else
+			nodes = new TreeSet<>();
+	}
+	/**
+	 * 
+	 * @return
+	 * @throws Exception 
+	 */
+	private Node removeSecondNode(Node n) throws Exception{
+		Node last = n.getNeighbors()[0];
+		last.setHeight(0);
+		last.setFold(null);
+		last.setSurrogateFold(null);
+		last.setInverseSurrogateFold(n);
 	}
 	/**
 	 * Removes all nodes from HyPeerWeb
