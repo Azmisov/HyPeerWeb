@@ -82,11 +82,13 @@ public class HyPeerWeb implements HyPeerWebInterface {
 		
 		//Make sure Node exists in HyPeerWeb
 		if (n == null || !nodes.contains(n))
-			return null;		
+			return null;
 		//Find a disconnection point
 		Node replace = this.getRandomNode().findDisconnectNode().disconnectNode(db);
 		if (replace == null)
 			throw removeNodeErr;
+		//Remove node from list of nodes
+		nodes.remove(replace);
 		//Replace the node to be deleted
 		if (!n.equals(replace))
 			replace.replaceNode(n);

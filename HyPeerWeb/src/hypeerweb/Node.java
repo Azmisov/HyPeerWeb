@@ -15,7 +15,10 @@ public class Node implements NodeInterface{
 	//NODE ATTRIBUTES
 	private int webID;
 	private int height;
-	private class Connections{
+	private static class Connections{
+		private static enum ConnectionType {
+			FOLD, SFOLD, ISFOLD, NEIGHBOR, SNEIGHBOR, ISNEIGHBOR
+		}
 		public Node fold;
 		public Node surrogateFold;
 		public Node inverseSurrogateFold;
@@ -155,7 +158,23 @@ public class Node implements NodeInterface{
 	 * @author isaac
 	 */
 	protected void replaceNode(Node toReplace){
-		//TODO
+		//Swap out connections
+		C = toReplace.getConnections();
+		//Notify all connections that their reference has changed
+		//NOTE: we reverse surrogate/inverse-surrogate connections
+		//Fold connections do not need a reference to the old node (pass null)
+		if (C.fold != null)
+			C.fold.updateConnection(null, this, Connections.ConnectionType.FOLD);
+		if (C.surrogateFold != null)
+			C.surrogateFold.updateConnection(null, this, Connections.ConnectionType.ISFOLD);
+		if (C.inverseSurrogateFold != null)
+			C.inverseSurrogateFold.updateConnection(null, this, Connections.ConnectionType.SFOLD);
+		for (Node n: C.neighbors)
+			n.updateConnection(toReplace, this, Connections.ConnectionType.NEIGHBOR);
+		for (Node n: C.surrogateNeighbors)
+			n.updateConnection(toReplace, this, Connections.ConnectionType.ISNEIGHBOR);
+		for (Node n: C.inverseSurrogateNeighbors)
+			n.updateConnection(toReplace, this, Connections.ConnectionType.SNEIGHBOR);
 	}
 	/**
 	 * Disconnects an edge node to replace a node that
@@ -306,22 +325,11 @@ public class Node implements NodeInterface{
 	 */
 	protected Node findDisconnectNode(){
 			
-            Node result = findDisconnectNode(new ArrayList<Node>(), 2);
-            if (result != null)
-                return result.getChildlessDescendant();
-            return getChildlessDescendant();
-	}	
-        
-        private Node getChildlessDescendant(){
-            
-            for (Node n : C.neighbors) {
-                if (n.getParent() == this)
-                    return n.getChildlessDescendant();
-            }
-            
-            return this;
-        }
-        
+			Node result = findDisconnectNode(new ArrayList<Node>(), 2);
+			if (result != null)
+				return result;
+			return this;
+		}	
 	private Node findDisconnectNode(List<Node> visited, int level) {
 
 		visited.add(this);
@@ -602,6 +610,13 @@ public class Node implements NodeInterface{
 		}
 		return lowest == this ? null : lowest;
 	}
+	/**
+	 * Gets all the nodes connections
+	 * @return a Connections class
+	 */
+	protected Connections getConnections(){
+		return C;
+	}
 	
 	//Setters
 	/**
@@ -697,6 +712,37 @@ public class Node implements NodeInterface{
 	 */
 	public void setFoldState(boolean stable){
 		foldState = stable ? new FoldStateStable() : new FoldStateUnstable();
+	}
+	/**
+	 * Updates a node's connections when a previous connection is replaced
+	 * @param old_node the old connection Node
+	 * @param new_node the new connection Node
+	 * @param type the type of the connection
+	 */
+	protected void updateConnection(Node old_node, Node new_node, Connections.ConnectionType type){
+		switch (type){
+			case FOLD:
+				C.fold = new_node;
+				break;
+			case SFOLD:
+				C.surrogateFold = new_node;
+				break;
+			case ISFOLD:
+				C.inverseSurrogateFold = new_node;
+				break;
+			case NEIGHBOR:
+				C.neighbors.remove(old_node);
+				C.neighbors.add(new_node);
+				break;
+			case SNEIGHBOR:
+				C.surrogateNeighbors.remove(old_node);
+				C.surrogateNeighbors.add(new_node);
+				break;
+			case ISNEIGHBOR:
+				C.inverseSurrogateNeighbors.remove(old_node);
+				C.inverseSurrogateNeighbors.add(new_node);
+				break;
+		}
 	}
 	
 	//CLASS OVERRIDES
