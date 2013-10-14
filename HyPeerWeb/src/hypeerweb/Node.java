@@ -211,7 +211,7 @@ public class Node implements NodeInterface{
 		}
 
 		//fold state
-		foldState.updateFolds(fdc, parent, this);
+		foldState.reverseFolds(fdc, parent, this);
 
 		//Attempt to update the database
 		//If it fails, we cannot proceed
@@ -805,9 +805,10 @@ public class Node implements NodeInterface{
 		@Override
 		public void reverseFolds(FoldDatabaseChanges fdc, Node parent, Node child) {
 			//parent.isf = child.fold
-						fdc.updateInverse(parent, child.getFold());
+			fdc.updateInverse(parent, child.getFold());
 			//parent.isf.sfold = parent
-						fdc.updateSurrogate(parent.getInverseSurrogateFold(), parent);
+			assert (parent.getInverseSurrogateFold() != null);
+			fdc.updateSurrogate(parent.getInverseSurrogateFold(), parent);
 		}
 	}
 	private static class FoldStateUnstable implements FoldStateInterface{

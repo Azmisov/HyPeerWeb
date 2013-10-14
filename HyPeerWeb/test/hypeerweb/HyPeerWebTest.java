@@ -58,9 +58,9 @@ public class HyPeerWebTest {
 					if (t == 0) web.addNode();
 					//Then delete all nodes
 					else{
+						System.out.println("DELETING A NODE");
 						if (web.removeNode(0) == null)
 							throw new Exception("Removed node should not be null!");
-						System.out.println("DELETING A NODE");
 					}
 					if (i % TEST_EVERY == 0){
 						valid = (new Validator(web)).validate();
