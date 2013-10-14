@@ -306,11 +306,22 @@ public class Node implements NodeInterface{
 	 */
 	protected Node findDisconnectNode(){
 			
-			Node result = findDisconnectNode(new ArrayList<Node>(), 2);
-			if (result != null)
-				return result;
-			return this;
-		}	
+            Node result = findDisconnectNode(new ArrayList<Node>(), 2);
+            if (result != null)
+                return result.getChildlessDescendant();
+            return getChildlessDescendant();
+	}	
+        
+        private Node getChildlessDescendant(){
+            
+            for (Node n : C.neighbors) {
+                if (n.getParent() == this)
+                    return n.getChildlessDescendant();
+            }
+            
+            return this;
+        }
+        
 	private Node findDisconnectNode(List<Node> visited, int level) {
 
 		visited.add(this);
