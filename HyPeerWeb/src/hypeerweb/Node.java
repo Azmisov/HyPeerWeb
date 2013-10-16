@@ -844,13 +844,15 @@ public class Node implements NodeInterface{
 		}
 		@Override
 		public void reverseFolds(FoldDatabaseChanges fdc, Node parent, Node child) {
-			//parent.isf = child.fold
-			fdc.updateInverse(parent, child.getFold());
-			//parent.isf.sfold = parent
-			if(parent.getInverseSurrogateFold() == null)
-				System.out.println("parent.getISF is null, parent is node " + parent.getWebId() + ",child is node " + child.getWebId());
-			assert (parent.getInverseSurrogateFold() != null);
-			fdc.updateSurrogate(parent.getInverseSurrogateFold(), parent);
+			/* To reverse from a stable state:
+			 * parent.isf = child.f
+			 * child.f.sf = parent
+			 * child.f.f = null
+			 */
+			Node fold = child.getFold();
+			fdc.updateInverse(parent, fold);
+			fdc.updateSurrogate(fold, parent);
+			fdc.removeDirect(fold, null);
 		}
 	}
 	private static class FoldStateUnstable implements FoldStateInterface{
@@ -873,16 +875,17 @@ public class Node implements NodeInterface{
 		}
 		@Override
 		public void reverseFolds(FoldDatabaseChanges fdc, Node parent, Node child) {
+			/* To reverse from an unstable state:
+			 * parent.f = child.f
+			 * child.f.f = parent
+			 * parent.sf = null
+			 * child.f.isf = null
+			 */
 			Node fold = child.getFold();
-			//give parent fold back
 			fdc.updateDirect(parent, fold);
-			
-			//remove parent sfold and the corresponding isfold
-			fdc.removeSurrogate(parent, fold);
-			fdc.removeInverse(fold, parent);
-			
-			//child.fold.fold = parent
 			fdc.updateDirect(fold, parent);
+			fdc.removeSurrogate(parent, null);
+			fdc.removeInverse(fold, null);			
 		}
 	}
 }
