@@ -177,6 +177,7 @@ public class Node implements NodeInterface{
 			n.updateConnection(toReplace, this, Connections.ConnectionType.SNEIGHBOR);
 		//NOTE: must come after, otherwise "this" and "toReplace" will be equal
 		webID = toReplace.getWebId();
+		height = toReplace.getHeight();
 	}
 	/**
 	 * Disconnects an edge node to replace a node that
