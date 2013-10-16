@@ -807,6 +807,8 @@ public class Node implements NodeInterface{
 			//parent.isf = child.fold
 			fdc.updateInverse(parent, child.getFold());
 			//parent.isf.sfold = parent
+			if(parent.getInverseSurrogateFold() == null)
+				System.out.println("parent.getISF is null, parent is node " + parent.getWebId() + ",child is node " + child.getWebId());
 			assert (parent.getInverseSurrogateFold() != null);
 			fdc.updateSurrogate(parent.getInverseSurrogateFold(), parent);
 		}
