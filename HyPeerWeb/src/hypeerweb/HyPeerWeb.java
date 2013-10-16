@@ -5,6 +5,7 @@ import java.io.FileOutputStream;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.Random;
 import java.util.TreeSet;
@@ -98,9 +99,7 @@ public class HyPeerWeb implements HyPeerWebInterface {
 		if (replace == null)
 			throw removeNodeErr;
 		//Remove node from list of nodes
-		System.out.println("BEFORE HEIGHT = "+nodes.size());
-		nodes.remove(replace);
-		System.out.println("AFTER HEIGHT = "+nodes.size());
+		nodes.remove(replace);		
 		//Replace the node to be deleted
 		if (!n.equals(replace))
 			replace.replaceNode(n);
@@ -111,7 +110,7 @@ public class HyPeerWeb implements HyPeerWebInterface {
 	 * @return
 	 * @throws Exception 
 	 */
-	private Node removeSecondNode(Node n) throws Exception{
+	private Node removeSecondNode(Node n) throws Exception{		
 		Node last = n.getNeighbors()[0];
 		if (!disableDB){
 			db.beginCommit();
@@ -124,11 +123,12 @@ public class HyPeerWeb implements HyPeerWebInterface {
 				throw removeNodeErr;
 		}
 		//Remove from java structure
+		nodes.remove(n);
+		//This must come after removing n
 		last.setWebID(0);
 		last.setHeight(0);
 		last.setFold(null);
 		last.removeNeighbor(n);
-		nodes.remove(n);
 		return n;
 	}
 	/**

@@ -212,10 +212,7 @@ public class Node implements NodeInterface{
 		}
 
 		//fold state
-		System.out.println(foldState);
-		System.out.println(C.fold.foldState);
 		C.fold.foldState.reverseFolds(fdc, parent, this);
-		//foldState.reverseFolds(fdc, parent, this);
 
 		//Attempt to update the database
 		//If it fails, we cannot proceed
