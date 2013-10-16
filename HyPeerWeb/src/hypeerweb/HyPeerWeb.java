@@ -302,4 +302,15 @@ public class HyPeerWeb implements HyPeerWebInterface {
 			return null;
 		return n;
 	}
+
+    @Override
+    public String toString() {
+        StringBuilder builder = new StringBuilder();
+        
+        for(Node n : nodes) {
+            builder.append(n + "\n");
+        }
+        
+        return builder.toString();
+    }
 }
