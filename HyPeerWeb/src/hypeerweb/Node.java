@@ -774,7 +774,47 @@ public class Node implements NodeInterface{
 	}
 	@Override
 	public String toString(){
-		return String.valueOf(webID)+"("+String.valueOf(height)+")";
+            StringBuilder builder = new StringBuilder();
+            builder.append("WebID: " + webID + "\n");
+            builder.append("Height: " + height + "\n");
+            
+	    if(C.neighbors != null && !C.neighbors.isEmpty()){
+		builder.append("Neighbors: ");
+		for(Node n : C.neighbors) {
+		    builder.append(n.getWebId() + "; ");
+		}
+		builder.append("\n");
+	    }
+            
+            if(C.fold != null){
+                builder.append("Fold: " + C.fold.getWebId() + "\n");
+            }
+            
+            if(C.surrogateNeighbors != null && !C.surrogateNeighbors.isEmpty()){
+		builder.append("Surrogate Neighbors: ");
+                for(Node n : C.surrogateNeighbors) {
+                    builder.append(n.getWebId() + "; ");
+                }
+		builder.append("\n");
+            }
+            
+            if(C.surrogateFold != null){
+                builder.append("Surrogate Fold: " + C.surrogateFold.getWebId() + "\n");
+            }
+	    
+	    if(C.inverseSurrogateNeighbors != null &&!C.inverseSurrogateNeighbors.isEmpty()) {
+		builder.append("Inverse Surrogate Neighbors: ");
+		for(Node n : C.inverseSurrogateNeighbors) {
+		    builder.append(n.getWebId() + "; ");
+		}
+		builder.append("\n");
+	    }
+	    
+	    if(C.inverseSurrogateFold != null) {
+		builder.append("Inverse Surrogate Fold: " + C.inverseSurrogateFold.getWebId() + "\n");
+	    }
+            
+            return builder.toString();
 	}
 	
 	//FOLD STATE PATTERN
