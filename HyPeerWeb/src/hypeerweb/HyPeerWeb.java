@@ -98,7 +98,9 @@ public class HyPeerWeb implements HyPeerWebInterface {
 		if (replace == null)
 			throw removeNodeErr;
 		//Remove node from list of nodes
+		System.out.println("BEFORE HEIGHT = "+nodes.size());
 		nodes.remove(replace);
+		System.out.println("AFTER HEIGHT = "+nodes.size());
 		//Replace the node to be deleted
 		if (!n.equals(replace))
 			replace.replaceNode(n);

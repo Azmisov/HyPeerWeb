@@ -211,7 +211,10 @@ public class Node implements NodeInterface{
 		}
 
 		//fold state
-		foldState.reverseFolds(fdc, parent, this);
+		System.out.println(foldState);
+		System.out.println(C.fold.foldState);
+		C.fold.foldState.reverseFolds(fdc, parent, this);
+		//foldState.reverseFolds(fdc, parent, this);
 
 		//Attempt to update the database
 		//If it fails, we cannot proceed
@@ -845,7 +848,7 @@ public class Node implements NodeInterface{
 			fdc.updateDirect(parent, fold);
 			fdc.updateDirect(fold, parent);
 			fdc.removeSurrogate(parent, null);
-			fdc.removeInverse(fold, null);			
+			fdc.removeInverse(fold, null);
 		}
 	}
 }

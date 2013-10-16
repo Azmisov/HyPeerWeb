@@ -40,7 +40,7 @@ public class HyPeerWebTest {
 	 */
 	@Test
 	public void testAddNode() throws Exception {
-		try{
+	//	try{
 			if (TEST_DATABASE){
 				//I put the testHyPeerWeb code here because it was always running after testAddNode and so wasn't testing anything.
 				System.out.println("Testing restore");
@@ -68,7 +68,7 @@ public class HyPeerWebTest {
 					}
 				}
 			}
-		} catch (Exception e){
+	/*	} catch (Exception e){
 			System.out.println("Fatal Error from HyPeerWeb:");
 			System.out.println(e);
 			System.out.println(e.getMessage());
@@ -78,6 +78,7 @@ public class HyPeerWebTest {
 			if (!web.endTrace())
 				System.out.println("WARNING!!! Could not save the insertion trace to log file");
 		}
+	*/
 	}
 	
 }
