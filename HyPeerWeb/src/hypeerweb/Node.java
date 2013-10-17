@@ -189,7 +189,7 @@ public class Node implements NodeInterface{
 	protected Node disconnectNode(Database db){
 		NeighborDatabaseChanges ndc = new NeighborDatabaseChanges();
 		FoldDatabaseChanges fdc = new FoldDatabaseChanges();
-
+		System.out.println("Disconnecting node " + webID);
 		Node parent = getParent();
 		int parentHeight = parent.getHeight()-1;
 
@@ -761,45 +761,28 @@ public class Node implements NodeInterface{
 	@Override
 	public String toString(){
             StringBuilder builder = new StringBuilder();
-            builder.append("WebID: " + webID + "\n");
-            builder.append("Height: " + height + "\n");
+            builder.append("WebId: " + webID + " Height: " + height);
+	    if(C.fold != null)
+		builder.append(" Fold: " + C.fold.getWebId());
+	    if(C.surrogateFold != null)
+                builder.append(" SFold: " + C.surrogateFold.getWebId());
+	    if(C.inverseSurrogateFold != null)
+                builder.append(" ISFold: " + C.inverseSurrogateFold.getWebId());
             
-	    if(C.neighbors != null && !C.neighbors.isEmpty()){
-		builder.append("Neighbors: ");
-		for(Node n : C.neighbors) {
-		    builder.append(n.getWebId() + "; ");
-		}
-		builder.append("\n");
+	    builder.append("\nNs: ");
+	    for(Node n : C.neighbors) {
+		builder.append(n.getWebId() + " ");
 	    }
-            
-            if(C.fold != null){
-                builder.append("Fold: " + C.fold.getWebId() + "\n");
-            }
-            
-            if(C.surrogateNeighbors != null && !C.surrogateNeighbors.isEmpty()){
-		builder.append("Surrogate Neighbors: ");
-                for(Node n : C.surrogateNeighbors) {
-                    builder.append(n.getWebId() + "; ");
-                }
-		builder.append("\n");
-            }
-            
-            if(C.surrogateFold != null){
-                builder.append("Surrogate Fold: " + C.surrogateFold.getWebId() + "\n");
-            }
+	    builder.append("SNs: ");
+	    for(Node n : C.surrogateNeighbors) {
+		builder.append(n.getWebId() + " ");
+	    }
+	    builder.append("ISNs: ");
+	    for(Node n : C.inverseSurrogateNeighbors) {
+		builder.append(n.getWebId() + " ");
+	    }
+	    builder.append("\n\n");
 	    
-	    if(C.inverseSurrogateNeighbors != null &&!C.inverseSurrogateNeighbors.isEmpty()) {
-		builder.append("Inverse Surrogate Neighbors: ");
-		for(Node n : C.inverseSurrogateNeighbors) {
-		    builder.append(n.getWebId() + "; ");
-		}
-		builder.append("\n");
-	    }
-	    
-	    if(C.inverseSurrogateFold != null) {
-		builder.append("Inverse Surrogate Fold: " + C.inverseSurrogateFold.getWebId() + "\n");
-	    }
-            
             return builder.toString();
 	}
 	

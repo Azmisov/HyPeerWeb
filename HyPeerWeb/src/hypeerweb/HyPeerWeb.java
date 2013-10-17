@@ -306,7 +306,7 @@ public class HyPeerWeb implements HyPeerWebInterface {
         StringBuilder builder = new StringBuilder();
         
         for (Node n : nodes.values()) {
-            builder.append(n).append("\n");
+            builder.append(n);
         }
         
         return builder.toString();
