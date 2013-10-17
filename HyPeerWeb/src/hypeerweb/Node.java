@@ -361,8 +361,11 @@ public class Node implements NodeInterface{
 		public Node check(Node origin, Node friend){
 			Node temp;
 			//Check for inverse surrogate neighbors (they always have greater height)
-			if ((temp = friend.getHighestInverseSurrogateNeighbor()) != null)
+			//Note: This is a shortcut, it only applies if origin = friend
+			if (origin.equals(friend) && (temp = friend.getHighestInverseSurrogateNeighbor()) != null){
+				System.out.println("Going up ladder = "+temp.webID);
 				return temp.findDisconnectNode();
+			}
 			//Find a child of greater height
 			if ((temp = friend.getHighestNeighbor()) != null && temp.getWebId() > origin.getWebId())
 				return temp.findDisconnectNode();
