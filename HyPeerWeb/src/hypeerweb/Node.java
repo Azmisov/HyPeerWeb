@@ -337,26 +337,6 @@ public class Node implements NodeInterface{
 		}
 		//If no child has greater height, I am valid
 		return this;
-		/*
-		
-		Node result = findDisconnectNode(new ArrayList<Node>(), 2);
-		if (result != null)
-			return result;
-		return this;
-		*/
-	}	
-	private Node findDisconnectNode(List<Node> visited, int level) {
-		Node result = findDisconnectNode(new ArrayList<Node>(), 2);
-		if (result != null)
-			return result.getChildlessDescendant();
-		return getChildlessDescendant();
-	}
-	private Node getChildlessDescendant(){
-		for (Node n : C.neighbors) {
-			if (n.getParent() == this)
-				return n.getChildlessDescendant();
-		}
-		return this;
 	}
 		
 	//EN-MASSE DATABASE CHANGE HANDLING
@@ -606,9 +586,12 @@ public class Node implements NodeInterface{
 	@Override
 	public Node getParent() {
 		Node lowest = this;
+		int lowID = this.webID, temp;
 		for (Node n : C.neighbors) {
-			if (n.webID < lowest.webID)
+			if ((temp = n.getWebId()) < lowID){
+				lowID = temp;
 				lowest = n;
+			}
 		}
 		return lowest == this ? null : lowest;
 	}
