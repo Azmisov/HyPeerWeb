@@ -1,7 +1,6 @@
 package hypeerweb;
 
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.TreeSet;
 import validator.NodeInterface;
 
@@ -22,9 +21,9 @@ public class Node implements NodeInterface{
 		public Node fold;
 		public Node surrogateFold;
 		public Node inverseSurrogateFold;
-		public HashSet<Node> neighbors = new HashSet<>();
-		public HashSet<Node> surrogateNeighbors = new HashSet<>();
-		public HashSet<Node> inverseSurrogateNeighbors = new HashSet<>();
+		public TreeSet<Node> neighbors = new TreeSet<>();
+		public TreeSet<Node> surrogateNeighbors = new TreeSet<>();
+		public TreeSet<Node> inverseSurrogateNeighbors = new TreeSet<>();
 	}
 	private Connections C;
 	//State machines
@@ -160,6 +159,10 @@ public class Node implements NodeInterface{
 	protected void replaceNode(Node toReplace){
 		//Swap out connections
 		C = toReplace.getConnections();
+		//Change WebID/Height, this must come before updating connections
+		//Otherwise, the Neighbor Sets will be tainted with incorrect webID's
+		webID = toReplace.getWebId();
+		height = toReplace.getHeight();
 		//Notify all connections that their reference has changed
 		//NOTE: we reverse surrogate/inverse-surrogate connections
 		//Fold connections do not need a reference to the old node (pass null)
@@ -175,9 +178,6 @@ public class Node implements NodeInterface{
 			n.updateConnection(toReplace, this, Connections.ConnectionType.ISNEIGHBOR);
 		for (Node n: C.inverseSurrogateNeighbors)
 			n.updateConnection(toReplace, this, Connections.ConnectionType.SNEIGHBOR);
-		//NOTE: must come after, otherwise "this" and "toReplace" will be equal
-		webID = toReplace.getWebId();
-		height = toReplace.getHeight();
 	}
 	/**
 	 * Disconnects an edge node to replace a node that
@@ -328,14 +328,13 @@ public class Node implements NodeInterface{
 	 */
 	protected Node findDisconnectNode(){
 		//Check for inverse surrogate neighbors
-		if (!C.inverseSurrogateNeighbors.isEmpty()){
-			//Recurse on the first ISNeighbor
-			return C.inverseSurrogateNeighbors.iterator().next().findDisconnectNode();
-		}
-		//Find a child of greater height
-		for (Node n: C.neighbors){
-			if (n.getWebId() > webID)
-				return n.findDisconnectNode();
+		if (!C.inverseSurrogateNeighbors.isEmpty())
+			return C.inverseSurrogateNeighbors.first().findDisconnectNode();
+		//Find a child of greatest height
+		if (!C.neighbors.isEmpty()){
+			Node lastChild = C.neighbors.last();
+			if (lastChild.getWebId() > webID)
+				return lastChild.findDisconnectNode();
 		}
 		//If no child has greater height, I am valid
 		return this;
@@ -554,7 +553,7 @@ public class Node implements NodeInterface{
 	 * Users of the method are "on their honor" to not modify the original list
 	 * @return a list of neighbors
 	 */
-	private HashSet<Node> getNeighborsSet(){
+	private TreeSet<Node> getNeighborsSet(){
 		return C.neighbors;
 	}
 	/**
@@ -573,7 +572,7 @@ public class Node implements NodeInterface{
 	public Node getFirstSurrogateNeighbor(){
 		if (C.surrogateNeighbors.isEmpty())
 			return null;
-		return C.surrogateNeighbors.iterator().next();
+		return C.surrogateNeighbors.first();
 	}
 	/**
 	 * Gets an ArrayList containing the Inverse Surrogate Neighbors of the Node
@@ -754,9 +753,10 @@ public class Node implements NodeInterface{
 	}
 	@Override
 	public boolean equals(Object obj) {
+		
 		if (obj == null || getClass() != obj.getClass())
 			return false;
-		return this.webID == ((Node) obj).webID;
+		return this.webID == ((Node) obj).getWebId();
 	}
 	@Override
 	public String toString(){
