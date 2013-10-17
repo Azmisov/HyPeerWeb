@@ -1,7 +1,7 @@
 package hypeerweb;
 
 import java.util.ArrayList;
-import java.util.List;
+import java.util.HashSet;
 import java.util.TreeSet;
 import validator.NodeInterface;
 
@@ -22,9 +22,9 @@ public class Node implements NodeInterface{
 		public Node fold;
 		public Node surrogateFold;
 		public Node inverseSurrogateFold;
-		public TreeSet<Node> neighbors = new TreeSet();
-		public TreeSet<Node> surrogateNeighbors = new TreeSet();
-		public TreeSet<Node> inverseSurrogateNeighbors = new TreeSet();
+		public HashSet<Node> neighbors = new HashSet<>();
+		public HashSet<Node> surrogateNeighbors = new HashSet<>();
+		public HashSet<Node> inverseSurrogateNeighbors = new HashSet<>();
 	}
 	private Connections C;
 	//State machines
@@ -328,8 +328,10 @@ public class Node implements NodeInterface{
 	 */
 	protected Node findDisconnectNode(){
 		//Check for inverse surrogate neighbors
-		if (!C.inverseSurrogateNeighbors.isEmpty())
-			return C.inverseSurrogateNeighbors.first().findDisconnectNode();
+		if (!C.inverseSurrogateNeighbors.isEmpty()){
+			//Recurse on the first ISNeighbor
+			return C.inverseSurrogateNeighbors.iterator().next().findDisconnectNode();
+		}
 		//Find a child of greater height
 		for (Node n: C.neighbors){
 			if (n.getWebId() > webID)
@@ -552,7 +554,7 @@ public class Node implements NodeInterface{
 	 * Users of the method are "on their honor" to not modify the original list
 	 * @return a list of neighbors
 	 */
-	private TreeSet<Node> getNeighborsSet(){
+	private HashSet<Node> getNeighborsSet(){
 		return C.neighbors;
 	}
 	/**
@@ -571,7 +573,7 @@ public class Node implements NodeInterface{
 	public Node getFirstSurrogateNeighbor(){
 		if (C.surrogateNeighbors.isEmpty())
 			return null;
-		return C.surrogateNeighbors.first();
+		return C.surrogateNeighbors.iterator().next();
 	}
 	/**
 	 * Gets an ArrayList containing the Inverse Surrogate Neighbors of the Node

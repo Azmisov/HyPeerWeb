@@ -284,7 +284,7 @@ public class HyPeerWeb implements HyPeerWebInterface {
 	//VALIDATION
 	@Override
 	public Node[] getOrderedListOfNodes() {
-		return nodes.entrySet().toArray(new Node[nodes.size()]);
+		return nodes.values().toArray(new Node[nodes.size()]);
 	}
 	/**
 	 * Retrieve a node with the specified webid
