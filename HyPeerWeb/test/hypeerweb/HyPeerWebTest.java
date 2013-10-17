@@ -58,7 +58,7 @@ public class HyPeerWebTest {
 			boolean valid;
 			int old_size = 0;
 			Node temp;
-			for (; t<1; t++){
+			for (; t<2; t++){
 				System.out.println("BEGIN "+(t == 0 ? "ADDING" : "DELETING")+" NODES");
 				for (i=1; i<=MAX_TESTS; i++){
 					//Add nodes first time around
@@ -81,6 +81,8 @@ public class HyPeerWebTest {
 						assertTrue(valid);
 					}
 				}
+				//After insertion graph
+				drawGraph(web.getFirstNode(), 5);
 			}
 		} catch (Exception e){
 			System.out.println("Fatal Error from HyPeerWeb:");
@@ -94,8 +96,11 @@ public class HyPeerWebTest {
 			System.out.println("ADDED "+(t > 0 ? MAX_TESTS : i)+" NODES");
 			System.out.println("DELETED "+(t == 1 ? i : t == 2 ? MAX_TESTS : 0)+" NODES");
 		}
-		
-		draw.start(web.getFirstNode(), 3);
+	}
+	
+	public void drawGraph(Node n, int levels) throws Exception{
+		if (n == null) return;
+		draw.start(n, levels);
 		synchronized (this){
 			this.wait();
 		}

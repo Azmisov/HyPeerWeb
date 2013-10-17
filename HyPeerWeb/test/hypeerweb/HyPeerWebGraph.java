@@ -14,6 +14,7 @@ import java.awt.image.BufferedImage;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.TreeSet;
 import javax.swing.JFrame;
@@ -42,13 +43,9 @@ public class HyPeerWebGraph extends JFrame{
 		//Mouse listeners
 		addMouseListener(new MouseListener(){
 			@Override
-			public void mousePressed(MouseEvent e) {
-				throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
-			}
+			public void mousePressed(MouseEvent e) {}
 			@Override
-			public void mouseReleased(MouseEvent e) {
-				
-			}
+			public void mouseReleased(MouseEvent e) {}
 			@Override
 			public void mouseClicked(MouseEvent e) {}
 			@Override
@@ -58,12 +55,10 @@ public class HyPeerWebGraph extends JFrame{
 		});
 		addMouseMotionListener(new MouseMotionListener(){
 			@Override
-			public void mouseDragged(MouseEvent e) {
-				
-			}
+			public void mouseDragged(MouseEvent e) {}
 			@Override
 			public void mouseMoved(MouseEvent e) {
-				
+				draw.drawMouse(e.getX(), e.getY()-20);
 			}
 		});
 	}
@@ -83,6 +78,7 @@ public class HyPeerWebGraph extends JFrame{
 		private Node n;							//Node we are going to draw
 		private int nodeSize = 10,				//Node size, in pixels
 					margin = 20,				//Minimum margin between nodes (within allowed window space)
+					selMargin = 5,				//Mimimum margin before a node is close enough to mouse for selection
 					mx, my;						//Mouse coordinates
 		private HashMap<Node, Point2D> coords;	//Screen coords of nodes
 		private HashMap<Node, Double> skews;	//Skew angles for each circle
@@ -100,6 +96,9 @@ public class HyPeerWebGraph extends JFrame{
 			strokeN = new BasicStroke(2, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND),
 			strokeSN = new BasicStroke(2, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND, 10, dash1, 10),
 			strokeISN = new BasicStroke(2, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND, 10, dash2, 10);
+		//Drawing buffer
+		private BufferedImage buffer;
+		private Entry<Node, Point2D> selected;
 		
 		/**
 		 * Draws the specified node
@@ -107,6 +106,7 @@ public class HyPeerWebGraph extends JFrame{
 		public void draw(Node n){
 			this.n = n;
 			skews = new HashMap<>();
+			buffer = null;
 			repaint();
 		}
 		/**
@@ -117,18 +117,43 @@ public class HyPeerWebGraph extends JFrame{
 		public void drawMouse(int x, int y){
 			mx = x;
 			my = y;
+			//Highlight a node for selection
+			Point2D temp;
+			for (Entry<Node, Point2D> entry: coords.entrySet()){
+				System.out.println(mx+" "+my);
+				if (entry.getValue().distance(mx, my) <= nodeSize){
+					selected = entry;
+					repaint();
+					return;
+				}
+			}
+			if (selected != null){
+				selected = null;
+				repaint();
+			}
 		}
 		
 		@Override
 		protected void paintComponent(Graphics g) {
 			super.paintComponent(g);
 			Graphics2D g2 = (Graphics2D) g;
+			//Redrawing
+			if (buffer != null){
+				g2.drawImage(buffer, null, 0, 0);
+				if (selected != null){
+					g2.setColor(Color.CYAN);
+					Point2D loc = selected.getValue();
+					paintNode(g2, selected.getKey(), (int) loc.getX(), (int) loc.getY());
+				}
+				return;
+			}
 			//Draw a node
 			if (n != null){
+				buffer = new BufferedImage(winSize, winSize, BufferedImage.TYPE_INT_ARGB);
+				Graphics2D gbi = buffer.createGraphics();
+				//Reset node structures
 				coords = new HashMap<>();
 				links = new TreeSet<>();
-				BufferedImage buffer = new BufferedImage(winSize, winSize, BufferedImage.TYPE_INT_ARGB);
-				Graphics2D gbi = buffer.createGraphics();
 				//Get diameters of circles
 				int radius = winSize/2-levels*margin;
 				//Paint the starting node inthe center of the screen
@@ -149,7 +174,7 @@ public class HyPeerWebGraph extends JFrame{
 				}
 				//Paint all links
 				gbi.setComposite(compMode);
-				paintLinks(g2);
+				paintLinks(gbi);
 				g2.drawImage(buffer, null, 0, 0);
 			}
 		}

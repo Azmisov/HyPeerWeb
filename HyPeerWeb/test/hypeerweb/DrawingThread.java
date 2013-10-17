@@ -2,8 +2,6 @@ package hypeerweb;
 
 import java.awt.event.ComponentEvent;
 import java.awt.event.ComponentListener;
-import java.awt.event.WindowEvent;
-import java.awt.event.WindowListener;
 
 /**
  * Thread for drawing a HyPeerWeb graph
