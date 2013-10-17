@@ -287,7 +287,7 @@ public class HyPeerWeb implements HyPeerWebInterface {
 			return false;
 		}
 	}
-	
+		
 	//VALIDATION
 	@Override
 	public Node[] getOrderedListOfNodes() {
@@ -303,7 +303,13 @@ public class HyPeerWeb implements HyPeerWebInterface {
 	public Node getNode(int webId){
 		return nodes.get(webId);
 	}
-
+	/**
+	 * Get the size of the HyPeerWeb
+	 * @return the number of nodes in the web
+	 */
+	public int getSize(){
+		return nodes.size();
+	}
     @Override
     public String toString() {
         StringBuilder builder = new StringBuilder();

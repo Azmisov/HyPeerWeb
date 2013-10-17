@@ -53,6 +53,7 @@ public class HyPeerWebTest {
 			//We cannot do simulated tests, since addNode inserts at arbitrary places
 			web.removeAllNodes();
 			boolean valid;
+			int old_size = 0;
 			for (; t<2; t++){
 				System.out.println("BEGIN "+(t == 0 ? "ADDING" : "DELETING")+" NODES");
 				for (i=1; i<=MAX_TESTS; i++){
@@ -60,11 +61,15 @@ public class HyPeerWebTest {
 					if (t == 0){
 						if (web.addNode() == null)
 							throw new Exception("Added node should not be null!");
+						if (web.getSize() != ++old_size)
+							throw new Exception("HyPeerWeb is not the correct size");
 					}
 					//Then delete all nodes
 					else{
 						if (web.removeNode(0) == null)
 							throw new Exception("Removed node should not be null!");
+						if (web.getSize() != --old_size)
+							throw new Exception("HyPeerWeb is not the correct size");
 					}
 					if (i % TEST_EVERY == 0){
 						valid = (new Validator(web)).validate();
@@ -82,7 +87,7 @@ public class HyPeerWebTest {
 			if (!web.endTrace())
 				System.out.println("WARNING!!! Could not save the insertion trace to log file");
 			System.out.println("ADDED "+(t > 0 ? MAX_TESTS : i)+" NODES");
-			System.out.println("DELETED "+(t > 1 ? i : 0)+" NODES");
+			System.out.println("DELETED "+(t == 1 ? i : t == 2 ? MAX_TESTS : 0)+" NODES");
 		}
 	}
 	
