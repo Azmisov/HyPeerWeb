@@ -94,14 +94,18 @@ public class HyPeerWeb implements HyPeerWebInterface {
 			return removeSecondNode(n);
 		
 		//Find a disconnection point
-		Node replace = this.getRandomNode().findDisconnectNode().disconnectNode(db);
+		Node replace = getRandomNode().findDisconnectNode().disconnectNode(db);
 		if (replace == null)
 			throw removeNodeErr;
 		//Remove node from list of nodes
 		nodes.remove(replace.getWebId());
 		//Replace the node to be deleted
-		if (!n.equals(replace))
+		if (!n.equals(replace)){
+			int newWebID = n.getWebId();
+			nodes.remove(newWebID);
 			replace.replaceNode(n);
+			nodes.put(newWebID, replace);
+		}
 		return n;
 	}
 	/**

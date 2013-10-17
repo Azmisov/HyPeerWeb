@@ -211,7 +211,7 @@ public class Node implements NodeInterface{
 			ndc.removeInverse(sn, this);
 		}
 
-		//fold state
+		//Reverse the fold state; we will always have a fold - guaranteed
 		C.fold.foldState.reverseFolds(fdc, parent, this);
 
 		//Attempt to update the database
