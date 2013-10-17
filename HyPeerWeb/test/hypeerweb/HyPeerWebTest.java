@@ -13,7 +13,7 @@ import validator.Validator;
  */
 public class HyPeerWebTest {
 	//Validation variables
-	private final int MAX_TESTS = 200;//use <=100 if testing database
+	private final int MAX_TESTS = 20;//use <=100 if testing database
 	private final int TEST_EVERY = 1;
 	private final boolean TEST_DATABASE = false;
 	private final boolean USE_TRACE_LOG = false;
@@ -81,7 +81,7 @@ public class HyPeerWebTest {
 			if (!web.endTrace())
 				System.out.println("WARNING!!! Could not save the insertion trace to log file");
 			System.out.println("ADDED "+(t == 1 ? MAX_TESTS : i)+" NODES");
-			System.out.println("DELTED "+(t == 1 ? i : 0)+" NODES");
+			System.out.println("DELETED "+(t > 1 ? i : 0)+" NODES");
 		}
 	}
 	

@@ -292,7 +292,7 @@ public class Node implements NodeInterface{
 		int level = recurseLevel;
 		//For some reason, HyPeerWeb only validates if we
 		//increase the recurse level; don't ask me why...
-		level += 2;
+		level++;
 		//Nodes we've checked already
 		TreeSet<Node> visited = new TreeSet<>();
 		//Nodes we are currently checking
