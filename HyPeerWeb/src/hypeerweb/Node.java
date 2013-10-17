@@ -160,6 +160,10 @@ public class Node implements NodeInterface{
 	protected void replaceNode(Node toReplace){
 		//Swap out connections
 		C = toReplace.getConnections();
+		//Change WebID/Height, this must come before updating connections
+		//Otherwise, the Neighbor Sets will be tainted with incorrect webID's
+		webID = toReplace.getWebId();
+		height = toReplace.getHeight();
 		//Notify all connections that their reference has changed
 		//NOTE: we reverse surrogate/inverse-surrogate connections
 		//Fold connections do not need a reference to the old node (pass null)
@@ -175,9 +179,6 @@ public class Node implements NodeInterface{
 			n.updateConnection(toReplace, this, Connections.ConnectionType.ISNEIGHBOR);
 		for (Node n: C.inverseSurrogateNeighbors)
 			n.updateConnection(toReplace, this, Connections.ConnectionType.SNEIGHBOR);
-		//NOTE: must come after, otherwise "this" and "toReplace" will be equal
-		webID = toReplace.getWebId();
-		height = toReplace.getHeight();
 	}
 	/**
 	 * Disconnects an edge node to replace a node that
@@ -754,9 +755,10 @@ public class Node implements NodeInterface{
 	}
 	@Override
 	public boolean equals(Object obj) {
+		
 		if (obj == null || getClass() != obj.getClass())
 			return false;
-		return this.webID == ((Node) obj).webID;
+		return this.webID == ((Node) obj).getWebId();
 	}
 	@Override
 	public String toString(){

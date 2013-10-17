@@ -103,8 +103,8 @@ public class HyPeerWeb implements HyPeerWebInterface {
 		if (!n.equals(replace)){
 			int newWebID = n.getWebId();
 			nodes.remove(newWebID);
-			replace.replaceNode(n);
 			nodes.put(newWebID, replace);
+			replace.replaceNode(n);
 		}
 		return n;
 	}
@@ -117,16 +117,19 @@ public class HyPeerWeb implements HyPeerWebInterface {
 		Node last = n.getNeighbors()[0];
 		if (!disableDB){
 			db.beginCommit();
-			int webID = last.getWebId();
-			//TODO database set webid
-			db.setHeight(webID, 0);
-			db.setFold(webID, -1);
-			db.removeNeighbor(webID, n.getWebId());
+			//TODO: FIX THIS ENTIRE THING HERE
+			int old_webID = last.getWebId();
+			//have to delete entry and add entire node
+			db.setHeight(old_webID, 0);
+			db.setFold(old_webID, -1);
+			db.removeNeighbor(old_webID, n.getWebId());
 			if(!db.endCommit())
 				throw removeNodeErr;
 		}
-		//Remove from java structure
-		nodes.remove(n.getWebId());
+		//Update map structure to reflect changes
+		nodes.remove(0);
+		nodes.remove(1);
+		nodes.put(0, last);
 		//This must come after removing n
 		last.setWebID(0);
 		last.setHeight(0);
