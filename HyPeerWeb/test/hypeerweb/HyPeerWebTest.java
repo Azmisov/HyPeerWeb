@@ -16,7 +16,7 @@ public class HyPeerWebTest {
 	private final int MAX_TESTS = 10000;//use <=100 if testing database
 	private final int TEST_EVERY = 100;
 	private final boolean TEST_DATABASE = false;
-	private final boolean USE_TRACE_LOG = true;
+	private final boolean USE_TRACE_LOG = false;
 	private HyPeerWeb web;
 	
 	public HyPeerWebTest() throws Exception{
