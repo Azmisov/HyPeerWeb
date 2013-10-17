@@ -6,9 +6,8 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.TreeSet;
+import java.util.TreeMap;
 
 /**
  * Low-level Database access class
@@ -255,10 +254,10 @@ public final class Database {
 	 * Makes nodes from data stored in database
 	 * @return a TreeSet<Node> containing all nodes stored in database
 	 */
-	public TreeSet<Node> getAllNodes() throws Exception{
-		TreeSet<Node> tsnodes = new TreeSet();
+	public TreeMap<Integer, Node> getAllNodes() throws Exception{
+		TreeMap<Integer, Node> tsnodes = new TreeMap<>();
 		//Index for finding nodes
-		HashMap<Integer, Node> nodes = new HashMap();
+//		HashMap<Integer, Node> nodes = new HashMap();
 		ResultSet rs;
 		Node n, left, right, raw;
 		int id;
@@ -270,61 +269,60 @@ public final class Database {
 		//Create raw nodes (no neighbor links)
 		while (rs.next()){
 			id = rs.getInt("WebId");
-			raw = nodes.get(id);
+			raw = tsnodes.get(id);
 			//Create a new node
 			if (raw == null){
 				raw = new Node(id, rs.getInt("Height"));
-				nodes.put(id, raw);
+				tsnodes.put(id, raw);
 			}
 			//Update a temporary node
 			else raw.setHeight(rs.getInt("Height"));
 			//Initialize folds
 			if ((id = rs.getInt("Fold")) != -1){
-				n = nodes.get(id);
+				n = tsnodes.get(id);
 				if (n == null){
 					n = new Node(id, -1);
-					nodes.put(id, n);
+					tsnodes.put(id, n);
 				}
 				raw.setFold(n);
 			}
 			if ((id = rs.getInt("SurrogateFold")) != -1){
-				n = nodes.get(id);
+				n = tsnodes.get(id);
 				if (n == null){
 					n = new Node(id, -1);
-					nodes.put(id, n);
+					tsnodes.put(id, n);
 				}
 				raw.setSurrogateFold(n);
 			}
 			if ((id = rs.getInt("InverseSurrogateFold")) != -1){
-				n = nodes.get(id);
+				n = tsnodes.get(id);
 				if (n == null){
 					n = new Node(id, -1);
-					nodes.put(id, n);
+					tsnodes.put(id, n);
 				}
 				raw.setInverseSurrogateFold(n);
 			}
 		}
-		if (nodes.isEmpty())
+		if (tsnodes.isEmpty())
 			return tsnodes;
 
 		//get data from Neighbors table
 		rs = sqlQuery("SELECT `WebID`,`Neighbor` FROM `Neighbors`");
 		while(rs.next()){
-			left = nodes.get(rs.getInt("WebId"));
-			right = nodes.get(rs.getInt("Neighbor"));
+			left = tsnodes.get(rs.getInt("WebId"));
+			right = tsnodes.get(rs.getInt("Neighbor"));
 			left.addNeighbor(right);
 		}
 				
 		//get data from SurrogateNeighbors table
 		rs = sqlQuery("SELECT `WebId`,`SurrogateNeighbor` FROM SurrogateNeighbors");
 		while(rs.next()){
-			left = nodes.get(rs.getInt("WebId"));
-			right = nodes.get(rs.getInt("SurrogateNeighbor"));
+			left = tsnodes.get(rs.getInt("WebId"));
+			right = tsnodes.get(rs.getInt("SurrogateNeighbor"));
 			left.addSurrogateNeighbor(right);
 			right.addInverseSurrogateNeighbor(left);
 		}
 		
-		tsnodes.addAll(nodes.values());
 		return tsnodes;
 	}
 
