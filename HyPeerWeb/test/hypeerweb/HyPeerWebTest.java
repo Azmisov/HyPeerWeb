@@ -13,7 +13,7 @@ import validator.Validator;
  */
 public class HyPeerWebTest {
 	//Validation variables
-	private final int MAX_TESTS = 20;//use <=100 if testing database
+	private final int MAX_TESTS = 200;//use <=100 if testing database
 	private final int TEST_EVERY = 1;
 	private final boolean TEST_DATABASE = false;
 	private final boolean USE_TRACE_LOG = false;
@@ -40,6 +40,7 @@ public class HyPeerWebTest {
 	 */
 	@Test
 	public void testAddNode() throws Exception {
+		int t = 0, i = 1;
 		try{
 			if (TEST_DATABASE){
 				//I put the testHyPeerWeb code here because it was always running after testAddNode and so wasn't testing anything.
@@ -52,8 +53,8 @@ public class HyPeerWebTest {
 			//We cannot do simulated tests, since addNode inserts at arbitrary places
 			web.removeAllNodes();
 			boolean valid;
-			for (int t=0; t<2; t++){
-				for (int i=1; i<=MAX_TESTS; i++){
+			for (; t<2; t++){
+				for (i=1; i<=MAX_TESTS; i++){
 					//Add nodes first time around
 					if (t == 0){
 						if (web.addNode() == null)
@@ -61,7 +62,6 @@ public class HyPeerWebTest {
 					}
 					//Then delete all nodes
 					else{
-						System.out.println("deleted");
 						if (web.removeNode(0) == null)
 							throw new Exception("Removed node should not be null!");
 					}
@@ -80,6 +80,8 @@ public class HyPeerWebTest {
 		} finally{
 			if (!web.endTrace())
 				System.out.println("WARNING!!! Could not save the insertion trace to log file");
+			System.out.println("ADDED "+(t == 1 ? MAX_TESTS : i)+" NODES");
+			System.out.println("DELTED "+(t == 1 ? i : 0)+" NODES");
 		}
 	}
 	

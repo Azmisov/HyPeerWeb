@@ -190,7 +190,7 @@ public class Node implements NodeInterface{
 	protected Node disconnectNode(Database db){
 		NeighborDatabaseChanges ndc = new NeighborDatabaseChanges();
 		FoldDatabaseChanges fdc = new FoldDatabaseChanges();
-		System.out.println("Disconnecting node " + webID);
+
 		Node parent = getParent();
 		int parentHeight = parent.getHeight()-1;
 
@@ -362,10 +362,8 @@ public class Node implements NodeInterface{
 			Node temp;
 			//Check for inverse surrogate neighbors (they always have greater height)
 			//Note: This is a shortcut, it only applies if origin = friend
-			if (origin.equals(friend) && (temp = friend.getHighestInverseSurrogateNeighbor()) != null){
-				System.out.println("Going up ladder = "+temp.webID);
+			if (origin.equals(friend) && (temp = friend.getHighestInverseSurrogateNeighbor()) != null)
 				return temp.findDisconnectNode();
-			}
 			//Find a child of greater height
 			if ((temp = friend.getHighestNeighbor()) != null && temp.getWebId() > origin.getWebId())
 				return temp.findDisconnectNode();
