@@ -327,6 +327,9 @@ public class Node implements NodeInterface{
 	 * @author Josh
 	 */
 	protected Node findDisconnectNode(){
+	    System.out.println("looking for disconnectNode in node " + webID);
+	    if(webID == 0)
+		return C.neighbors.last().findDisconnectNode();
 	    //Check for inverse surrogate neighbors
 	    if (!C.inverseSurrogateNeighbors.isEmpty())
 		    return C.inverseSurrogateNeighbors.first().findDisconnectNode();
