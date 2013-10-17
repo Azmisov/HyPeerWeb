@@ -327,17 +327,18 @@ public class Node implements NodeInterface{
 	 * @author Josh
 	 */
 	protected Node findDisconnectNode(){
-		//Check for inverse surrogate neighbors
-		if (!C.inverseSurrogateNeighbors.isEmpty())
-			return C.inverseSurrogateNeighbors.first().findDisconnectNode();
-		//Find a child of greatest height
-		if (!C.neighbors.isEmpty()){
-			Node lastChild = C.neighbors.last();
-			if (lastChild.getWebId() > webID)
-				return lastChild.findDisconnectNode();
-		}
-		//If no child has greater height, I am valid
-		return this;
+	    //Check for inverse surrogate neighbors
+	    if (!C.inverseSurrogateNeighbors.isEmpty())
+		    return C.inverseSurrogateNeighbors.first().findDisconnectNode();
+	    //Find a child of greatest height
+	    if (!C.neighbors.isEmpty()){
+		Node parent = getParent();
+		    for(Node n : C.neighbors)
+			if(n != parent && n.getHeight() > height || n.hasInverseSurrogateNeighbors())
+			    return n.findDisconnectNode();
+	    }
+	    //If no child has greater height, I am valid
+	    return this;
 	}
 		
 	//EN-MASSE DATABASE CHANGE HANDLING
@@ -583,6 +584,12 @@ public class Node implements NodeInterface{
 	@Override
 	public Node[] getInverseSurrogateNeighbors() {
 		return C.inverseSurrogateNeighbors.toArray(new Node[0]);
+	}
+	public boolean hasInverseSurrogateNeighbors(){
+	    if(C.inverseSurrogateNeighbors.isEmpty())
+		return false;
+	    else
+		return true;
 	}
 	@Override
 	public Node getParent() {
