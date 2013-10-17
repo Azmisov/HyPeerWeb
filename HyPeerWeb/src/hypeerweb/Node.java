@@ -15,8 +15,8 @@ public class Node implements NodeInterface{
 	//NODE ATTRIBUTES
 	private int webID;
 	private int height;
-	private static class Connections{
-		private static enum ConnectionType {
+	public static class Connections{
+		public static enum ConnectionType {
 			FOLD, SFOLD, ISFOLD, NEIGHBOR, SNEIGHBOR, ISNEIGHBOR
 		}
 		public Node fold;
@@ -28,7 +28,7 @@ public class Node implements NodeInterface{
 	}
 	private Connections C;
 	//State machines
-	private static final int recurseLevel = 3; //3 = neighbor's neighbors
+	private static final int recurseLevel = 2; //2 = neighbor's neighbors
 	private FoldStateInterface foldState; 
 	//Hash code prime
 	private static long prime = Long.parseLong("2654435761");
@@ -278,10 +278,11 @@ public class Node implements NodeInterface{
 		/**
 		 * Checks to see if the "friend" of the "origin" node fits some criteria
 		 * @param origin the originating node
-		 * @param friend a node connected to the origin within "recurseLevel" connections
+		 * @param friend a node connected to the origin within "level" neighbor connections
+		 * @param level how far out the friend is from origin
 		 * @return a Node that fits the criteria, otherwise null
 		 */
-		public Node check(Node origin, Node friend);
+		public Node check(Node origin, Node friend, int level);
 	}
 	/**
 	 * Finds a valid node, given a set of criteria
@@ -289,10 +290,9 @@ public class Node implements NodeInterface{
 	 * @return a valid node
 	 */
 	private Node findValidNode(Criteria x){
-		int level = recurseLevel;
 		//For some reason, HyPeerWeb only validates if we
 		//increase the recurse level; don't ask me why...
-		level++;
+		int level = recurseLevel;
 		//Nodes we've checked already
 		TreeSet<Node> visited = new TreeSet<>();
 		//Nodes we are currently checking
@@ -306,7 +306,7 @@ public class Node implements NodeInterface{
 		while(true){
 			//Check for valid nodes
 			for (Node parent: parents){
-				if ((temp = x.check(this, parent)) != null)
+				if ((temp = x.check(this, parent, recurseLevel-level)) != null)
 					return temp;
 			}
 			//If this was the last level, don't go down any further
@@ -322,6 +322,9 @@ public class Node implements NodeInterface{
 						parents.add(friend);
 					}
 				}
+				//Nothing else to check
+				if (parents.isEmpty())
+					return this;
 			}
 			//No friend nodes out to "recurseLevel" connections is valid
 			else return this;
@@ -332,12 +335,15 @@ public class Node implements NodeInterface{
 	 */
 	private static Criteria insertCriteria = new Criteria(){
 		@Override
-		public Node check(Node origin, Node friend){
+		public Node check(Node origin, Node friend, int level){
+			Node temp;
+			//Friends cannot have height less than origin
 			if (friend.getHeight() < origin.getHeight())
 				return friend;
-			Node temp;
+			//Friends cannot have surrogate folds
 			if ((temp = friend.getSurrogateFold()) != null)
 				return temp;
+			//Friends cannot have surrogate neighbors
 			if ((temp = friend.getHighestSurrogateNeighbor()) != null)
 				return temp;
 			return null;
@@ -358,11 +364,11 @@ public class Node implements NodeInterface{
 	 */
 	private static Criteria disconnectCriteria = new Criteria(){
 		@Override
-		public Node check(Node origin, Node friend){
+		public Node check(Node origin, Node friend, int level){
 			Node temp;
 			//Check for inverse surrogate neighbors (they always have greater height)
 			//Note: This is a shortcut, it only applies if origin = friend
-			if (origin.equals(friend) && (temp = friend.getHighestInverseSurrogateNeighbor()) != null)
+			if (level == 0 && (temp = friend.getHighestInverseSurrogateNeighbor()) != null)
 				return temp.findDisconnectNode();
 			//Find a child of greater height
 			if ((temp = friend.getHighestNeighbor()) != null && temp.getWebId() > origin.getWebId())
@@ -821,7 +827,6 @@ public class Node implements NodeInterface{
 	}
 	@Override
 	public boolean equals(Object obj) {
-		
 		if (obj == null || getClass() != obj.getClass())
 			return false;
 		return this.webID == ((Node) obj).getWebId();

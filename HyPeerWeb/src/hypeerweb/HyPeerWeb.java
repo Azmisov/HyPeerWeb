@@ -94,7 +94,7 @@ public class HyPeerWeb implements HyPeerWebInterface {
 			return removeSecondNode(n);
 		
 		//Find a disconnection point
-		Node replace = getRandomNode().findDisconnectNode().disconnectNode(db);
+		Node replace = nodes.lastEntry().getValue().findDisconnectNode().disconnectNode(db);
 		if (replace == null)
 			throw removeNodeErr;
 		//Remove node from list of nodes
@@ -302,6 +302,24 @@ public class HyPeerWeb implements HyPeerWebInterface {
 	@Override
 	public Node getNode(int webId){
 		return nodes.get(webId);
+	}
+	/**
+	 * Gets the first node in the HyPeerWeb
+	 * @return node with webID = 0
+	 */
+	public Node getFirstNode(){
+		if (nodes.isEmpty())
+			return null;
+		return nodes.firstEntry().getValue();
+	}
+	/**
+	 * Gets the last node in the HyPeerWeb
+	 * @return 
+	 */
+	public Node getLastNode(){
+		if (nodes.isEmpty())
+			return null;
+		return nodes.lastEntry().getValue();
 	}
 	/**
 	 * Get the size of the HyPeerWeb

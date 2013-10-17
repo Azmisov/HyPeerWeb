@@ -13,11 +13,12 @@ import validator.Validator;
  */
 public class HyPeerWebTest {
 	//Validation variables
-	private final int MAX_TESTS = 40;//use <=100 if testing database
+	private final int MAX_TESTS = 10;//use <=100 if testing database
 	private final int TEST_EVERY = 1;
 	private final boolean TEST_DATABASE = false;
-	private final boolean USE_TRACE_LOG = false;
+	private final boolean USE_TRACE_LOG = true;
 	private HyPeerWeb web;
+	private DrawingThread draw;
 	
 	public HyPeerWebTest() throws Exception{
 		web = HyPeerWeb.getInstance();
@@ -33,6 +34,8 @@ public class HyPeerWebTest {
 			//*/
 		}
 		else web.startTrace();
+		//Drawing a HyPeerWeb Graph
+		draw = new DrawingThread(this);
 	}
 	
 	/**
@@ -54,19 +57,21 @@ public class HyPeerWebTest {
 			web.removeAllNodes();
 			boolean valid;
 			int old_size = 0;
-			for (; t<2; t++){
+			Node temp;
+			for (; t<1; t++){
 				System.out.println("BEGIN "+(t == 0 ? "ADDING" : "DELETING")+" NODES");
 				for (i=1; i<=MAX_TESTS; i++){
 					//Add nodes first time around
 					if (t == 0){
-						if (web.addNode() == null)
+						if ((temp = web.addNode()) == null)
 							throw new Exception("Added node should not be null!");
 						if (web.getSize() != ++old_size)
 							throw new Exception("HyPeerWeb is not the correct size");
+//						System.out.println("ADDED = "+temp.getWebId());
 					}
 					//Then delete all nodes
 					else{
-						if (web.removeNode(0) == null)
+						if ((temp = web.removeNode(web.getFirstNode())) == null)
 							throw new Exception("Removed node should not be null!");
 						if (web.getSize() != --old_size)
 							throw new Exception("HyPeerWeb is not the correct size");
@@ -89,6 +94,10 @@ public class HyPeerWebTest {
 			System.out.println("ADDED "+(t > 0 ? MAX_TESTS : i)+" NODES");
 			System.out.println("DELETED "+(t == 1 ? i : t == 2 ? MAX_TESTS : 0)+" NODES");
 		}
+		
+		draw.start(web.getFirstNode(), 3);
+		synchronized (this){
+			this.wait();
+		}
 	}
-	
 }
