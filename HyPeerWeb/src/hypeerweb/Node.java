@@ -1,6 +1,7 @@
 package hypeerweb;
 
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.TreeSet;
 import validator.NodeInterface;
 
@@ -82,6 +83,7 @@ public class Node implements NodeInterface{
 		C = new Connections();
 	}
 
+	//ADD OR REMOVE NODES
 	/**
 	 * Adds a child node to the current one
 	 * @param db the Database associated with the HyPeerWeb
@@ -150,7 +152,6 @@ public class Node implements NodeInterface{
 			return child;
 		}
 	}
-	
 	/**
 	 * Replaces a node with this node
 	 * @param toReplace the node to replace
@@ -236,7 +237,8 @@ public class Node implements NodeInterface{
 			return this;
 		}
 	}
-		
+	
+	//SEARCH FOR NODE
 	/**
 	 * Finds and returns the node whose WebID is closest to the given long
 	 * Assumed to always start with the node with WebID of zero
@@ -267,23 +269,33 @@ public class Node implements NodeInterface{
 		return (((i + (i >> 4)) & 0x0F0F0F0F) * 0x01010101) >> 24;
 	}
 	
+	//FIND VALID NODES
 	/**
-	 * Finds the closest valid insertion point (the parent
-	 * of the child to add) from a starting node, automatically deals with
-	 * the node's holes and insertable state
-	 * @return the parent of the child to add
-	 * @author josh
+	 * This is the Command Pattern
+	 * Yeah. That's right.
 	 */
-	protected Node findInsertionNode() {
-		return findInsertionNode(recurseLevel);
+	private static interface Criteria{
+		/**
+		 * Checks to see if the "friend" of the "origin" node fits some criteria
+		 * @param origin the originating node
+		 * @param friend a node connected to the origin within "recurseLevel" connections
+		 * @return a Node that fits the criteria, otherwise null
+		 */
+		public Node check(Node origin, Node friend);
 	}
-	private Node findInsertionNode(int level){
+	/**
+	 * Finds a valid node, given a set of criteria
+	 * @param x the Criteria that denotes a valid node
+	 * @return a valid node
+	 */
+	private Node findValidNode(Criteria x){
+		int level = recurseLevel;
 		//For some reason, HyPeerWeb only validates if we
 		//increase the recurse level; don't ask me why...
-		level++;
-		//Nodes we've checked for holes already
+		level += 2;
+		//Nodes we've checked already
 		TreeSet<Node> visited = new TreeSet<>();
-		//Nodes we are currently checking for holes
+		//Nodes we are currently checking
 		ArrayList<Node> parents = new ArrayList<>();
 		//Neighbors of the parents
 		ArrayList<Node> friends;
@@ -292,15 +304,9 @@ public class Node implements NodeInterface{
 		visited.add(this);
 		Node temp;
 		while(true){
-			//Check parents for valid insertion points
+			//Check for valid nodes
 			for (Node parent: parents){
-				if (parent.getHeight() < height)
-					return parent;
-				temp = parent.getSurrogateFold();
-				if (temp != null)
-					return temp;
-				temp = parent.getFirstSurrogateNeighbor();
-				if (temp != null)
+				if ((temp = x.check(this, parent)) != null)
 					return temp;
 			}
 			//If this was the last level, don't go down any further
@@ -317,27 +323,64 @@ public class Node implements NodeInterface{
 					}
 				}
 			}
+			//No friend nodes out to "recurseLevel" connections is valid
 			else return this;
 		}
 	}
-	
+	/**
+	 * Criteria for a valid insertion point node
+	 */
+	private static Criteria insertCriteria = new Criteria(){
+		@Override
+		public Node check(Node origin, Node friend){
+			if (friend.getHeight() < origin.getHeight())
+				return friend;
+			Node temp;
+			if ((temp = friend.getSurrogateFold()) != null)
+				return temp;
+			if ((temp = friend.getHighestSurrogateNeighbor()) != null)
+				return temp;
+			return null;
+		}
+	};
+	/**
+	 * Finds the closest valid insertion point (the parent
+	 * of the child to add) from a starting node, automatically deals with
+	 * the node's holes and insertable state
+	 * @return the parent of the child to add
+	 * @author josh
+	 */
+	protected Node findInsertionNode() {
+		return findValidNode(insertCriteria);
+	}
+	/**
+	 * Criteria for a valid disconnect node
+	 */
+	private static Criteria disconnectCriteria = new Criteria(){
+		@Override
+		public Node check(Node origin, Node friend){
+			Node temp;
+			//Check for inverse surrogate neighbors (they always have greater height)
+			if ((temp = friend.getHighestInverseSurrogateNeighbor()) != null)
+				return temp.findDisconnectNode();
+			//Find a child of greater height
+			if ((temp = friend.getHighestNeighbor()) != null && temp.getWebId() > origin.getWebId())
+				return temp.findDisconnectNode();
+			return null;
+		}
+	};
 	/**
 	 * Finds an edge node that can replace a node to be deleted
 	 * @return a Node that can be disconnected
 	 * @author Josh
 	 */
 	protected Node findDisconnectNode(){
-		//Check for inverse surrogate neighbors
-		if (!C.inverseSurrogateNeighbors.isEmpty())
-			return C.inverseSurrogateNeighbors.first().findDisconnectNode();
-		//Find a child of greatest height
-		if (!C.neighbors.isEmpty()){
-			Node lastChild = C.neighbors.last();
-			if (lastChild.getWebId() > webID)
-				return lastChild.findDisconnectNode();
-		}
-		//If no child has greater height, I am valid
-		return this;
+		/* Check all nodes out to "recurseLevel" for higher nodes
+			Any time we find a "higher" node, we go up to it
+			We keep walking up the ladder until we can go no farther
+			We don't need to keep track of visited nodes, since visited nodes will always be lower on the ladder
+		*/
+		return findValidNode(disconnectCriteria);
 	}
 		
 	//EN-MASSE DATABASE CHANGE HANDLING
@@ -557,6 +600,15 @@ public class Node implements NodeInterface{
 		return C.neighbors;
 	}
 	/**
+	 * Gets the neighbor of greatest height
+	 * @return a neighbor
+	 */
+	private Node getHighestNeighbor(){
+		if (C.neighbors.isEmpty())
+			return null;
+		return C.neighbors.last();
+	}
+	/**
 	 * Gets an ArrayList containing the Surrogate Neighbors of the Node
 	 *
 	 * @return An ArrayList containing the Surrogate Neighbors of the Node
@@ -569,10 +621,10 @@ public class Node implements NodeInterface{
 	 * Gets the first surrogate neighbor of the node
 	 * @return the first surrogate neighbor
 	 */
-	public Node getFirstSurrogateNeighbor(){
+	public Node getHighestSurrogateNeighbor(){
 		if (C.surrogateNeighbors.isEmpty())
 			return null;
-		return C.surrogateNeighbors.first();
+		return C.surrogateNeighbors.last();
 	}
 	/**
 	 * Gets an ArrayList containing the Inverse Surrogate Neighbors of the Node
@@ -583,6 +635,15 @@ public class Node implements NodeInterface{
 	@Override
 	public Node[] getInverseSurrogateNeighbors() {
 		return C.inverseSurrogateNeighbors.toArray(new Node[0]);
+	}
+	/**
+	 * Gets the first inverse surrogate neighbor of the node
+	 * @return the first inverse surrogate neighbor
+	 */
+	public Node getHighestInverseSurrogateNeighbor(){
+		if (C.inverseSurrogateNeighbors.isEmpty())
+			return null;
+		return C.inverseSurrogateNeighbors.last();
 	}
 	@Override
 	public Node getParent() {
@@ -600,7 +661,7 @@ public class Node implements NodeInterface{
 	 * Gets all the nodes connections
 	 * @return a Connections class
 	 */
-	protected Connections getConnections(){
+	private Connections getConnections(){
 		return C;
 	}
 	

@@ -13,8 +13,8 @@ import validator.Validator;
  */
 public class HyPeerWebTest {
 	//Validation variables
-	private final int MAX_TESTS = 8;//use <=100 if testing database
-	private final int TEST_EVERY = 1;
+	private final int MAX_TESTS = 10000;//use <=100 if testing database
+	private final int TEST_EVERY = 100;
 	private final boolean TEST_DATABASE = false;
 	private final boolean USE_TRACE_LOG = true;
 	private HyPeerWeb web;
