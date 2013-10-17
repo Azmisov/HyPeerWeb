@@ -761,7 +761,7 @@ public class Node implements NodeInterface{
 	@Override
 	public String toString(){
             StringBuilder builder = new StringBuilder();
-            builder.append("WebId: " + webID + " Height: " + height);
+            builder.append("\nWebId: " + webID + " Height: " + height);
 	    if(C.fold != null)
 		builder.append(" Fold: " + C.fold.getWebId());
 	    if(C.surrogateFold != null)
@@ -781,7 +781,7 @@ public class Node implements NodeInterface{
 	    for(Node n : C.inverseSurrogateNeighbors) {
 		builder.append(n.getWebId() + " ");
 	    }
-	    builder.append("\n\n");
+	    builder.append("\n");
 	    
             return builder.toString();
 	}
