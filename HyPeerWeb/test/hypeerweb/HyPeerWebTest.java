@@ -13,18 +13,21 @@ import validator.Validator;
  */
 public class HyPeerWebTest {
 	//Validation variables
-	private final int MAX_TESTS = 10000;//use <=100 if testing database
-	private final int TEST_EVERY = 100;
+	private final int MAX_TESTS = 10;//use <=100 if testing database
+	private final int TEST_EVERY = 1;
+	private final int GRAPH_LEVELS = 3;
 	private final boolean TEST_DATABASE = false;
 	private final boolean USE_TRACE_LOG = false;
+	private final boolean DRAW_GRAPH = true;
 	private HyPeerWeb web;
+	private DrawingThread draw;
 	
 	public HyPeerWebTest() throws Exception{
 		web = HyPeerWeb.getInstance();
 		if (!TEST_DATABASE)
 			web.disableDatabase();
 		if (USE_TRACE_LOG){
-			/*
+			//*
 			if (!web.loadTrace()){
 				System.out.println("Could not load insertion trace from log file!!!");
 				System.out.println("Try again or disable USE_TRACE_LOG");
@@ -33,6 +36,9 @@ public class HyPeerWebTest {
 			//*/
 		}
 		else web.startTrace();
+		//Drawing a HyPeerWeb Graph
+		if (DRAW_GRAPH)
+		    draw = new DrawingThread(this);
 	}
 	
 	/**
@@ -40,6 +46,7 @@ public class HyPeerWebTest {
 	 */
 	@Test
 	public void testAddNode() throws Exception {
+		int t = 0, i = 1;
 		try{
 			if (TEST_DATABASE){
 				//I put the testHyPeerWeb code here because it was always running after testAddNode and so wasn't testing anything.
@@ -50,15 +57,41 @@ public class HyPeerWebTest {
 
 			//Add a bunch of nodes; if it validates afterwards, addNode should be working
 			//We cannot do simulated tests, since addNode inserts at arbitrary places
-			web.deleteAllNodes();
+			web.removeAllNodes();
 			boolean valid;
-			for (int i=1; i<=MAX_TESTS; i++){
-				web.addNode();
-				//System.out.println("added node "+i);
-				if (i % TEST_EVERY == 0){
-					valid = (new Validator(web)).validate();
-					assertTrue(valid);
+			int old_size = 0;
+			Node temp;
+			for (; t<2; t++){
+				System.out.println("BEGIN "+(t == 0 ? "ADDING" : "DELETING")+" NODES");
+				for (i=1; i<=MAX_TESTS; i++){
+					//Add nodes first time around
+					if (t == 0){
+						if ((temp = web.addNode()) == null)
+							throw new Exception("Added node should not be null!");
+						if (web.getSize() != ++old_size)
+							throw new Exception("HyPeerWeb is not the correct size");
+						//System.out.println("ADDED = "+temp.getWebId());
+					}
+					//Then delete all nodes
+					else{
+						if (t == 1 && i==9)
+							drawGraph(web.getNode(63));
+						if ((temp = web.removeNode(web.getFirstNode())) == null)
+							throw new Exception("Removed node should not be null!");
+						if (web.getSize() != --old_size)
+							throw new Exception("HyPeerWeb is not the correct size");
+						if (t == 1 && i==9)
+							drawGraph(web.getNode(31));
+					}
+					if (i % TEST_EVERY == 0){
+						valid = (new Validator(web)).validate();
+						assertTrue(valid);
+					}
 				}
+				//After insertion graph
+				System.out.println("DONE "+(t == 0 ? "ADDING" : "DELETING")+" NODES");
+				if (DRAW_GRAPH)
+				    drawGraph(web.getFirstNode());
 			}
 		} catch (Exception e){
 			System.out.println("Fatal Error from HyPeerWeb:");
@@ -69,7 +102,16 @@ public class HyPeerWebTest {
 		} finally{
 			if (!web.endTrace())
 				System.out.println("WARNING!!! Could not save the insertion trace to log file");
+			System.out.println("ADDED "+(t > 0 ? MAX_TESTS : i)+" NODES");
+			System.out.println("DELETED "+(t == 1 ? i : t == 2 ? MAX_TESTS : 0)+" NODES");
 		}
 	}
 	
+	public void drawGraph(Node n) throws Exception{
+		if (n == null) return;
+		draw.start(n, GRAPH_LEVELS);
+		synchronized (this){
+			this.wait();
+		}
+	}
 }

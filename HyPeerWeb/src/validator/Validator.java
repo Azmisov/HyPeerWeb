@@ -61,31 +61,7 @@ public class Validator {
         
         if(!valid) {
             System.out.println("\nNodes in HyPeerWeb of size " + nodes.length + ":");
-            for(NodeInterface node : nodes) {
-                System.out.println("WebId: " + node.getWebId() + 
-                        " Height: " + node.getHeight() + 
-                        " Fold: " + node.getFold() +
-                        " SFold: " + node.getSurrogateFold() + 
-                        " ISFold: " + node.getInverseSurrogateFold());
-                System.out.print("Ns: ");
-                NodeInterface[] neighbors = node.getNeighbors();
-                for(NodeInterface n : neighbors){
-                    System.out.print(n.getWebId() + " ");
-                }
-                System.out.print(" SNs: ");
-                NodeInterface[] sneighbors = node.getSurrogateNeighbors();
-                for(NodeInterface n : sneighbors){
-                    System.out.print(n.getWebId() + " ");
-                }
-                System.out.print(" ISNs: ");
-                NodeInterface[] isneighbors = node.getInverseSurrogateNeighbors();
-                for(NodeInterface n : isneighbors){
-                    System.out.print(n.getWebId() + " ");
-                }
-                System.out.println();
-		System.out.println();
-            }
-            System.out.println();
+            System.out.println(hypeerWeb.toString());
         }
 
         return valid;

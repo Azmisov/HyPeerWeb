@@ -10,6 +10,10 @@ import java.util.*;
 public class Main {
 
 	public static void main(String[] args) {
+		int x = 0 & 1;
+		System.out.println(Integer.toBinaryString(x));
+		return;
+		
 		int total_errs = 0;
 		
 		/* DATABASE TEST CODE
@@ -33,7 +37,7 @@ public class Main {
 		try{
 			System.out.println("BEGIN HYPEERWEB CLASS TESTING:\n");
 			HyPeerWeb web = HyPeerWeb.getInstance();
-			web.deleteAllNodes();
+			web.removeAllNodes();
 			//try to add a bunch of nodes
 			for (int i=0; i<50; i++)
 				System.out.println("added node "+web.addNode());
