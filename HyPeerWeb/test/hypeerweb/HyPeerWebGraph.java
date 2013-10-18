@@ -46,7 +46,7 @@ public class HyPeerWebGraph extends JFrame{
 		//Initialize window
 		setTitle("HyPeerWeb Directed Graph");
 		setDefaultCloseOperation(JFrame.HIDE_ON_CLOSE);
-		setSize(winSize, winSize);
+		setSize(winSize, winSize+100);
 		draw = new Graph();
 		add(draw);
 		
@@ -89,9 +89,11 @@ public class HyPeerWebGraph extends JFrame{
 	
 	//INNER DRAWING CLASS:
 	private class Graph extends JPanel{
+		private String title;					//Graph title
 		private Node n;							//Node we are going to draw
+		private Node nParent;					//The node's parent
 		private int nodeSize = 10,				//Node size, in pixels
-					margin = 0,				//Minimum margin between nodes (within allowed window space)
+					margin = 0,					//Minimum margin between nodes (within allowed window space)
 					selMargin = 5,				//Mimimum margin before a node is close enough to mouse for selection
 					mx, my;						//Mouse coordinates
 		private TreeSet<Link> links;			//Set of links for the graph
@@ -120,6 +122,10 @@ public class HyPeerWebGraph extends JFrame{
 		 */
 		public void draw(Node n){
 			this.n = n;
+			nParent = n.getParent();
+			title = "Graph of Node #"+n.getWebId()+" ("+n.getHeight()+")";
+			if (nParent != null)
+				title += ", child of Node #"+nParent.getWebId()+" ("+nParent.getHeight()+")";
 			hide = new HashSet<>();
 			data = new HashMap<>();
 			links = new TreeSet<>();
@@ -219,6 +225,9 @@ public class HyPeerWebGraph extends JFrame{
 			if (n != null){
 				buffer = new BufferedImage(winSize, winSize, BufferedImage.TYPE_INT_ARGB);
 				Graphics2D gbi = buffer.createGraphics();
+				//Graph title
+				gbi.setColor(Color.BLACK);
+				gbi.drawString(title, 20, 20);
 				//Get diameters of circles
 				int radius = (int) (winSize/2-levels*margin);
 				//Paint the starting node inthe center of the screen
