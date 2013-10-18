@@ -366,7 +366,6 @@ public class Node implements NodeInterface{
 	private static Criteria disconnectCriteria = new Criteria(){
 		@Override
 		public Node check(Node origin, Node friend, int level){
-			int originHeight = origin.getHeight();
 			//Folds
 			Node temp = friend.getFold();
 			if (temp != null && temp.compareTo(origin) > 0)
@@ -377,21 +376,11 @@ public class Node implements NodeInterface{
 				return temp;
 			//*			
 			//Friends
-			if (friend.getHeight() > originHeight)
-				return friend;
-			/*
-			temp = friend.getInverseSurrogateFold();
-			if (temp != null){
-				if (temp.compareTo(origin) > 0)
-					return temp;
+			if (level < 2){
+				temp = friend.getHighestNeighbor();
+				if (temp != null && temp.getHeight() > origin.getHeight())
+					return friend;
 			}
-
-			/*
-			//ISNeighbors
-			temp = friend.getHighestSurrogateNeighbor();
-			if (temp != null && temp.getHeight() > originHeight)
-				return temp;
-			//*/
 			return null;
 		}
 	};
