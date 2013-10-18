@@ -190,7 +190,6 @@ public class Node implements NodeInterface{
 	protected Node disconnectNode(Database db){
 		NeighborDatabaseChanges ndc = new NeighborDatabaseChanges();
 		FoldDatabaseChanges fdc = new FoldDatabaseChanges();
-		System.out.println("disconnecting node " + webID);
 		Node parent = getParent();
 		int parentHeight = parent.getHeight()-1;
 
@@ -367,18 +366,32 @@ public class Node implements NodeInterface{
 	private static Criteria disconnectCriteria = new Criteria(){
 		@Override
 		public Node check(Node origin, Node friend, int level){
-			int originWebId = origin.getWebId();
-			//Friends
-			if (friend.getWebId() > originWebId)
-				return friend;
-			//ISFold
-			Node temp = friend.getSurrogateFold();
-			if (temp != null && temp.getWebId() > originWebId)
+			int originHeight = origin.getHeight();
+			//Folds
+			Node temp = friend.getFold();
+			if (temp != null && temp.compareTo(origin) > 0)
 				return temp;
+			
+			temp = friend.getHighestInverseSurrogateNeighbor();
+			if (temp != null && temp.compareTo(origin) > 0)
+				return temp;
+			//*			
+			//Friends
+			if (friend.getHeight() > originHeight)
+				return friend;
+			/*
+			temp = friend.getInverseSurrogateFold();
+			if (temp != null){
+				if (temp.compareTo(origin) > 0)
+					return temp;
+			}
+
+			/*
 			//ISNeighbors
 			temp = friend.getHighestSurrogateNeighbor();
-			if (temp != null && temp.getWebId() > originWebId)
+			if (temp != null && temp.getHeight() > originHeight)
 				return temp;
+			//*/
 			return null;
 		}
 	};
@@ -885,10 +898,10 @@ public class Node implements NodeInterface{
 	//CLASS OVERRIDES
 	@Override
 	public int compareTo(NodeInterface node) {
-		if (webID < node.getWebId())
-			return -1;
-		else if (webID == node.getWebId())
+		if (webID == node.getWebId())
 			return 0;
+		if (height < node.getHeight() || webID < node.getWebId())
+			return -1;
 		return 1;
 	}
 	@Override
