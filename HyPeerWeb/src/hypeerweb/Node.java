@@ -359,10 +359,7 @@ public class Node implements NodeInterface{
 	 * @author josh
 	 */
 	protected Node findInsertionNode() {
-		System.out.println("\tstarting = "+this.getWebId());
-		Node n = findValidNode(insertCriteria);
-		System.out.println("\tfound = "+n.getWebId());
-		return n;
+		return findValidNode(insertCriteria);
 	}
 	/**
 	 * Criteria for a valid disconnect node
