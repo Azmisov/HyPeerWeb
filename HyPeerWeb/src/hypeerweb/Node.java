@@ -244,17 +244,28 @@ public class Node implements NodeInterface{
 	 * @param index The value to get as close as possible to
 	 * @author John
 	 */
-	public Node searchForNode(long index){
+	public Node searchForNode(int index, boolean exactMatch){
+		System.out.println(index);
+		if(index == webID)
+			return this;
 		long closeness = countSetBits(index & this.webID);
+		System.out.println(closeness);
+		System.out.println("index " + Integer.toBinaryString(index));
+		System.out.println("webID " + Integer.toBinaryString(webID));
 		//Check fold first, since it may be faster
 		Node fold_ref = C.fold == null ? C.surrogateFold : C.fold;
 		if (fold_ref != null && countSetBits(index & fold_ref.getWebId()) > closeness)
-			return fold_ref.searchForNode(index);
+			return fold_ref.searchForNode(index, exactMatch);
 		//Otherwise, check neighbors
 		for (Node n: C.neighbors){
 			if (countSetBits(index & n.getWebId()) > closeness)
-				return n.searchForNode(index);
+				return n.searchForNode(index, exactMatch);
 		}
+		if(exactMatch && webID != index)
+			for (Node n: C.surrogateNeighbors){
+				if (countSetBits(index & n.getWebId()) >= closeness)
+					return n.searchForNode(index, exactMatch);
+			}
 		return this;
 	}
 	/**
@@ -262,10 +273,8 @@ public class Node implements NodeInterface{
 	 * @param i a number
 	 * @return how many bits are set in the number
 	 */
-	private long countSetBits(long i){
-		i = i - ((i >> 1) & 0x55555555);
-		i = (i & 0x33333333) + ((i >> 2) & 0x33333333);
-		return (((i + (i >> 4)) & 0x0F0F0F0F) * 0x01010101) >> 24;
+	private long countSetBits(int i){
+		return ~(i ^ webID);
 	}
 	
 	//FIND VALID NODES

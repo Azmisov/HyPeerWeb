@@ -27,8 +27,8 @@ public class HyPeerWeb implements HyPeerWebInterface {
 			removeNodeErr = new Exception("Failed to remove a node"),
 			clearErr = new Exception("Failed to clear the HyPeerWeb");
 	//Trace random insertion for debugging purposes
-	private static ArrayList<Long> randTrace;
-	private static Iterator<Long> randTraceIter;
+	private static ArrayList<Integer> randTrace;
+	private static Iterator<Integer> randTraceIter;
 	private static enum TraceMode{ ON, OFF, READ }
 	private static TraceMode traceMode = TraceMode.OFF;
 	private static String traceLogName = "InsertionTrace.log";
@@ -95,7 +95,8 @@ public class HyPeerWeb implements HyPeerWebInterface {
 		
 		//Find a disconnection point
 		//Node replace = nodes.lastEntry().getValue().findDisconnectNode().disconnectNode(db);
-		Node random = nodes.get(1);
+		Node random = getRandomNode();
+		System.out.println("Random node == " + random.getWebId());
 		Node replace = random.findDisconnectNode().disconnectNode(db);
 		if (replace == null)
 			throw removeNodeErr;
@@ -227,7 +228,7 @@ public class HyPeerWeb implements HyPeerWebInterface {
 	 * @author John, Josh
 	 */
 	public Node getRandomNode(){
-		long index;
+		int index;
 		if (traceMode == TraceMode.READ){
 			index = randTraceIter.next();
 			//We've reached the end of the log file; start recording
@@ -243,7 +244,7 @@ public class HyPeerWeb implements HyPeerWebInterface {
 				randTrace.add(index);
 		}
 		//Always start at Node with WebID = 0
-		return nodes.firstEntry().getValue().searchForNode(index);
+		return nodes.firstEntry().getValue().searchForNode(index, false);
 	}
 	
 	//DEBUGGING
@@ -280,7 +281,7 @@ public class HyPeerWeb implements HyPeerWebInterface {
 		try (FileInputStream fis = new FileInputStream("InsertionTrace.log");
 			 ObjectInputStream ois = new ObjectInputStream(fis))
 		{
-			randTrace = (ArrayList<Long>) ois.readObject();
+			randTrace = (ArrayList<Integer>) ois.readObject();
 			randTraceIter = randTrace.iterator();
 			if (randTraceIter.hasNext())
 				traceMode = TraceMode.READ;
