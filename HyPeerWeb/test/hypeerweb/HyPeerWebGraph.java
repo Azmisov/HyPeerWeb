@@ -22,6 +22,16 @@ import javax.swing.JPanel;
 
 /**
  * Draws a directed graph of a HyPeerWeb node
+ * Red-links = neighbors
+ * Pink-links = isneighbors
+ * Green-links = sneighbors
+ * Cyan = selected node
+ * Yellow = selected node's children
+ * Green = selcted node's parent
+ * 
+ * - Right click a node hide it
+ * - Middle click to restore all hidden nodes
+ * 
  * @author isaac
  */
 public class HyPeerWebGraph extends JFrame{
@@ -43,7 +53,9 @@ public class HyPeerWebGraph extends JFrame{
 		//Mouse listeners
 		addMouseListener(new MouseListener(){
 			@Override
-			public void mousePressed(MouseEvent e) {}
+			public void mousePressed(MouseEvent e) {
+				draw.mouseClick(e.getButton());
+			}
 			@Override
 			public void mouseReleased(MouseEvent e) {}
 			@Override
@@ -90,6 +102,7 @@ public class HyPeerWebGraph extends JFrame{
 			Node.Connections.ConnectionType.ISNEIGHBOR
 		};
 		//Drawing modes
+		private HashSet<Node> hide;
 		private HashMap<Node, DrawData> data;
 		private final AlphaComposite compMode = AlphaComposite.getInstance(AlphaComposite.DST_OVER);
 		private final float[] dash1 = {4}, dash2 = {10};
@@ -107,6 +120,7 @@ public class HyPeerWebGraph extends JFrame{
 		 */
 		public void draw(Node n){
 			this.n = n;
+			hide = new HashSet<>();
 			data = new HashMap<>();
 			links = new TreeSet<>();
 			buffer = null;
@@ -142,11 +156,37 @@ public class HyPeerWebGraph extends JFrame{
 				double px = ddParent.coord.getX(),
 						py = ddParent.coord.getY();
 				ddParent.skew += Math.atan2(y-py, x-px)-Math.atan2(my-py, mx-px);
-				redraw = true;
-				repaint();
+				redraw();
 			}
 			mx = x;
 			my = y;
+		}
+		public void mouseClick(int button){
+			if (button == MouseEvent.BUTTON2){
+				hide.clear();
+				redraw();
+			}
+			//Hide all nodes descending from this one
+			if (button == MouseEvent.BUTTON3 && selected != null){
+				hide.add(selected.getKey());
+				ArrayList<Node> nodes = selected.getValue().children;
+				while (nodes != null && !nodes.isEmpty()){
+					hide.addAll(nodes);
+					ArrayList<Node> temp = new ArrayList<>();
+					for (Node z: nodes){
+						ArrayList<Node> childs = data.get(z).children;
+						if (childs != null)
+							temp.addAll(childs);
+					}
+					nodes = temp;
+				}
+				redraw();
+			}
+		}
+		
+		private void redraw(){
+			redraw = true;
+			repaint();
 		}
 		
 		@Override
@@ -193,8 +233,10 @@ public class HyPeerWebGraph extends JFrame{
 				for (int level = 0; level <= levels; level++){
 					radius /= 2;
 					friends = new ArrayList<>();
-					for (Node parent: parents)
-						friends.addAll(paintCircle(gbi, parent, radius+margin, redraw ? -1 : level));
+					for (Node parent: parents){
+						if (!hide.contains(parent))
+							friends.addAll(paintCircle(gbi, parent, radius+margin, redraw ? -1 : level));
+					}
 					if (friends.isEmpty()) break;
 					parents = friends;
 				}
@@ -235,8 +277,14 @@ public class HyPeerWebGraph extends JFrame{
 				parentData.children = friends;
 			}
 			else friends = parentData.children;
-			
-			//Draw these as friends in a circle
+			//Remove hidden friends
+			ArrayList<Node> temp = new ArrayList<>();
+			for (Node z: friends){
+				if (!hide.contains(z))
+					temp.add(z);
+			}
+			friends = temp;
+			//Draw these friends in a circle
 			if (parentData.skew == -1)
 				parentData.skew = Math.random()*2*Math.PI/friends.size();
 			double theta = 2*Math.PI/(double) (friends.size() == 2 ? 3 : friends.size()),
@@ -273,8 +321,10 @@ public class HyPeerWebGraph extends JFrame{
 			drawNode(g, n, (int) p.getX(), (int) p.getY());
 		}
 		private void drawNode(Graphics2D g, Node n, int x, int y){
-			g.fillOval(x-nodeSize/2, y-nodeSize/2, nodeSize, nodeSize);
-			g.drawString(n.getWebId()+" ("+n.getHeight()+")", x+5, y-5);
+			if (!hide.contains(n)){
+				g.fillOval(x-nodeSize/2, y-nodeSize/2, nodeSize, nodeSize);
+				g.drawString(n.getWebId()+" ("+n.getHeight()+")", x+5, y-5);
+			}
 		}
 		/**
 		 * Draws all links between the nodes in the graph
@@ -283,11 +333,14 @@ public class HyPeerWebGraph extends JFrame{
 		private void paintLinks(Graphics2D g){
 			DrawData d1, d2;
 			Node.Connections.ConnectionType curType = null;
+			ArrayList<Link> badLinks = new ArrayList<>();
 			for (Link l: links){
 				d1 = data.get(l.friend);
 				d2 = data.get(l.origin);
 				//Make sure references exist in the graph
 				if (d1 != null && d2 != null){
+					if (hide.contains(l.friend) || hide.contains(l.origin))
+						continue;
 					//Switch drawing mode
 					//TreeSet is ordered by type, so we'll only switch modes thrice
 					if (curType != l.type){
@@ -310,7 +363,9 @@ public class HyPeerWebGraph extends JFrame{
 					//Draw a line
 					g.drawLine((int) d1.coord.getX(), (int) d1.coord.getY(), (int) d2.coord.getX(), (int) d2.coord.getY());
 				}
+				else badLinks.add(l);
 			}
+			links.removeAll(badLinks);
 		}
 		
 		private void addNodeData(Node n, Node parent, ArrayList<Node> children, double skew, int level, Point2D coord){
