@@ -11,6 +11,7 @@ public class DrawingThread implements Runnable{
 	private final Thread t;
 	private final Object lock;
 	private HyPeerWebGraph graph;
+	private boolean running = false;
 	
 	public DrawingThread(Object l) throws Exception{
 		lock = l;
@@ -40,6 +41,9 @@ public class DrawingThread implements Runnable{
 	public void start(Node n, int levels){
 		graph.setVisible(true);
 		graph.drawNode(n, levels);
-		t.start();
+		if (!running){
+			t.start();
+			running = true;
+		}
 	}
 }

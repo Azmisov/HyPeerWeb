@@ -340,11 +340,11 @@ public class Node implements NodeInterface{
 			//Friends cannot have height less than origin
 			if (friend.getHeight() < originHeight)
 				return friend;
-			//Friend's sneighbor cannot have smaller height
+			//Friend's fold cannot have smaller height
 			Node temp = friend.getSurrogateFold();
 			if (temp != null && temp.getHeight() < originHeight)
 				return temp;
-			//Friends cannot have surrogate neighbors
+			//Friends cannot have surrogate neighbors of less height
 			temp = friend.getLowestSurrogateNeighbor();
 			if (temp != null && temp.getHeight() < originHeight)
 				return temp;
@@ -367,13 +367,17 @@ public class Node implements NodeInterface{
 	private static Criteria disconnectCriteria = new Criteria(){
 		@Override
 		public Node check(Node origin, Node friend, int level){
-			Node temp;
-			//Check for inverse surrogate neighbors (they always have greater height)
-			//Note: This is a shortcut, it only applies if origin = friend
-			if (level == 0 && (temp = friend.getHighestInverseSurrogateNeighbor()) != null)
+			int originWebId = origin.getWebId();
+			//Friends
+			if (friend.getWebId() > originWebId)
+				return friend;
+			//ISFold
+			Node temp = friend.getSurrogateFold();
+			if (temp != null && temp.getWebId() > originWebId)
 				return temp;
-			//Find a child of greater height
-			if ((temp = friend.getHighestNeighbor()) != null && temp.getWebId() > origin.getWebId())
+			//ISNeighbors
+			temp = friend.getHighestSurrogateNeighbor();
+			if (temp != null && temp.getWebId() > originWebId)
 				return temp;
 			return null;
 		}
