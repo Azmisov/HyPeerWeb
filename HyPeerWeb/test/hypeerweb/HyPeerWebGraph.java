@@ -90,6 +90,7 @@ public class HyPeerWebGraph extends JFrame{
 	//INNER DRAWING CLASS:
 	private class Graph extends JPanel{
 		private String title;					//Graph title
+		private String detail;					//Node details
 		private Node n;							//Node we are going to draw
 		private Node nParent;					//The node's parent
 		private int nodeSize = 10,				//Node size, in pixels
@@ -126,6 +127,12 @@ public class HyPeerWebGraph extends JFrame{
 			title = "Graph of Node #"+n.getWebId()+" ("+n.getHeight()+")";
 			if (nParent != null)
 				title += ", child of Node #"+nParent.getWebId()+" ("+nParent.getHeight()+")";
+			detail = "N:"+n.getNeighbors().length+
+						", SN:"+n.getSurrogateNeighbors().length+
+						", ISN:"+n.getInverseSurrogateNeighbors().length+
+						", F:"+(n.getFold() == null ? "yes" : "no")+
+						", SF:"+(n.getSurrogateFold()== null ? "yes" : "no")+
+						", ISF:"+(n.getInverseSurrogateFold()== null ? "yes" : "no");
 			hide = new HashSet<>();
 			data = new HashMap<>();
 			links = new TreeSet<>();
@@ -228,6 +235,7 @@ public class HyPeerWebGraph extends JFrame{
 				//Graph title
 				gbi.setColor(Color.BLACK);
 				gbi.drawString(title, 20, 20);
+				gbi.drawString(detail, 20, 35);
 				//Get diameters of circles
 				int radius = (int) (winSize/2-levels*margin);
 				//Paint the starting node inthe center of the screen

@@ -307,7 +307,7 @@ public class Node implements NodeInterface{
 			//Check for valid nodes
 			for (Node parent: parents){
 				if ((temp = x.check(this, parent, recurseLevel-level)) != null)
-					return temp;
+					return temp.findValidNode(x);
 			}
 			//If this was the last level, don't go down any further
 			if (level-- != 0){
@@ -336,15 +336,17 @@ public class Node implements NodeInterface{
 	private static Criteria insertCriteria = new Criteria(){
 		@Override
 		public Node check(Node origin, Node friend, int level){
-			Node temp;
+			int originHeight = origin.getHeight();
 			//Friends cannot have height less than origin
-			if (friend.getHeight() < origin.getHeight())
+			if (friend.getHeight() < originHeight)
 				return friend;
-			//Friends cannot have surrogate folds
-			if ((temp = friend.getSurrogateFold()) != null)
+			//Friend's sneighbor cannot have smaller height
+			Node temp = friend.getSurrogateFold();
+			if (temp != null && temp.getHeight() < originHeight)
 				return temp;
 			//Friends cannot have surrogate neighbors
-			if ((temp = friend.getHighestSurrogateNeighbor()) != null)
+			temp = friend.getLowestSurrogateNeighbor();
+			if (temp != null && temp.getHeight() < originHeight)
 				return temp;
 			return null;
 		}
@@ -357,7 +359,10 @@ public class Node implements NodeInterface{
 	 * @author josh
 	 */
 	protected Node findInsertionNode() {
-		return findValidNode(insertCriteria);
+		System.out.println("\tstarting = "+this.getWebId());
+		Node n = findValidNode(insertCriteria);
+		System.out.println("\tfound = "+n.getWebId());
+		return n;
 	}
 	/**
 	 * Criteria for a valid disconnect node
@@ -369,10 +374,10 @@ public class Node implements NodeInterface{
 			//Check for inverse surrogate neighbors (they always have greater height)
 			//Note: This is a shortcut, it only applies if origin = friend
 			if (level == 0 && (temp = friend.getHighestInverseSurrogateNeighbor()) != null)
-				return temp.findDisconnectNode();
+				return temp;
 			//Find a child of greater height
 			if ((temp = friend.getHighestNeighbor()) != null && temp.getWebId() > origin.getWebId())
-				return temp.findDisconnectNode();
+				return temp;
 			return null;
 		}
 	};
@@ -653,6 +658,15 @@ public class Node implements NodeInterface{
 		return C.neighbors.last();
 	}
 	/**
+	 * Gets the neighbor of smallest height
+	 * @return a neighbor
+	 */
+	private Node getLowestNeighbor(){
+		if (C.neighbors.isEmpty())
+			return null;
+		return C.neighbors.first();
+	}
+	/**
 	 * Gets an ArrayList containing the Surrogate Neighbors of the Node
 	 *
 	 * @return An ArrayList containing the Surrogate Neighbors of the Node
@@ -662,13 +676,22 @@ public class Node implements NodeInterface{
 		return C.surrogateNeighbors.toArray(new Node[0]);
 	}		
 	/**
-	 * Gets the first surrogate neighbor of the node
-	 * @return the first surrogate neighbor
+	 * Gets the last surrogate neighbor of the node
+	 * @return the last surrogate neighbor
 	 */
 	public Node getHighestSurrogateNeighbor(){
 		if (C.surrogateNeighbors.isEmpty())
 			return null;
 		return C.surrogateNeighbors.last();
+	}
+	/**
+	 * Gets the first surrogate neighbor of the node
+	 * @return the first surrogate neighbor
+	 */
+	public Node getLowestSurrogateNeighbor(){
+		if (C.surrogateNeighbors.isEmpty())
+			return null;
+		return C.surrogateNeighbors.first();
 	}
 	/**
 	 * Gets an ArrayList containing the Inverse Surrogate Neighbors of the Node
@@ -688,6 +711,15 @@ public class Node implements NodeInterface{
 		if (C.inverseSurrogateNeighbors.isEmpty())
 			return null;
 		return C.inverseSurrogateNeighbors.last();
+	}
+	/**
+	 * Gets the smallest isneighbor
+	 * @return 
+	 */
+	public Node getLowestInverseSurrogateNeighbor(){
+		if (C.inverseSurrogateNeighbors.isEmpty())
+			return null;
+		return C.inverseSurrogateNeighbors.first();
 	}
 	public boolean hasInverseSurrogateNeighbors(){
 	    if(C.inverseSurrogateNeighbors.isEmpty())
