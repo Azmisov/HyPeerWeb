@@ -88,7 +88,7 @@ public class HyPeerWebTest {
 				}
 				//After insertion graph
 				System.out.println("DONE "+(t == 0 ? "ADDING" : "DELETING")+" NODES");
-				if (DRAW_GRAPH)
+				if(DRAW_GRAPH)
 				    drawGraph(web.getFirstNode());
 			}
 		} catch (Exception e){
