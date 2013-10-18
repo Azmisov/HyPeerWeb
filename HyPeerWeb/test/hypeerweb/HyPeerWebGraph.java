@@ -99,10 +99,10 @@ public class HyPeerWebGraph extends JFrame{
 					mx, my;						//Mouse coordinates
 		private TreeSet<Link> links;			//Set of links for the graph
 		//Link types
-		private final Node.Connections.ConnectionType[] Ntypes = {
-			Node.Connections.ConnectionType.NEIGHBOR,
-			Node.Connections.ConnectionType.SNEIGHBOR,
-			Node.Connections.ConnectionType.ISNEIGHBOR
+		private final Links.Type[] Ntypes = {
+			Links.Type.NEIGHBOR,
+			Links.Type.SNEIGHBOR,
+			Links.Type.ISNEIGHBOR
 		};
 		//Drawing modes
 		private HashSet<Node> hide;
@@ -349,7 +349,7 @@ public class HyPeerWebGraph extends JFrame{
 		 */
 		private void paintLinks(Graphics2D g){
 			DrawData d1, d2;
-			Node.Connections.ConnectionType curType = null;
+			Links.Type curType = null;
 			ArrayList<Link> badLinks = new ArrayList<>();
 			for (Link l: links){
 				d1 = data.get(l.friend);
@@ -394,9 +394,9 @@ public class HyPeerWebGraph extends JFrame{
 		private class Link implements Comparable{
 			public Node origin;
 			public Node friend;
-			public Node.Connections.ConnectionType type;
+			public Links.Type type;
 			
-			public Link(Node origin, Node friend, Node.Connections.ConnectionType type){
+			public Link(Node origin, Node friend, Links.Type type){
 				this.origin = origin;
 				this.friend = friend;
 				this.type = type;

@@ -136,8 +136,8 @@ public class HyPeerWeb implements HyPeerWebInterface {
 		//This must come after removing n
 		last.setWebID(0);
 		last.setHeight(0);
-		last.setFold(null);
-		last.removeNeighbor(n);
+		last.L.setFold(null);
+		last.L.removeNeighbor(n);
 		return n;
 	}
 	/**
@@ -212,10 +212,10 @@ public class HyPeerWeb implements HyPeerWebInterface {
 		//Update java struct
 		{
 			first.setHeight(1);
-			first.setFold(sec);
-			sec.setFold(first);
-			first.addNeighbor(sec);
-			sec.addNeighbor(first);
+			first.L.setFold(sec);
+			sec.L.setFold(first);
+			first.L.addNeighbor(sec);
+			sec.L.addNeighbor(first);
 			nodes.put(1, sec);
 			return sec;
 		}

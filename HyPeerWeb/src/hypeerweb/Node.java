@@ -6,8 +6,11 @@ import validator.NodeInterface;
 
 /**
  * The Node class
- * TODO: better searchForNode
- *		implement removeNeighbor syncing with InsertState (if necessary)
+ * TODO:
+ *	- searchForNode is not working
+ *  - find disconnect point is slow
+ *  - disconnect node doesn't sync with database
+ *  - make NodeProxy hold webID, height, and L (LinksProxy) by default
  * @author Guy
  */
 public class Node implements NodeInterface{
@@ -128,7 +131,7 @@ public class Node implements NodeInterface{
 	 */
 	protected void replaceNode(Node toReplace){
 		//Swap out connections
-		L = toReplace.getConnections();
+		L = toReplace.getLinks();
 		//Change WebID/Height, this must come before updating connections
 		//Otherwise, the Neighbor Sets will be tainted with incorrect webID's
 		webID = toReplace.getWebId();
@@ -208,16 +211,18 @@ public class Node implements NodeInterface{
 		System.out.println("index " + Integer.toBinaryString(index));
 		System.out.println("webID " + Integer.toBinaryString(webID));
 		//Check fold first, since it may be faster
-		Node fold_ref = C.fold == null ? C.surrogateFold : C.fold;
+		Node fold_ref = L.getFold();
+		if (fold_ref == null)
+			fold_ref = L.getSurrogateFold();
 		if (fold_ref != null && countSetBits(index & fold_ref.getWebId()) > closeness)
 			return fold_ref.searchForNode(index, exactMatch);
 		//Otherwise, check neighbors
-		for (Node n: C.neighbors){
+		for (Node n: L.getNeighborsSet()){
 			if (countSetBits(index & n.getWebId()) > closeness)
 				return n.searchForNode(index, exactMatch);
 		}
 		if(exactMatch && webID != index)
-			for (Node n: C.surrogateNeighbors){
+			for (Node n: L.getSurrogateNeighborsSet()){
 				if (countSetBits(index & n.getWebId()) >= closeness)
 					return n.searchForNode(index, exactMatch);
 			}
@@ -277,7 +282,7 @@ public class Node implements NodeInterface{
 				//Get a list of neighbors (friends)
 				friends = new ArrayList<>();
 				for (Node parent: parents)
-					friends.addAll(parent.getNeighborsSet());
+					friends.addAll(parent.L.getNeighborsSet());
 				//Set non-visited friends as the new parents
 				parents = new ArrayList<>();
 				for (Node friend: friends){
@@ -308,7 +313,7 @@ public class Node implements NodeInterface{
 			if (temp != null && temp.getHeight() < originHeight)
 				return temp;
 			//Friends cannot have surrogate neighbors of less height
-			temp = friend.getLowestSurrogateNeighbor();
+			temp = friend.L.getLowestSurrogateNeighbor();
 			if (temp != null && temp.getHeight() < originHeight)
 				return temp;
 			return null;
@@ -340,7 +345,7 @@ public class Node implements NodeInterface{
 			//*			
 			//Friends
 			if (level < 2){
-				temp = friend.getHighestNeighbor();
+				temp = friend.getLinks().getHighestNeighbor();
 				if (temp != null && temp.getHeight() > origin.getHeight())
 					return friend;
 			}
@@ -453,13 +458,13 @@ public class Node implements NodeInterface{
 				Node value = nu.delete ? null : nu.value;
 				switch (nu.type){
 					case DIRECT:
-						nu.node.setFold(value);
+						nu.node.L.setFold(value);
 						break;
 					case SURROGATE:
-						nu.node.setSurrogateFold(value);
+						nu.node.L.setSurrogateFold(value);
 						break;
 					case INVERSE:
-						nu.node.setInverseSurrogateFold(value);
+						nu.node.L.setInverseSurrogateFold(value);
 						//Update node FoldState; nu.delete corresponds directly to a Stable state
 						nu.node.setFoldState(nu.delete);
 						break;
@@ -497,18 +502,18 @@ public class Node implements NodeInterface{
 				switch (nu.type){
 					case DIRECT:
 						if (nu.delete)
-							nu.node.removeNeighbor(nu.value);
-						else nu.node.addNeighbor(nu.value);
+							nu.node.L.removeNeighbor(nu.value);
+						else nu.node.L.addNeighbor(nu.value);
 						break;
 					case SURROGATE:
 						if (nu.delete)
-							nu.node.removeSurrogateNeighbor(nu.value);
-						else nu.node.addSurrogateNeighbor(nu.value);
+							nu.node.L.removeSurrogateNeighbor(nu.value);
+						else nu.node.L.addSurrogateNeighbor(nu.value);
 						break;
 					case INVERSE:
 						if (nu.delete)
-							nu.node.removeInverseSurrogateNeighbor(nu.value);
-						else nu.node.addInverseSurrogateNeighbor(nu.value);
+							nu.node.L.removeInverseSurrogateNeighbor(nu.value);
+						else nu.node.L.addInverseSurrogateNeighbor(nu.value);
 						break;
 				}
 			}
@@ -542,7 +547,7 @@ public class Node implements NodeInterface{
 	public Node getParent() {
 		Node lowest = this;
 		int lowID = this.webID, temp;
-		for (Node n : C.getNeighbors()) {
+		for (Node n : L.getNeighborsSet()) {
 			if ((temp = n.getWebId()) < lowID){
 				lowID = temp;
 				lowest = n;
@@ -551,19 +556,12 @@ public class Node implements NodeInterface{
 		return lowest == this ? null : lowest;
 	}
 	/**
-	 * Gets all the nodes connections
-	 * @return a Links class
-	 */
-	private Links getConnections(){
-		return C;
-	}
-	/**
 	 * Get the node's neighbors
 	 * @return a list of nodes
 	 */
 	@Override
 	public Node[] getNeighbors() {
-		return C.getNeighbors();
+		return L.getNeighbors();
 	}
 	/**
 	 * Get this node's surrogate neighbors
@@ -571,7 +569,7 @@ public class Node implements NodeInterface{
 	 */
 	@Override
 	public Node[] getSurrogateNeighbors() {
-		return C.getSurrogateNeighbors();
+		return L.getSurrogateNeighbors();
 	}
 	/**
 	 * Get this node's inverse surrogate neighbors
@@ -579,7 +577,7 @@ public class Node implements NodeInterface{
 	 */
 	@Override
 	public Node[] getInverseSurrogateNeighbors() {
-		return C.getInverseSurrogateNeighbors();
+		return L.getInverseSurrogateNeighbors();
 	}
 	/**
 	 * Get this node's fold
@@ -587,7 +585,7 @@ public class Node implements NodeInterface{
 	 */
 	@Override
 	public Node getFold() {
-		return C.getFold();
+		return L.getFold();
 	}
 	/**
 	 * Get this node's surrogate fold
@@ -595,7 +593,7 @@ public class Node implements NodeInterface{
 	 */
 	@Override
 	public Node getSurrogateFold() {
-		return C.getSurrogateFold();
+		return L.getSurrogateFold();
 	}
 	/**
 	 * Get this node's inverse surrogate fold
@@ -603,7 +601,22 @@ public class Node implements NodeInterface{
 	 */
 	@Override
 	public Node getInverseSurrogateFold() {
-		return C.getInverseSurrogateFold();
+		return L.getInverseSurrogateFold();
+	}
+	
+	//LINKS & CONNECTIONS
+	/**
+	 * Gets all the nodes connections
+	 * @return a Links class
+	 */
+	public Links getLinks(){
+		return L;
+	}
+	/**
+	 * Updates a link pointer
+	 */
+	public void updateLinks(Node oldNode, Node newNode, Links.Type type){
+		L.update(oldNode, newNode, type);
 	}
 	
 	//Setters
@@ -622,44 +635,7 @@ public class Node implements NodeInterface{
 		height = h;
 		//Every time we update height, we need to broadcast this
 		//change to our neighbor connections, so they can preserve sorted order
-		//Note that SNeighbors and ISNeighbors swap
-		for (Node n: C.neighbors)
-			n.updateConnection(this, this, Links.Type.NEIGHBOR);
-		for (Node n: C.surrogateNeighbors)
-			n.updateConnection(this, this, Links.Type.ISNEIGHBOR);
-		for (Node n: C.inverseSurrogateNeighbors)
-			n.updateConnection(this, this, Links.Type.SNEIGHBOR);
-	}
-	/**
-	 * Updates a node's connections when a previous connection is replaced
-	 * @param old_node the old connection Node
-	 * @param new_node the new connection Node
-	 * @param type the type of the connection
-	 */
-	protected void updateConnection(Node old_node, Node new_node, Links.Type type){
-		switch (type){
-			case FOLD:
-				C.fold = new_node;
-				break;
-			case SFOLD:
-				C.surrogateFold = new_node;
-				break;
-			case ISFOLD:
-				C.inverseSurrogateFold = new_node;
-				break;
-			case NEIGHBOR:
-				C.neighbors.remove(old_node);
-				C.neighbors.add(new_node);
-				break;
-			case SNEIGHBOR:
-				C.surrogateNeighbors.remove(old_node);
-				C.surrogateNeighbors.add(new_node);
-				break;
-			case ISNEIGHBOR:
-				C.inverseSurrogateNeighbors.remove(old_node);
-				C.inverseSurrogateNeighbors.add(new_node);
-				break;
-		}
+		L.updateIncomingPointers(this, this);
 	}
 	
 	//CLASS OVERRIDES
@@ -681,30 +657,33 @@ public class Node implements NodeInterface{
 	}
 	@Override
 	public String toString(){
-            StringBuilder builder = new StringBuilder();
-            builder.append("\nWebId: " + webID + " Height: " + height);
-	    if(C.fold != null)
-		builder.append(" Fold: " + C.fold.getWebId());
-	    if(C.surrogateFold != null)
-                builder.append(" SFold: " + C.surrogateFold.getWebId());
-	    if(C.inverseSurrogateFold != null)
-                builder.append(" ISFold: " + C.inverseSurrogateFold.getWebId());
-            
-	    builder.append("\nNs: ");
-	    for(Node n : C.neighbors) {
-		builder.append(n.getWebId() + " ");
-	    }
-	    builder.append("SNs: ");
-	    for(Node n : C.surrogateNeighbors) {
-		builder.append(n.getWebId() + " ");
-	    }
-	    builder.append("ISNs: ");
-	    for(Node n : C.inverseSurrogateNeighbors) {
-		builder.append(n.getWebId() + " ");
-	    }
-	    builder.append("\n");
-	    
-            return builder.toString();
+		StringBuilder builder = new StringBuilder();
+		builder.append("\nNode #: ").append(webID).append("(").append(height).append(")");
+		//Folds
+		if (L.getFold() != null)
+			builder.append("\n\tFold: ").append(L.getFold().getWebId());
+		if (L.getSurrogateFold() != null)
+			builder.append("\n\tSFold: ").append(L.getSurrogateFold().getWebId());
+		if (L.getInverseSurrogateFold() != null)
+			builder.append("\n\tISFold: ").append(L.getInverseSurrogateFold().getWebId());
+		//Neighbors
+		TreeSet<Node> temp;
+		if (!(temp = L.getNeighborsSet()).isEmpty()){
+			builder.append("\n\tNeighbors: ");
+			for (Node n : temp)
+				builder.append(n.getWebId()).append(" (").append(n.getHeight()).append("), ");
+		}
+		if (!(temp = L.getSurrogateNeighborsSet()).isEmpty()){
+			builder.append("\n\tSNeighbors: ");
+			for (Node n : temp)
+				builder.append(n.getWebId()).append(" (").append(n.getHeight()).append("), ");
+		}
+		if (!(temp = L.getInverseSurrogateNeighborsSet()).isEmpty()){
+			builder.append("\n\tISNeighbors: ");
+			for (Node n : temp)
+				builder.append(n.getWebId()).append(" (").append(n.getHeight()).append("), ");
+		}
+		return builder.toString();
 	}
 		
 	//FOLD STATE PATTERN

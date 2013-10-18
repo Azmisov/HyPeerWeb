@@ -56,7 +56,7 @@ public class Links{
 	 * @param newNode the new Node reference
 	 * @param type the type of connection (Links.Type)
 	 */
-	private void update(Node oldNode, Node newNode, Type type){
+	public void update(Node oldNode, Node newNode, Type type){
 		//Add it to the appropriate structure
 		switch (type){
 			case FOLD:
@@ -107,17 +107,17 @@ public class Links{
 		//NOTE: we reverse surrogate/inverse-surrogate connections
 		//Fold connections do not need a reference to the old node (pass null)
 		if (fold != null)
-			fold.updateConnection(null, newPointer, Type.FOLD);
+			fold.L.update(null, newPointer, Type.FOLD);
 		if (surrogateFold != null)
-			surrogateFold.updateConnection(null, newPointer, Type.ISFOLD);
+			surrogateFold.L.update(null, newPointer, Type.ISFOLD);
 		if (inverseSurrogateFold != null)
-			inverseSurrogateFold.updateConnection(null, newPointer, Type.SFOLD);
+			inverseSurrogateFold.L.update(null, newPointer, Type.SFOLD);
 		for (Node n: neighbors)
-			n.updateConnection(oldPointer, newPointer, Type.NEIGHBOR);
+			n.L.update(oldPointer, newPointer, Type.NEIGHBOR);
 		for (Node n: surrogateNeighbors)
-			n.updateConnection(oldPointer, newPointer, Type.ISNEIGHBOR);
+			n.L.update(oldPointer, newPointer, Type.ISNEIGHBOR);
 		for (Node n: inverseSurrogateNeighbors)
-			n.updateConnection(oldPointer, newPointer, Type.SNEIGHBOR);
+			n.L.update(oldPointer, newPointer, Type.SNEIGHBOR);
 	}
 	
 	//SETTERS

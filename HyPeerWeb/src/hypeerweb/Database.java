@@ -256,8 +256,6 @@ public final class Database {
 	 */
 	public TreeMap<Integer, Node> getAllNodes() throws Exception{
 		TreeMap<Integer, Node> tsnodes = new TreeMap<>();
-		//Index for finding nodes
-//		HashMap<Integer, Node> nodes = new HashMap();
 		ResultSet rs;
 		Node n, left, right, raw;
 		int id;
@@ -284,7 +282,7 @@ public final class Database {
 					n = new Node(id, -1);
 					tsnodes.put(id, n);
 				}
-				raw.setFold(n);
+				raw.L.setFold(n);
 			}
 			if ((id = rs.getInt("SurrogateFold")) != -1){
 				n = tsnodes.get(id);
@@ -292,7 +290,7 @@ public final class Database {
 					n = new Node(id, -1);
 					tsnodes.put(id, n);
 				}
-				raw.setSurrogateFold(n);
+				raw.L.setSurrogateFold(n);
 			}
 			if ((id = rs.getInt("InverseSurrogateFold")) != -1){
 				n = tsnodes.get(id);
@@ -300,7 +298,7 @@ public final class Database {
 					n = new Node(id, -1);
 					tsnodes.put(id, n);
 				}
-				raw.setInverseSurrogateFold(n);
+				raw.L.setInverseSurrogateFold(n);
 			}
 		}
 		if (tsnodes.isEmpty())
@@ -311,7 +309,7 @@ public final class Database {
 		while(rs.next()){
 			left = tsnodes.get(rs.getInt("WebId"));
 			right = tsnodes.get(rs.getInt("Neighbor"));
-			left.addNeighbor(right);
+			left.L.addNeighbor(right);
 		}
 				
 		//get data from SurrogateNeighbors table
@@ -319,8 +317,8 @@ public final class Database {
 		while(rs.next()){
 			left = tsnodes.get(rs.getInt("WebId"));
 			right = tsnodes.get(rs.getInt("SurrogateNeighbor"));
-			left.addSurrogateNeighbor(right);
-			right.addInverseSurrogateNeighbor(left);
+			left.L.addSurrogateNeighbor(right);
+			right.L.addInverseSurrogateNeighbor(left);
 		}
 		
 		return tsnodes;
