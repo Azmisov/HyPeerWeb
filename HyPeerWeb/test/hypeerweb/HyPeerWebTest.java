@@ -70,7 +70,7 @@ public class HyPeerWebTest {
 							throw new Exception("Added node should not be null!");
 						if (web.getSize() != ++old_size)
 							throw new Exception("HyPeerWeb is not the correct size");
-						if (temp.getWebId() == 254 && DRAW_GRAPH)
+						if (temp.getWebId() == 126 && DRAW_GRAPH)
 							drawGraph(temp);
 						System.out.println("ADDED = "+temp.getWebId());
 					}
