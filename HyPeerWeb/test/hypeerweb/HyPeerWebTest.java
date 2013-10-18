@@ -15,7 +15,7 @@ public class HyPeerWebTest {
 	//Validation variables
 	private final int MAX_TESTS = 200;//use <=100 if testing database
 	private final int TEST_EVERY = 1;
-	private final int GRAPH_LEVELS = 2;
+	private final int GRAPH_LEVELS = 3;
 	private final boolean TEST_DATABASE = false;
 	private final boolean USE_TRACE_LOG = true;
 	private HyPeerWeb web;

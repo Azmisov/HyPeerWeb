@@ -37,7 +37,7 @@ import javax.swing.JPanel;
 public class HyPeerWebGraph extends JFrame{
 	private HyPeerWeb web;
 	private Graph draw;
-	private static int winSize = 500;
+	private static int winSize = 700;
 	private int levels;
 	
 	public HyPeerWebGraph() throws Exception{
@@ -46,7 +46,7 @@ public class HyPeerWebGraph extends JFrame{
 		//Initialize window
 		setTitle("HyPeerWeb Directed Graph");
 		setDefaultCloseOperation(JFrame.HIDE_ON_CLOSE);
-		setSize(500, 500);
+		setSize(winSize, winSize);
 		draw = new Graph();
 		add(draw);
 		
