@@ -1,7 +1,6 @@
 package hypeerweb;
 
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.TreeSet;
 import validator.NodeInterface;
 
@@ -15,18 +14,7 @@ public class Node implements NodeInterface{
 	//NODE ATTRIBUTES
 	private int webID;
 	private int height;
-	public static class Connections{
-		public static enum ConnectionType {
-			FOLD, SFOLD, ISFOLD, NEIGHBOR, SNEIGHBOR, ISNEIGHBOR
-		}
-		public Node fold;
-		public Node surrogateFold;
-		public Node inverseSurrogateFold;
-		public TreeSet<Node> neighbors = new TreeSet<>();
-		public TreeSet<Node> surrogateNeighbors = new TreeSet<>();
-		public TreeSet<Node> inverseSurrogateNeighbors = new TreeSet<>();
-	}
-	private Connections C;
+	public Links L;
 	//State machines
 	private static final int recurseLevel = 2; //2 = neighbor's neighbors
 	private FoldStateInterface foldState; 
@@ -42,45 +30,26 @@ public class Node implements NodeInterface{
 	public Node(int id, int height) {
 		this.webID = id;
 		this.height = height;
-		
-		NodeInit();
+		L = new Links();
+		foldState = new FoldStateStable();
 	}
-
 	/**
 	 * Create a Node with all of its data
 	 *
 	 * @param id The WebID of the Node
-	 * @param Height The Height of the Node
-	 * @param Fold The Fold of the Node
-	 * @param sFold The Surrogate Fold of the Node
-	 * @param isFold The Inverse Surrogate Fold of the Node
-	 * @param Neighbors An ArrayList containing the Neighbors of the Node
-	 * @param sNeighbors An ArrayList containing the Surrogate Neighbors of the
-	 * Node
-	 * @param isNeighbors An ArrayList containing the Inverse Surrogate
-	 * Neighbors of the Node
+	 * @param h The Height of the Node
+	 * @param f The Fold of the Node
+	 * @param sf The Surrogate Fold of the Node
+	 * @param isf The Inverse Surrogate Fold of the Node
+	 * @param n An ArrayList containing the Neighbors of the Node
+	 * @param sn An ArrayList containing the Surrogate Neighbors of the Node
+	 * @param isn An ArrayList containing the Inverse Surrogate Neighbors of the Node
 	 */
-	public Node(int id, int Height, Node Fold, Node sFold, Node isFold,
-			ArrayList<Node> Neighbors, ArrayList<Node> sNeighbors,
-			ArrayList<Node> isNeighbors) {
+	public Node(int id, int h, Node f, Node sf, Node isf, ArrayList<Node> n, ArrayList<Node> sn, ArrayList<Node> isn){
 		webID = id;
-		height = Height;
-		C.fold = Fold;
-		C.surrogateFold = sFold;
-		C.inverseSurrogateFold = isFold;
-
-		if (Neighbors != null)
-			C.neighbors.addAll(Neighbors);
-		if (sNeighbors != null)
-			C.surrogateNeighbors.addAll(sNeighbors);
-		if (isNeighbors != null)
-			C.inverseSurrogateNeighbors.addAll(isNeighbors);
-		
-		NodeInit();
-	}
-	private void NodeInit(){
+		height = h;
+		L =  new Links(f, sf, isf, n, sn, isn);		
 		foldState = new FoldStateStable();
-		C = new Connections();
 	}
 
 	//ADD OR REMOVE NODES
@@ -104,7 +73,7 @@ public class Node implements NodeInterface{
 		//child neighbors
 		ndc.updateDirect(this, child);
 		ndc.updateDirect(child, this);
-		for (Node n: C.inverseSurrogateNeighbors){
+		for (Node n: L.getInverseSurrogateNeighborsSet()){
 			ndc.updateDirect(child, n);
 			ndc.updateDirect(n, child);
 			//Remove surrogate reference to parent
@@ -113,7 +82,7 @@ public class Node implements NodeInterface{
 		}
 		//adds a neighbor of parent as a surrogate neighbor of child if neighbor is childless
 		//and makes child an isn of neighbor
-		for (Node n: C.neighbors){
+		for (Node n: L.getNeighborsSet()){
 			if (n.getHeight() < childHeight){
 				ndc.updateSurrogate(child, n);
 				ndc.updateInverse(n, child);
@@ -144,8 +113,8 @@ public class Node implements NodeInterface{
 		//Add the node to the Java structure
 		{
 			//Update parent
-			this.setHeight(childHeight);
-			this.removeAllInverseSurrogateNeighbors();
+			setHeight(childHeight);
+			L.removeAllInverseSurrogateNeighbors();
 			//Update neighbors and folds
 			ndc.commitToHyPeerWeb();
 			fdc.commitToHyPeerWeb();
@@ -159,26 +128,13 @@ public class Node implements NodeInterface{
 	 */
 	protected void replaceNode(Node toReplace){
 		//Swap out connections
-		C = toReplace.getConnections();
+		L = toReplace.getConnections();
 		//Change WebID/Height, this must come before updating connections
 		//Otherwise, the Neighbor Sets will be tainted with incorrect webID's
 		webID = toReplace.getWebId();
 		height = toReplace.getHeight();
 		//Notify all connections that their reference has changed
-		//NOTE: we reverse surrogate/inverse-surrogate connections
-		//Fold connections do not need a reference to the old node (pass null)
-		if (C.fold != null)
-			C.fold.updateConnection(null, this, Connections.ConnectionType.FOLD);
-		if (C.surrogateFold != null)
-			C.surrogateFold.updateConnection(null, this, Connections.ConnectionType.ISFOLD);
-		if (C.inverseSurrogateFold != null)
-			C.inverseSurrogateFold.updateConnection(null, this, Connections.ConnectionType.SFOLD);
-		for (Node n: C.neighbors)
-			n.updateConnection(toReplace, this, Connections.ConnectionType.NEIGHBOR);
-		for (Node n: C.surrogateNeighbors)
-			n.updateConnection(toReplace, this, Connections.ConnectionType.ISNEIGHBOR);
-		for (Node n: C.inverseSurrogateNeighbors)
-			n.updateConnection(toReplace, this, Connections.ConnectionType.SNEIGHBOR);
+		L.updateIncomingPointers(toReplace, this);
 	}
 	/**
 	 * Disconnects an edge node to replace a node that
@@ -195,7 +151,7 @@ public class Node implements NodeInterface{
 
 		//all of the neighbors of this except parent will have parent as surrogateNeighbor instead of neighbor, and
 		//parent will have all neighbors of this except itself as inverse surrogate neighbor
-		for (Node neighbor: C.neighbors){
+		for (Node neighbor: L.getNeighborsSet()){
 			if(neighbor != parent){
 				ndc.updateSurrogate(neighbor, parent);
 				ndc.updateInverse(parent, neighbor);
@@ -207,12 +163,11 @@ public class Node implements NodeInterface{
 		ndc.removeDirect(parent, this);
 
 		//all SNs of this will have this removed from their ISN list
-		for (Node sn : C.surrogateNeighbors){
+		for (Node sn : L.getSurrogateNeighborsSet())
 			ndc.removeInverse(sn, this);
-		}
 
 		//Reverse the fold state; we will always have a fold - guaranteed
-		C.fold.foldState.reverseFolds(fdc, parent, this);
+		L.getFold().getFoldState().reverseFolds(fdc, parent, this);
 
 		//Attempt to update the database
 		//If it fails, we cannot proceed
@@ -366,13 +321,12 @@ public class Node implements NodeInterface{
 	private static Criteria disconnectCriteria = new Criteria(){
 		@Override
 		public Node check(Node origin, Node friend, int level){
+			int originHeight = origin.getHeight();
 			//Folds
 			Node temp = friend.getFold();
-			if (temp != null && temp.compareTo(origin) > 0)
+			if (temp != null && temp.getHeight() > originHeight)
 				return temp;
-			
-			temp = friend.getHighestInverseSurrogateNeighbor();
-			if (temp != null && temp.compareTo(origin) > 0)
+			if (temp != null && temp.getHeight() > originHeight)
 				return temp;
 			//*			
 			//Friends
@@ -398,43 +352,7 @@ public class Node implements NodeInterface{
 		return findValidNode(disconnectCriteria);
 		//return getHighestRelation(true);
 	}
-	
-	private Node getHighestRelation(boolean originalCall){
-	    Node highest = this;
-	    Node neighborHighest;
-	    if(!C.inverseSurrogateNeighbors.isEmpty()){
-		for(Node n : C.inverseSurrogateNeighbors){
-		    if(n.getWebId() > highest.getWebId())
-			highest = n;
-		}
-	    }
-	    if(!C.neighbors.isEmpty()){
-		for(Node n : C.neighbors){
-		if(n.getWebId() > highest.getWebId())
-		highest = n;
-		}
-	    }
-	    if(originalCall && !C.neighbors.isEmpty()){//neighbor's neighbors
-		for(Node n : C.neighbors){
-		    for(Node m : n.getInverseSurrogateNeighbors()){
-			neighborHighest = m.getHighestRelation(false);
-			if(neighborHighest.getWebId() > highest.getWebId())
-			    highest = neighborHighest;
-		    }
-		}
-	    }
-	    if(C.fold != null)
-	    if(C.fold.getWebId() > highest.getWebId())
-		highest = C.fold;
-	    if(C.inverseSurrogateFold != null)
-	    if(C.inverseSurrogateFold.getWebId() > highest.getWebId())
-		highest = C.inverseSurrogateFold;
-	    
-	    if(highest.getWebId() > webID)
-		return highest.getHighestRelation(true);
-	    
-	    return this;
-	}
+
 	//EN-MASSE DATABASE CHANGE HANDLING
 	/**
 	 * Sub-Class to keep track of Fold updates
@@ -608,133 +526,14 @@ public class Node implements NodeInterface{
 		return height;
 	}
 	/**
-	 * Gets the WebId of the Node's Fold
-	 *
-	 * @return The WebID of the Node's Fold
+	 * Gets this node's parent
+	 * @return the neighbor with webID lower than this node
 	 */
-	@Override
-	public Node getFold() {
-		return C.fold;
-	}
-	/**
-	 * Gets the WebID of the Surrogate Fold of the Node
-	 *
-	 * @return The WebID of the Surrogate Fold of the Node
-	 */
-	@Override
-	public Node getSurrogateFold() {
-		return C.surrogateFold;
-	}
-	/**
-	 * Gets the WebID of the Inverse Surrogate Fold of the Node
-	 *
-	 * @return The WebID of the Inverse Surrogate Fold of the Node
-	 */
-	@Override
-	public Node getInverseSurrogateFold() {
-		return C.inverseSurrogateFold;
-	}
-	/**
-	 * Gets an ArrayList containing the Neighbors of the Node
-	 *
-	 * @return An ArrayList containing the Neighbors of the Node
-	 */
-	@Override
-	public Node[] getNeighbors() {
-		return C.neighbors.toArray(new Node[0]);
-	}
-	/**
-	 * Gets neighbors as type list
-	 * Users of the method are "on their honor" to not modify the original list
-	 * @return a list of neighbors
-	 */
-	private TreeSet<Node> getNeighborsSet(){
-		return C.neighbors;
-	}
-	/**
-	 * Gets the neighbor of greatest height
-	 * @return a neighbor
-	 */
-	private Node getHighestNeighbor(){
-		if (C.neighbors.isEmpty())
-			return null;
-		return C.neighbors.last();
-	}
-	/**
-	 * Gets the neighbor of smallest height
-	 * @return a neighbor
-	 */
-	private Node getLowestNeighbor(){
-		if (C.neighbors.isEmpty())
-			return null;
-		return C.neighbors.first();
-	}
-	/**
-	 * Gets an ArrayList containing the Surrogate Neighbors of the Node
-	 *
-	 * @return An ArrayList containing the Surrogate Neighbors of the Node
-	 */
-	@Override
-	public Node[] getSurrogateNeighbors() {
-		return C.surrogateNeighbors.toArray(new Node[0]);
-	}		
-	/**
-	 * Gets the last surrogate neighbor of the node
-	 * @return the last surrogate neighbor
-	 */
-	public Node getHighestSurrogateNeighbor(){
-		if (C.surrogateNeighbors.isEmpty())
-			return null;
-		return C.surrogateNeighbors.last();
-	}
-	/**
-	 * Gets the first surrogate neighbor of the node
-	 * @return the first surrogate neighbor
-	 */
-	public Node getLowestSurrogateNeighbor(){
-		if (C.surrogateNeighbors.isEmpty())
-			return null;
-		return C.surrogateNeighbors.first();
-	}
-	/**
-	 * Gets an ArrayList containing the Inverse Surrogate Neighbors of the Node
-	 *
-	 * @return An ArrayList containing the Inverse Surrogate Neighbors of the
-	 * Node
-	 */
-	@Override
-	public Node[] getInverseSurrogateNeighbors() {
-		return C.inverseSurrogateNeighbors.toArray(new Node[0]);
-	}
-	/**
-	 * Gets the first inverse surrogate neighbor of the node
-	 * @return the first inverse surrogate neighbor
-	 */
-	public Node getHighestInverseSurrogateNeighbor(){
-		if (C.inverseSurrogateNeighbors.isEmpty())
-			return null;
-		return C.inverseSurrogateNeighbors.last();
-	}
-	/**
-	 * Gets the smallest isneighbor
-	 * @return 
-	 */
-	public Node getLowestInverseSurrogateNeighbor(){
-		if (C.inverseSurrogateNeighbors.isEmpty())
-			return null;
-		return C.inverseSurrogateNeighbors.first();
-	}
-	public boolean hasInverseSurrogateNeighbors(){
-	    if(C.inverseSurrogateNeighbors.isEmpty())
-		return false;
-	    else
-		return true;
-	}
 	@Override
 	public Node getParent() {
 		Node lowest = this;
 		int lowID = this.webID, temp;
-		for (Node n : C.neighbors) {
+		for (Node n : C.getNeighbors()) {
 			if ((temp = n.getWebId()) < lowID){
 				lowID = temp;
 				lowest = n;
@@ -744,10 +543,58 @@ public class Node implements NodeInterface{
 	}
 	/**
 	 * Gets all the nodes connections
-	 * @return a Connections class
+	 * @return a Links class
 	 */
-	private Connections getConnections(){
+	private Links getConnections(){
 		return C;
+	}
+	/**
+	 * Get the node's neighbors
+	 * @return a list of nodes
+	 */
+	@Override
+	public Node[] getNeighbors() {
+		return C.getNeighbors();
+	}
+	/**
+	 * Get this node's surrogate neighbors
+	 * @return a list of nodes
+	 */
+	@Override
+	public Node[] getSurrogateNeighbors() {
+		return C.getSurrogateNeighbors();
+	}
+	/**
+	 * Get this node's inverse surrogate neighbors
+	 * @return a list of nodes
+	 */
+	@Override
+	public Node[] getInverseSurrogateNeighbors() {
+		return C.getInverseSurrogateNeighbors();
+	}
+	/**
+	 * Get this node's fold
+	 * @return a single node
+	 */
+	@Override
+	public Node getFold() {
+		return C.getFold();
+	}
+	/**
+	 * Get this node's surrogate fold
+	 * @return a single node
+	 */
+	@Override
+	public Node getSurrogateFold() {
+		return C.getSurrogateFold();
+	}
+	/**
+	 * Get this node's inverse surrogate fold
+	 * @return a single node
+	 */
+	@Override
+	public Node getInverseSurrogateFold() {
+		return C.getInverseSurrogateFold();
 	}
 	
 	//Setters
@@ -759,98 +606,20 @@ public class Node implements NodeInterface{
 		this.webID = id;
 	}
 	/**
-	 * Adds a Neighbor WebID to the list of Neighbors if it is not already in
-	 * the list
-	 *
-	 * @param n The WebID of the Neighbor
-	 */
-	public void addNeighbor(Node n) {
-		C.neighbors.add(n);
-	}
-	/**
-	 * Removes a neighbor node
-	 * @param n the node to remove
-	 */
-	public void removeNeighbor(Node n){
-		C.neighbors.remove(n);
-	}
-	/**
-	 * Adds a Surrogate Neighbor WebID to the list of Surrogate Neighbors if it
-	 * is not already in the list
-	 *
-	 * @param sn The WebID of the Surrogate Neighbor
-	 */
-	public void addSurrogateNeighbor(Node sn) {
-		C.surrogateNeighbors.add(sn);
-	}
-	/**
-	 * Removes a surrogate neighbor
-	 * @param sn the node to remove
-	 */
-	public void removeSurrogateNeighbor(Node sn){
-		C.surrogateNeighbors.remove(sn);
-	}
-	/**
-	 * Adds an Inverse Surrogate Neighbor WebID to the list of Inverse Surrogate
-	 * Neighbors if it is not already in the list
-	 *
-	 * @param isn The WebID of the Inverse Surrogate Neighbor
-	 */
-	public void addInverseSurrogateNeighbor(Node isn) {
-		C.inverseSurrogateNeighbors.add(isn);
-	}
-	/**
-	 * Removes the given node as an inverse surrogate neighbor
-	 * 
-	 * @param isn Node to remove from inverse surrogate neighbor list
-	 */
-	public void removeInverseSurrogateNeighbor(Node isn){
-		C.inverseSurrogateNeighbors.remove(isn);
-	}
-	/**
 	 * Sets the Height of the Node
-	 *
 	 * @param h The new height
 	 */
 	public void setHeight(int h) {
 		height = h;
-	}
-	/**
-	 * Removes all the IS neighbors from the node
-	 */
-	public void removeAllInverseSurrogateNeighbors(){
-		C.inverseSurrogateNeighbors.clear();
-	}
-	/**
-	 * Sets the WebID of the Fold of the Node
-	 *
-	 * @param f The WebID of the Fold of the Node
-	 */
-	public void setFold(Node f) {
-		C.fold = f;
-	}
-	/**
-	 * Sets the WebID of the Surrogate Fold of the Node
-	 *
-	 * @param sf The WebID of the Surrogate Fold of the Node
-	 */
-	public void setSurrogateFold(Node sf) {
-		C.surrogateFold = sf;
-	}
-	/**
-	 * Sets the WebID of the Inverse Surrogate Fold of the Node
-	 *
-	 * @param sf The WebID of the Inverse Surrogate Fold of the Node
-	 */
-	public void setInverseSurrogateFold(Node sf) {
-		C.inverseSurrogateFold = sf;
-	}
-	/**
-	 * Switches the Fold State pattern state
-	 * @param stable whether or not to switch to the stable state
-	 */
-	public void setFoldState(boolean stable){
-		foldState = stable ? new FoldStateStable() : new FoldStateUnstable();
+		//Every time we update height, we need to broadcast this
+		//change to our neighbor connections, so they can preserve sorted order
+		//Note that SNeighbors and ISNeighbors swap
+		for (Node n: C.neighbors)
+			n.updateConnection(this, this, Links.Type.NEIGHBOR);
+		for (Node n: C.surrogateNeighbors)
+			n.updateConnection(this, this, Links.Type.ISNEIGHBOR);
+		for (Node n: C.inverseSurrogateNeighbors)
+			n.updateConnection(this, this, Links.Type.SNEIGHBOR);
 	}
 	/**
 	 * Updates a node's connections when a previous connection is replaced
@@ -858,7 +627,7 @@ public class Node implements NodeInterface{
 	 * @param new_node the new connection Node
 	 * @param type the type of the connection
 	 */
-	protected void updateConnection(Node old_node, Node new_node, Connections.ConnectionType type){
+	protected void updateConnection(Node old_node, Node new_node, Links.Type type){
 		switch (type){
 			case FOLD:
 				C.fold = new_node;
@@ -889,9 +658,7 @@ public class Node implements NodeInterface{
 	public int compareTo(NodeInterface node) {
 		if (webID == node.getWebId())
 			return 0;
-		if (height < node.getHeight() || webID < node.getWebId())
-			return -1;
-		return 1;
+		return height < node.getHeight() ? -1 : 1;
 	}
 	@Override
 	public int hashCode(){
@@ -930,22 +697,30 @@ public class Node implements NodeInterface{
 	    
             return builder.toString();
 	}
-	
+		
 	//FOLD STATE PATTERN
+	/**
+	 * Switches the Fold State pattern state
+	 * @param stable whether or not to switch to the stable state
+	 */
+	private void setFoldState(boolean stable){
+		foldState = stable ? new Node.FoldStateStable() : new Node.FoldStateUnstable();
+	}
+	/**
+	 * Gets this node's fold state
+	 * @return a FoldState
+	 */
+	private FoldStateInterface getFoldState(){
+		return foldState;
+	}
 	private static interface FoldStateInterface{
 		public void updateFolds(Node.FoldDatabaseChanges fdc, Node caller, Node child);
 		public void reverseFolds(Node.FoldDatabaseChanges fdc, Node parent, Node child);
 	}
 	private static class FoldStateStable implements FoldStateInterface{
-		/*
-		private static FoldStateInterface instance = new FoldStateStable();
-		public static FoldStateInterface getInstance(){
-			return instance;
-		}
-		*/
 		@Override
 		//After running we should be in an unstable state
-		public void updateFolds(FoldDatabaseChanges fdc, Node caller, Node child) {
+		public void updateFolds(Node.FoldDatabaseChanges fdc, Node caller, Node child) {
 			Node fold = caller.getFold();
 			//Update reflexive folds
 			fdc.updateDirect(child, fold);
@@ -957,7 +732,7 @@ public class Node implements NodeInterface{
 			fdc.removeDirect(caller, null);
 		}
 		@Override
-		public void reverseFolds(FoldDatabaseChanges fdc, Node parent, Node child) {
+		public void reverseFolds(Node.FoldDatabaseChanges fdc, Node parent, Node child) {
 			/* To reverse from a stable state:
 			 * parent.isf = child.f
 			 * child.f.sf = parent
@@ -970,15 +745,9 @@ public class Node implements NodeInterface{
 		}
 	}
 	private static class FoldStateUnstable implements FoldStateInterface{
-		/*
-		private static FoldStateInterface instance = new FoldStateStable();
-		public static FoldStateInterface getInstance(){
-			return instance;
-		}
-		*/
 		@Override
 		//After running, we should be in a stable state
-		public void updateFolds(FoldDatabaseChanges fdc, Node caller, Node child) {
+		public void updateFolds(Node.FoldDatabaseChanges fdc, Node caller, Node child) {
 			//Stable-state fold references
 			Node isfold = caller.getInverseSurrogateFold();
 			fdc.updateDirect(child, isfold);
@@ -988,7 +757,7 @@ public class Node implements NodeInterface{
 			fdc.removeInverse(caller, null);
 		}
 		@Override
-		public void reverseFolds(FoldDatabaseChanges fdc, Node parent, Node child) {
+		public void reverseFolds(Node.FoldDatabaseChanges fdc, Node parent, Node child) {
 			/* To reverse from an unstable state:
 			 * parent.f = child.f
 			 * child.f.f = parent
