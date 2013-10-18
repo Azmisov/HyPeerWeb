@@ -156,10 +156,22 @@ public class HyPeerWebGraph extends JFrame{
 			//Redrawing
 			if (buffer != null && !redraw){
 				g2.drawImage(buffer, null, 0, 0);
+				//Selected nodes
 				if (selected != null){
+					DrawData temp = selected.getValue();
 					g2.setColor(Color.CYAN);
-					Point2D loc = selected.getValue().coord;
-					paintNode(g2, selected.getKey(), (int) loc.getX(), (int) loc.getY());
+					repaintNode(g2, selected.getKey());
+					//Children of selection
+					if (temp.children != null){
+						g2.setColor(Color.YELLOW);
+						for (Node child: temp.children)
+							repaintNode(g2, child);
+					}
+					//Parent of selection
+					if (temp.parent != null){
+						g2.setColor(Color.GREEN);
+						repaintNode(g2, temp.parent);
+					}
 				}
 				return;
 			}
@@ -227,7 +239,7 @@ public class HyPeerWebGraph extends JFrame{
 			//Draw these as friends in a circle
 			if (parentData.skew == -1)
 				parentData.skew = Math.random()*2*Math.PI/friends.size();
-			double theta = 2*Math.PI/(double) friends.size(),
+			double theta = 2*Math.PI/(double) (friends.size() == 2 ? 3 : friends.size()),
 					angle = parentData.skew;
 			Point2D coord = new Point2D.Double();
 			for (Node friend: friends){
@@ -254,6 +266,13 @@ public class HyPeerWebGraph extends JFrame{
 		 */
 		private void paintNode(Graphics2D g, Node n, int x, int y){
 			data.get(n).coord.setLocation(x, y);
+			drawNode(g, n, x, y);
+		}
+		private void repaintNode(Graphics2D g, Node n){
+			Point2D p = data.get(n).coord;
+			drawNode(g, n, (int) p.getX(), (int) p.getY());
+		}
+		private void drawNode(Graphics2D g, Node n, int x, int y){
 			g.fillOval(x-nodeSize/2, y-nodeSize/2, nodeSize, nodeSize);
 			g.drawString(n.getWebId()+" ("+n.getHeight()+")", x+5, y-5);
 		}

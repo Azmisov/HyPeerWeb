@@ -13,7 +13,7 @@ import validator.Validator;
  */
 public class HyPeerWebTest {
 	//Validation variables
-	private final int MAX_TESTS = 4;//use <=100 if testing database
+	private final int MAX_TESTS = 60;//use <=100 if testing database
 	private final int TEST_EVERY = 1;
 	private final int GRAPH_LEVELS = 4;
 	private final boolean TEST_DATABASE = false;
