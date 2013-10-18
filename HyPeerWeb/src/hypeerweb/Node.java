@@ -190,7 +190,7 @@ public class Node implements NodeInterface{
 	protected Node disconnectNode(Database db){
 		NeighborDatabaseChanges ndc = new NeighborDatabaseChanges();
 		FoldDatabaseChanges fdc = new FoldDatabaseChanges();
-
+		System.out.println("disconnecting node " + webID);
 		Node parent = getParent();
 		int parentHeight = parent.getHeight()-1;
 
@@ -388,8 +388,45 @@ public class Node implements NodeInterface{
 			We don't need to keep track of visited nodes, since visited nodes will always be lower on the ladder
 		*/
 		return findValidNode(disconnectCriteria);
+		//return getHighestRelation(true);
 	}
-		
+	
+	private Node getHighestRelation(boolean originalCall){
+	    Node highest = this;
+	    Node neighborHighest;
+	    if(!C.inverseSurrogateNeighbors.isEmpty()){
+		for(Node n : C.inverseSurrogateNeighbors){
+		    if(n.getWebId() > highest.getWebId())
+			highest = n;
+		}
+	    }
+	    if(!C.neighbors.isEmpty()){
+		for(Node n : C.neighbors){
+		if(n.getWebId() > highest.getWebId())
+		highest = n;
+		}
+	    }
+	    if(originalCall && !C.neighbors.isEmpty()){//neighbor's neighbors
+		for(Node n : C.neighbors){
+		    for(Node m : n.getInverseSurrogateNeighbors()){
+			neighborHighest = m.getHighestRelation(false);
+			if(neighborHighest.getWebId() > highest.getWebId())
+			    highest = neighborHighest;
+		    }
+		}
+	    }
+	    if(C.fold != null)
+	    if(C.fold.getWebId() > highest.getWebId())
+		highest = C.fold;
+	    if(C.inverseSurrogateFold != null)
+	    if(C.inverseSurrogateFold.getWebId() > highest.getWebId())
+		highest = C.inverseSurrogateFold;
+	    
+	    if(highest.getWebId() > webID)
+		return highest.getHighestRelation(true);
+	    
+	    return this;
+	}
 	//EN-MASSE DATABASE CHANGE HANDLING
 	/**
 	 * Sub-Class to keep track of Fold updates

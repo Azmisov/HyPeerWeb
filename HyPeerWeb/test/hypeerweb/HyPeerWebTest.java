@@ -13,10 +13,11 @@ import validator.Validator;
  */
 public class HyPeerWebTest {
 	//Validation variables
-	private final int MAX_TESTS = 10;//use <=100 if testing database
+	private final int MAX_TESTS = 114;//use <=100 if testing database
 	private final int TEST_EVERY = 1;
 	private final boolean TEST_DATABASE = false;
-	private final boolean USE_TRACE_LOG = true;
+	private final boolean USE_TRACE_LOG = false;
+	private final boolean DRAW_GRAPH = false;
 	private HyPeerWeb web;
 	private DrawingThread draw;
 	
@@ -35,7 +36,8 @@ public class HyPeerWebTest {
 		}
 		else web.startTrace();
 		//Drawing a HyPeerWeb Graph
-		draw = new DrawingThread(this);
+		if(DRAW_GRAPH)
+		    draw = new DrawingThread(this);
 	}
 	
 	/**
@@ -82,7 +84,9 @@ public class HyPeerWebTest {
 					}
 				}
 				//After insertion graph
-				drawGraph(web.getFirstNode(), 5);
+				System.out.println("DONE "+(t == 0 ? "ADDING" : "DELETING")+" NODES");
+				if(DRAW_GRAPH)
+				    drawGraph(web.getFirstNode(), 5);
 			}
 		} catch (Exception e){
 			System.out.println("Fatal Error from HyPeerWeb:");
