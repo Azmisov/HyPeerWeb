@@ -15,6 +15,7 @@ public class HyPeerWebTest {
 	//Validation variables
 	private final int MAX_TESTS = 114;//use <=100 if testing database
 	private final int TEST_EVERY = 1;
+	private final int GRAPH_LEVELS = 3;
 	private final boolean TEST_DATABASE = false;
 	private final boolean USE_TRACE_LOG = false;
 	private final boolean DRAW_GRAPH = false;
@@ -69,7 +70,9 @@ public class HyPeerWebTest {
 							throw new Exception("Added node should not be null!");
 						if (web.getSize() != ++old_size)
 							throw new Exception("HyPeerWeb is not the correct size");
-//						System.out.println("ADDED = "+temp.getWebId());
+						if (temp.getWebId() == 254)
+							drawGraph(temp);
+						System.out.println("ADDED = "+temp.getWebId());
 					}
 					//Then delete all nodes
 					else{
@@ -102,9 +105,9 @@ public class HyPeerWebTest {
 		}
 	}
 	
-	public void drawGraph(Node n, int levels) throws Exception{
+	public void drawGraph(Node n) throws Exception{
 		if (n == null) return;
-		draw.start(n, levels);
+		draw.start(n, GRAPH_LEVELS);
 		synchronized (this){
 			this.wait();
 		}
