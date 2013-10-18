@@ -89,7 +89,7 @@ public class HyPeerWebTest {
 				//After insertion graph
 				System.out.println("DONE "+(t == 0 ? "ADDING" : "DELETING")+" NODES");
 				if(DRAW_GRAPH)
-				    drawGraph(web.getFirstNode(), 5);
+				    drawGraph(web.getFirstNode());
 			}
 		} catch (Exception e){
 			System.out.println("Fatal Error from HyPeerWeb:");
