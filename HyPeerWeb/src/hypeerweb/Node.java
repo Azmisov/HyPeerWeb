@@ -207,23 +207,23 @@ public class Node implements NodeInterface, Comparable<NodeInterface>{
 	 */
 	public Node searchForNode(int index, boolean exactMatch){
 		//Exact matches will have a score of 32
-		int base = scoreWebIdMatch(index, this.webID), score;
+		int base = scoreWebIdMatch(index), score;
 		if (base == 32) return this;
 		//Check fold first, since it may be faster
 		Node fold_ref = L.getFold();
 		if (fold_ref == null)
 			fold_ref = L.getSurrogateFold();
-		if (fold_ref != null && (score = scoreWebIdMatch(index, fold_ref.getWebId())) > base)
+		if (fold_ref != null && (score = fold_ref.scoreWebIdMatch(index)) > base)
 			return score == 32 ? fold_ref : fold_ref.searchForNode(index, exactMatch);
 		//Otherwise, check neighbors
 		for (Node n: L.getNeighborsSet()){
-			if ((score = scoreWebIdMatch(index, n.getWebId())) > base)
+			if ((score = n.scoreWebIdMatch(index)) > base)
 				return score == 32 ? n : n.searchForNode(index, exactMatch);
 		}
 		//If we're looking for an exact node, go down to sneighbors
 		if (exactMatch && webID != index){
 			for (Node n: L.getSurrogateNeighborsSet()){
-				if ((score = scoreWebIdMatch(index, n.getWebId())) >= base)
+				if ((score = n.scoreWebIdMatch(index)) >= base)
 					return score == 32 ? n : n.searchForNode(index, exactMatch);
 			}
 		}
@@ -236,8 +236,8 @@ public class Node implements NodeInterface, Comparable<NodeInterface>{
 	 * @param base the base score
 	 * @return how many bits are set in the number
 	 */
-	private int scoreWebIdMatch(int idKey, int idSearch){
-		return Integer.bitCount(~(idKey ^ idSearch));
+	private int scoreWebIdMatch(int idSearch){
+		return Integer.bitCount(~(webID ^ idSearch));
 	}
 	
 	//FIND VALID NODES
