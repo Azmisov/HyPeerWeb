@@ -10,10 +10,6 @@ import java.util.*;
 public class Main {
 
 	public static void main(String[] args) {
-		int x = 0 & 1;
-		System.out.println(Integer.toBinaryString(x));
-		return;
-		
 		int total_errs = 0;
 		
 		/* DATABASE TEST CODE
