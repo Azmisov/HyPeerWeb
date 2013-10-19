@@ -17,7 +17,7 @@ public class Links{
 	private TreeSet<Node> neighbors;
 	private TreeSet<Node> surrogateNeighbors;
 	private TreeSet<Node> inverseSurrogateNeighbors;
-	private TreeSet<Node> highest;
+	public TreeSet<Node> highest;
 	
 	public Links(){
 		neighbors = new TreeSet<>();
@@ -94,29 +94,32 @@ public class Links{
 				break;
 		}
 		//Update the highest connection list
-		if (oldNode != null)
+		//Make sure this node isn't another link type
+		if (oldNode != null && (keyChange || !(fold == oldNode || surrogateFold == oldNode ||
+			inverseSurrogateFold == fold || neighbors.contains(oldNode) ||
+			surrogateNeighbors.contains(oldNode) || inverseSurrogateNeighbors.contains(oldNode))))
+		{
 			highest.remove(oldNode);
+		}
 		//Add it to the appropriate structure
 		//Change the key back to the changed value
 		if (keyChange)
 			newNode.changingKey = false;
-		switch (type){
-			case NEIGHBOR:
-				if (newNode != null)
+		if (newNode != null){
+			switch (type){
+				case NEIGHBOR:
 					neighbors.add(newNode);
-				break;
-			case SNEIGHBOR:
-				if (newNode != null)
+					break;
+				case SNEIGHBOR:
 					surrogateNeighbors.add(newNode);
-				break;
-			case ISNEIGHBOR:
-				if (newNode != null)
+					break;
+				case ISNEIGHBOR:
 					inverseSurrogateNeighbors.add(newNode);
-				break;
-		}
-		//Update the highest connection list
-		if (newNode != null)
+					break;
+			}
+			//Update the highest connection list
 			highest.add(newNode);
+		}
 	}
 	
 	//BROADCAST AND NOTIFICATION

@@ -11,6 +11,7 @@ import validator.NodeInterface;
  *  - find disconnect point is slow
  *  - disconnect node doesn't sync with database
  *  - make NodeProxy hold webID, height, changingKey, and L (LinksProxy) by default
+ *  - make sure we can use == or .equals when we get to proxies
  * @author Guy
  */
 public class Node implements NodeInterface, Comparable<NodeInterface>{
