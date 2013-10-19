@@ -247,7 +247,7 @@ public class HyPeerWebGraph extends JFrame{
 				ArrayList<Node> parents = new ArrayList<>();
 				ArrayList<Node> friends;
 				parents.add(n);
-				for (int level = 0; level <= levels; level++){
+				for (int level = 0; level < levels; level++){
 					radius /= 2;
 					friends = new ArrayList<>();
 					for (Node parent: parents){

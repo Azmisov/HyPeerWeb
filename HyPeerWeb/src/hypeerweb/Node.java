@@ -7,20 +7,24 @@ import validator.NodeInterface;
 /**
  * The Node class
  * TODO:
- *	- searchForNode is not working
+ *  - find insert/disconnect point is broken again
  *  - find disconnect point is slow
  *  - disconnect node doesn't sync with database
- *  - make NodeProxy hold webID, height, and L (LinksProxy) by default
+ *  - make NodeProxy hold webID, height, changingKey, and L (LinksProxy) by default
  * @author Guy
  */
-public class Node implements NodeInterface{
+public class Node implements NodeInterface, Comparable<NodeInterface>{
 	//NODE ATTRIBUTES
-	private int webID;
-	private int height;
+	private int webID, height, _webID, _height;
 	public Links L;
+	//This flag is raised whenever we're changing webID or height
+	//Since these values are actually the keys to ordered TreeSets,
+	//Modifying them would corrupt the TreeSet ordering; this prevents that
+	//It should ONLY be modified by the Links class
+	protected boolean changingKey = false;
 	//State machines
 	private static final int recurseLevel = 2; //2 = neighbor's neighbors
-	private FoldStateInterface foldState; 
+	private FoldStateInterface foldState = new FoldStateStable(); 
 	//Hash code prime
 	private static long prime = Long.parseLong("2654435761");
 
@@ -34,7 +38,6 @@ public class Node implements NodeInterface{
 		this.webID = id;
 		this.height = height;
 		L = new Links();
-		foldState = new FoldStateStable();
 	}
 	/**
 	 * Create a Node with all of its data
@@ -52,7 +55,6 @@ public class Node implements NodeInterface{
 		webID = id;
 		height = h;
 		L =  new Links(f, sf, isf, n, sn, isn);		
-		foldState = new FoldStateStable();
 	}
 
 	//ADD OR REMOVE NODES
@@ -137,7 +139,7 @@ public class Node implements NodeInterface{
 		webID = toReplace.getWebId();
 		height = toReplace.getHeight();
 		//Notify all connections that their reference has changed
-		L.updateIncomingPointers(toReplace, this);
+		L.broadcastUpdate(toReplace, this, false);
 	}
 	/**
 	 * Disconnects an edge node to replace a node that
@@ -203,38 +205,38 @@ public class Node implements NodeInterface{
 	 * @author John
 	 */
 	public Node searchForNode(int index, boolean exactMatch){
-		System.out.println(index);
-		if(index == webID)
-			return this;
-		long closeness = countSetBits(index & this.webID);
-		System.out.println(closeness);
-		System.out.println("index " + Integer.toBinaryString(index));
-		System.out.println("webID " + Integer.toBinaryString(webID));
+		//Exact matches will have a score of 32
+		int base = scoreWebIdMatch(index, this.webID), score;
+		if (base == 32) return this;
 		//Check fold first, since it may be faster
 		Node fold_ref = L.getFold();
 		if (fold_ref == null)
 			fold_ref = L.getSurrogateFold();
-		if (fold_ref != null && countSetBits(index & fold_ref.getWebId()) > closeness)
-			return fold_ref.searchForNode(index, exactMatch);
+		if (fold_ref != null && (score = scoreWebIdMatch(index, fold_ref.getWebId())) > base)
+			return score == 32 ? fold_ref : fold_ref.searchForNode(index, exactMatch);
 		//Otherwise, check neighbors
 		for (Node n: L.getNeighborsSet()){
-			if (countSetBits(index & n.getWebId()) > closeness)
-				return n.searchForNode(index, exactMatch);
+			if ((score = scoreWebIdMatch(index, n.getWebId())) > base)
+				return score == 32 ? n : n.searchForNode(index, exactMatch);
 		}
-		if(exactMatch && webID != index)
+		//If we're looking for an exact node, go down to sneighbors
+		if (exactMatch && webID != index){
 			for (Node n: L.getSurrogateNeighborsSet()){
-				if (countSetBits(index & n.getWebId()) >= closeness)
-					return n.searchForNode(index, exactMatch);
+				if ((score = scoreWebIdMatch(index, n.getWebId())) >= base)
+					return score == 32 ? n : n.searchForNode(index, exactMatch);
 			}
+		}
 		return this;
 	}
 	/**
-	 * Voodoo magic... don't touch
-	 * @param i a number
+	 * Scores how well a webID matches a search key compared to a base score
+	 * @param idKey the webId search key
+	 * @param idSearch the query result webID
+	 * @param base the base score
 	 * @return how many bits are set in the number
 	 */
-	private long countSetBits(int i){
-		return ~(i ^ webID);
+	private int scoreWebIdMatch(int idKey, int idSearch){
+		return Integer.bitCount(~(idKey ^ idSearch));
 	}
 	
 	//FIND VALID NODES
@@ -304,6 +306,13 @@ public class Node implements NodeInterface{
 	private static Criteria insertCriteria = new Criteria(){
 		@Override
 		public Node check(Node origin, Node friend, int level){
+			//*
+			Node low = friend.L.getLowestLink();
+			if (low != null && low.getHeight() < origin.getHeight())
+				return low;
+			return null;
+			//*/
+			/*
 			int originHeight = origin.getHeight();
 			//Friends cannot have height less than origin
 			if (friend.getHeight() < originHeight)
@@ -317,6 +326,7 @@ public class Node implements NodeInterface{
 			if (temp != null && temp.getHeight() < originHeight)
 				return temp;
 			return null;
+			//*/
 		}
 	};
 	/**
@@ -335,20 +345,9 @@ public class Node implements NodeInterface{
 	private static Criteria disconnectCriteria = new Criteria(){
 		@Override
 		public Node check(Node origin, Node friend, int level){
-			int originHeight = origin.getHeight();
-			//Folds
-			Node temp = friend.getFold();
-			if (temp != null && temp.getHeight() > originHeight)
-				return temp;
-			if (temp != null && temp.getHeight() > originHeight)
-				return temp;
-			//*			
-			//Friends
-			if (level < 2){
-				temp = friend.getLinks().getHighestNeighbor();
-				if (temp != null && temp.getHeight() > origin.getHeight())
-					return friend;
-			}
+			Node high = friend.L.getHighestLink();
+			if (high != null && high.getHeight() > origin.getHeight())
+				return high;
 			return null;
 		}
 	};
@@ -612,12 +611,6 @@ public class Node implements NodeInterface{
 	public Links getLinks(){
 		return L;
 	}
-	/**
-	 * Updates a link pointer
-	 */
-	public void updateLinks(Node oldNode, Node newNode, Links.Type type){
-		L.update(oldNode, newNode, type);
-	}
 	
 	//Setters
 	/**
@@ -625,25 +618,34 @@ public class Node implements NodeInterface{
 	 * @param id the new webid
 	 */
 	protected void setWebID(int id){
+		//We don't need to broadcast a key change here, since this is only
+		//called when there is one node left
 		this.webID = id;
 	}
 	/**
-	 * Sets the Height of the Node
+	 * Sets the Height of the Node and updates all pointers
 	 * @param h The new height
 	 */
 	public void setHeight(int h) {
-		height = h;
 		//Every time we update height, we need to broadcast this
 		//change to our neighbor connections, so they can preserve sorted order
-		L.updateIncomingPointers(this, this);
+		_height = height;
+		height = h;
+		L.broadcastUpdate(null, this, true);
 	}
 	
 	//CLASS OVERRIDES
 	@Override
 	public int compareTo(NodeInterface node) {
-		if (webID == node.getWebId())
+		//If we're trying to remove the key in an ordered collection, changingKey = true
+		//In that case, check the old key value, before it was changed
+		int activeWebId = changingKey ? _webID : webID,
+			activeHeight = changingKey ? _height : height;
+		int id = node.getWebId();
+		if (activeWebId == id)
 			return 0;
-		return height < node.getHeight() ? -1 : 1;
+		int nh = node.getHeight();
+		return (activeHeight == nh ? activeWebId < id : activeHeight < nh) ? -1 : 1;
 	}
 	@Override
 	public int hashCode(){
@@ -658,30 +660,34 @@ public class Node implements NodeInterface{
 	@Override
 	public String toString(){
 		StringBuilder builder = new StringBuilder();
-		builder.append("\nNode #: ").append(webID).append("(").append(height).append(")");
+		builder.append("\nNode: ").append(webID).append("(").append(height).append(")");
+		Node f;
 		//Folds
-		if (L.getFold() != null)
-			builder.append("\n\tFold: ").append(L.getFold().getWebId());
-		if (L.getSurrogateFold() != null)
-			builder.append("\n\tSFold: ").append(L.getSurrogateFold().getWebId());
-		if (L.getInverseSurrogateFold() != null)
-			builder.append("\n\tISFold: ").append(L.getInverseSurrogateFold().getWebId());
+		if ((f = L.getFold()) != null)
+			builder.append("\n\tFold: ").append(f.getWebId()).
+					append("(").append(f.getHeight()).append(")");
+		if ((f = L.getSurrogateFold()) != null)
+			builder.append("\n\tSFold: ").append(f.getWebId()).
+					append("(").append(f.getHeight()).append(")");
+		if ((f = L.getInverseSurrogateFold()) != null)
+			builder.append("\n\tISFold: ").append(f.getWebId()).
+					append("(").append(f.getHeight()).append(")");
 		//Neighbors
 		TreeSet<Node> temp;
 		if (!(temp = L.getNeighborsSet()).isEmpty()){
 			builder.append("\n\tNeighbors: ");
 			for (Node n : temp)
-				builder.append(n.getWebId()).append(" (").append(n.getHeight()).append("), ");
+				builder.append(n.getWebId()).append("(").append(n.getHeight()).append("), ");
 		}
 		if (!(temp = L.getSurrogateNeighborsSet()).isEmpty()){
 			builder.append("\n\tSNeighbors: ");
 			for (Node n : temp)
-				builder.append(n.getWebId()).append(" (").append(n.getHeight()).append("), ");
+				builder.append(n.getWebId()).append("(").append(n.getHeight()).append("), ");
 		}
 		if (!(temp = L.getInverseSurrogateNeighborsSet()).isEmpty()){
 			builder.append("\n\tISNeighbors: ");
 			for (Node n : temp)
-				builder.append(n.getWebId()).append(" (").append(n.getHeight()).append("), ");
+				builder.append(n.getWebId()).append("(").append(n.getHeight()).append("), ");
 		}
 		return builder.toString();
 	}

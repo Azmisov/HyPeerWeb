@@ -13,11 +13,11 @@ import validator.Validator;
  */
 public class HyPeerWebTest {
 	//Validation variables
-	private final int MAX_TESTS = 10;//use <=100 if testing database
+	private final int MAX_TESTS = 100;//use <=100 if testing database
 	private final int TEST_EVERY = 1;
 	private final int GRAPH_LEVELS = 3;
 	private final boolean TEST_DATABASE = false;
-	private final boolean USE_TRACE_LOG = false;
+	private final boolean USE_TRACE_LOG = true;
 	private final boolean DRAW_GRAPH = true;
 	private HyPeerWeb web;
 	private DrawingThread draw;
@@ -70,18 +70,16 @@ public class HyPeerWebTest {
 							throw new Exception("Added node should not be null!");
 						if (web.getSize() != ++old_size)
 							throw new Exception("HyPeerWeb is not the correct size");
-						//System.out.println("ADDED = "+temp.getWebId());
+						//if (temp.getWebId() == 83)
+							drawGraph(web.getNode(0));
+						System.out.println("ADDED = "+temp.getWebId());
 					}
 					//Then delete all nodes
 					else{
-						if (t == 1 && i==9)
-							drawGraph(web.getNode(63));
 						if ((temp = web.removeNode(web.getFirstNode())) == null)
 							throw new Exception("Removed node should not be null!");
 						if (web.getSize() != --old_size)
 							throw new Exception("HyPeerWeb is not the correct size");
-						if (t == 1 && i==9)
-							drawGraph(web.getNode(31));
 					}
 					if (i % TEST_EVERY == 0){
 						valid = (new Validator(web)).validate();

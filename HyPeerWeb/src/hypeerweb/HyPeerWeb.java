@@ -95,9 +95,7 @@ public class HyPeerWeb implements HyPeerWebInterface {
 		
 		//Find a disconnection point
 		//Node replace = nodes.lastEntry().getValue().findDisconnectNode().disconnectNode(db);
-		Node random = getRandomNode();
-		System.out.println("Random node == " + random.getWebId());
-		Node replace = random.findDisconnectNode().disconnectNode(db);
+		Node replace = getRandomNode().findDisconnectNode().disconnectNode(db);
 		if (replace == null)
 			throw removeNodeErr;
 		//Remove node from list of nodes
@@ -172,7 +170,6 @@ public class HyPeerWeb implements HyPeerWebInterface {
 			throw addNodeErr;
 		//Node successfully added!
 		nodes.put(child.getWebId(), child);
-		//System.out.println();
 		return child;
 	}
 	/**
@@ -334,11 +331,8 @@ public class HyPeerWeb implements HyPeerWebInterface {
     @Override
     public String toString() {
         StringBuilder builder = new StringBuilder();
-        
-        for (Node n : nodes.values()) {
+        for (Node n : nodes.values())
             builder.append(n);
-        }
-        
         return builder.toString();
     }
 }
