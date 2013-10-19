@@ -15,7 +15,7 @@ import validator.NodeInterface;
  */
 public class Node implements NodeInterface, Comparable<NodeInterface>{
 	//NODE ATTRIBUTES
-	private int webID, height, _webID, _height;
+	private int webID, height, _height;
 	public Links L;
 	//This flag is raised whenever we're changing webID or height
 	//Since these values are actually the keys to ordered TreeSets,
@@ -639,13 +639,13 @@ public class Node implements NodeInterface, Comparable<NodeInterface>{
 	public int compareTo(NodeInterface node) {
 		//If we're trying to remove the key in an ordered collection, changingKey = true
 		//In that case, check the old key value, before it was changed
-		int activeWebId = changingKey ? _webID : webID,
-			activeHeight = changingKey ? _height : height;
+		//Currently, we only cache the old height, but we may cache old webId in the future
+		int activeHeight = changingKey ? _height : height;
 		int id = node.getWebId();
-		if (activeWebId == id)
+		if (webID == id)
 			return 0;
 		int nh = node.getHeight();
-		return (activeHeight == nh ? activeWebId < id : activeHeight < nh) ? -1 : 1;
+		return (activeHeight == nh ? webID < id : activeHeight < nh) ? -1 : 1;
 	}
 	@Override
 	public int hashCode(){
