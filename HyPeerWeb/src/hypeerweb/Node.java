@@ -173,6 +173,8 @@ public class Node implements NodeInterface, Comparable<NodeInterface>{
 			ndc.removeInverse(sn, this);
 
 		//Reverse the fold state; we will always have a fold - guaranteed
+		if (L.getFold() == null)
+			System.out.println("Bad disconnect point");
 		L.getFold().getFoldState().reverseFolds(fdc, parent, this);
 
 		//Attempt to update the database
@@ -346,8 +348,14 @@ public class Node implements NodeInterface, Comparable<NodeInterface>{
 			We keep walking up the ladder until we can go no farther
 			We don't need to keep track of visited nodes, since visited nodes will always be lower on the ladder
 		*/
-		return findValidNode(disconnectCriteria);
-		//return getHighestRelation(true);
+		Node valid = findValidNode(disconnectCriteria);
+		//From here, we want to pick a node that has a fold
+		if (valid.getFold() == null)
+			valid = valid.getSurrogateFold().getFold();
+		//Don't pick node zero, since it doesn't have a 
+		if (valid.getParent() == null)
+			System.out.println("bad");
+		return valid;
 	}
 
 	//EN-MASSE DATABASE CHANGE HANDLING
