@@ -306,27 +306,10 @@ public class Node implements NodeInterface, Comparable<NodeInterface>{
 	private static Criteria insertCriteria = new Criteria(){
 		@Override
 		public Node check(Node origin, Node friend, int level){
-			//*
 			Node low = friend.L.getLowestLink();
 			if (low != null && low.getHeight() < origin.getHeight())
 				return low;
 			return null;
-			//*/
-			/*
-			int originHeight = origin.getHeight();
-			//Friends cannot have height less than origin
-			if (friend.getHeight() < originHeight)
-				return friend;
-			//Friend's fold cannot have smaller height
-			Node temp = friend.getSurrogateFold();
-			if (temp != null && temp.getHeight() < originHeight)
-				return temp;
-			//Friends cannot have surrogate neighbors of less height
-			temp = friend.L.getLowestSurrogateNeighbor();
-			if (temp != null && temp.getHeight() < originHeight)
-				return temp;
-			return null;
-			//*/
 		}
 	};
 	/**
