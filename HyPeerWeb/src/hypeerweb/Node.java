@@ -2,6 +2,7 @@ package hypeerweb;
 
 import java.util.ArrayList;
 import java.util.TreeSet;
+import java.util.HashSet;
 import validator.NodeInterface;
 
 /**
@@ -16,13 +17,8 @@ import validator.NodeInterface;
  */
 public class Node implements NodeInterface, Comparable<NodeInterface>{
 	//NODE ATTRIBUTES
-	private int webID, height, _height;
+	private int webID, height;
 	public Links L;
-	//This flag is raised whenever we're changing webID or height
-	//Since these values are actually the keys to ordered TreeSets,
-	//Modifying them would corrupt the TreeSet ordering; this prevents that
-	//It should ONLY be modified by the Links class
-	protected boolean changingKey = false;
 	//State machines
 	private static final int recurseLevel = 2; //2 = neighbor's neighbors
 	private FoldStateInterface foldState = new FoldStateStable(); 
@@ -140,7 +136,7 @@ public class Node implements NodeInterface, Comparable<NodeInterface>{
 		webID = toReplace.getWebId();
 		height = toReplace.getHeight();
 		//Notify all connections that their reference has changed
-		L.broadcastUpdate(toReplace, this, false);
+		L.broadcastUpdate(toReplace, this);
 	}
 	/**
 	 * Disconnects an edge node to replace a node that
@@ -619,11 +615,11 @@ public class Node implements NodeInterface, Comparable<NodeInterface>{
 	 * @param h The new height
 	 */
 	public void setHeight(int h) {
-		//Every time we update height, we need to broadcast this
-		//change to our neighbor connections, so they can preserve sorted order
-		_height = height;
+		//First remove the old key
+		L.broadcastUpdate(this, null);
 		height = h;
-		L.broadcastUpdate(null, this, true);
+		//Now add back in with the new key
+		L.broadcastUpdate(null, this);
 	}
 	
 	//CLASS OVERRIDES
@@ -632,12 +628,11 @@ public class Node implements NodeInterface, Comparable<NodeInterface>{
 		//If we're trying to remove the key in an ordered collection, changingKey = true
 		//In that case, check the old key value, before it was changed
 		//Currently, we only cache the old height, but we may cache old webId in the future
-		int activeHeight = changingKey ? _height : height;
 		int id = node.getWebId();
 		if (webID == id)
 			return 0;
 		int nh = node.getHeight();
-		return (activeHeight == nh ? webID < id : activeHeight < nh) ? -1 : 1;
+		return (height == nh ? webID < id : height < nh) ? -1 : 1;
 	}
 	@Override
 	public int hashCode(){
@@ -757,4 +752,44 @@ public class Node implements NodeInterface, Comparable<NodeInterface>{
 			fdc.removeInverse(fold, null);
 		}
 	}
+	
+	//VISITOR PATTERN
+	private interface VisitorInterface{
+		public void visit(Node n);
+	}
+	private class VisitorSend implements VisitorInterface{
+		@Override
+		public void visit(Node n){
+			//Do something here...
+		}
+	}
+	public void accept(VisitorInterface v){
+		v.visit(this);
+	}
+        private class VisitorBroadcast implements VisitorInterface{
+            @Override
+            public void visit(Node n){
+                int trailingZeros = Integer.numberOfTrailingZeros(webID);
+                HashSet<Integer> generatedNeighbors = new HashSet();
+                HashSet<Integer> generatedInverseSurrogates = new HashSet();
+                int neighbors = webID;
+                int inverseSurrogates = webID | (Integer.highestOneBit(webID) << 1);
+                int bitShifter = 1;
+                for(int i = 0; i < trailingZeros; i++){
+                    generatedNeighbors.add(neighbors | bitShifter);
+                    generatedInverseSurrogates.add(inverseSurrogates | bitShifter);
+                    bitShifter <<= 1;
+                }
+                for(Node node : L.getNeighborsSet()){
+                    if(generatedNeighbors.contains(node.getWebId())){
+                        //do something
+                    }
+                }
+                for(Node node : L.getInverseSurrogateNeighborsSet()){
+                    if(generatedInverseSurrogates.contains(node.getWebId())){
+                        //do something
+                    }
+                }
+            }
+        }
 }

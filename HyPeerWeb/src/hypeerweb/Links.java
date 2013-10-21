@@ -58,15 +58,7 @@ public class Links{
 	 * @param keyChange if true, newNode will be treated as a key change,
 	 * rather than a replacement of oldNode
 	 */
-	public void update(Node oldNode, Node newNode, Type type, boolean keyChange){
-		//First remove the old node reference
-		//In the case of folds, we can just set them right now
-		//If we're updating the key, temporarily change the height/webID
-		//So that the node gets added into the correct place
-		if (keyChange){
-			oldNode = newNode;
-			newNode.changingKey = true;
-		}
+	public void update(Node oldNode, Node newNode, Type type){
 		switch (type){
 			case FOLD:
 				oldNode = fold;
@@ -95,16 +87,14 @@ public class Links{
 		}
 		//Update the highest connection list
 		//Make sure this node isn't another link type
-		if (oldNode != null && (keyChange || !(fold == oldNode || surrogateFold == oldNode ||
-			inverseSurrogateFold == fold || neighbors.contains(oldNode) ||
+		if (oldNode != null && (!(fold == oldNode || surrogateFold == oldNode ||
+			inverseSurrogateFold == oldNode || neighbors.contains(oldNode) ||
 			surrogateNeighbors.contains(oldNode) || inverseSurrogateNeighbors.contains(oldNode))))
 		{
 			highest.remove(oldNode);
 		}
 		//Add it to the appropriate structure
 		//Change the key back to the changed value
-		if (keyChange)
-			newNode.changingKey = false;
 		if (newNode != null){
 			switch (type){
 				case NEIGHBOR:
@@ -131,21 +121,21 @@ public class Links{
 	 * @param keyChange if true, new node will be treated as a new key, rather
 	 * than a replacement of oldPointer
 	 */
-	public void broadcastUpdate(Node oldPointer, Node newPointer, boolean keyChange){
+	public void broadcastUpdate(Node oldPointer, Node newPointer){
 		//NOTE: we reverse surrogate/inverse-surrogate connections
 		//In the case of folds, we do not have to search for an oldPointer
 		if (fold != null)
-			fold.L.update(null, newPointer, Type.FOLD, keyChange);
+			fold.L.update(null, newPointer, Type.FOLD);
 		if (surrogateFold != null)
-			surrogateFold.L.update(null, newPointer, Type.ISFOLD, keyChange);
+			surrogateFold.L.update(null, newPointer, Type.ISFOLD);
 		if (inverseSurrogateFold != null)
-			inverseSurrogateFold.L.update(null, newPointer, Type.SFOLD, keyChange);
+			inverseSurrogateFold.L.update(null, newPointer, Type.SFOLD);
 		for (Node n: neighbors)
-			n.L.update(oldPointer, newPointer, Type.NEIGHBOR, keyChange);
+			n.L.update(oldPointer, newPointer, Type.NEIGHBOR);
 		for (Node n: surrogateNeighbors)
-			n.L.update(oldPointer, newPointer, Type.ISNEIGHBOR, keyChange);
+			n.L.update(oldPointer, newPointer, Type.ISNEIGHBOR);
 		for (Node n: inverseSurrogateNeighbors)
-			n.L.update(oldPointer, newPointer, Type.SNEIGHBOR, keyChange);
+			n.L.update(oldPointer, newPointer, Type.SNEIGHBOR);
 	}
 	
 	//SETTERS
@@ -154,42 +144,42 @@ public class Links{
 	 * @param n the neighbor node
 	 */
 	public void addNeighbor(Node n) {
-		update(null, n, Type.NEIGHBOR, false);
+		update(null, n, Type.NEIGHBOR);
 	}
 	/**
 	 * Removes a neighbor node
 	 * @param n the node to remove
 	 */
 	public void removeNeighbor(Node n){
-		update(n, null, Type.NEIGHBOR, false);
+		update(n, null, Type.NEIGHBOR);
 	}
 	/**
 	 * Adds a Surrogate Neighbor
 	 * @param sn the new node
 	 */
 	public void addSurrogateNeighbor(Node sn) {
-		update(null, sn, Type.SNEIGHBOR, false);
+		update(null, sn, Type.SNEIGHBOR);
 	}
 	/**
 	 * Removes a surrogate neighbor
 	 * @param sn the node to remove
 	 */
 	public void removeSurrogateNeighbor(Node sn){
-		update(sn, null, Type.SNEIGHBOR, false);
+		update(sn, null, Type.SNEIGHBOR);
 	}
 	/**
 	 * Adds an Inverse Surrogate Neighbor
 	 * @param isn the new node
 	 */
 	public void addInverseSurrogateNeighbor(Node isn) {
-		update(null, isn, Type.ISNEIGHBOR, false);
+		update(null, isn, Type.ISNEIGHBOR);
 	}
 	/**
 	 * Removes the given node as an inverse surrogate neighbor
 	 * @param isn Node to remove from inverse surrogate neighbor set
 	 */
 	public void removeInverseSurrogateNeighbor(Node isn){
-		update(isn, null, Type.ISNEIGHBOR, false);
+		update(isn, null, Type.ISNEIGHBOR);
 	}
 	/**
 	 * Removes all the IS neighbors from the node
@@ -203,21 +193,21 @@ public class Links{
 	 * @param f the new fold node
 	 */
 	public void setFold(Node f) {
-		update(null, f, Type.FOLD, false);
+		update(null, f, Type.FOLD);
 	}
 	/**
 	 * Sets the surrogate fold of the node
 	 * @param sf the new surrogate fold node
 	 */
 	public void setSurrogateFold(Node sf) {
-		update(null, sf, Type.SFOLD, false);
+		update(null, sf, Type.SFOLD);
 	}
 	/**
 	 * Sets the Inverse Surrogate Fold of the Node
 	 * @param isf the new Inverse Surrogate Fold of the Node
 	 */
 	public void setInverseSurrogateFold(Node isf) {
-		update(null, isf, Type.ISFOLD, false);
+		update(null, isf, Type.ISFOLD);
 	}
 	
 	//GETTERS
