@@ -2,6 +2,7 @@ package hypeerweb;
 
 import java.util.ArrayList;
 import java.util.TreeSet;
+import java.util.HashSet;
 import validator.NodeInterface;
 
 /**
@@ -763,4 +764,30 @@ public class Node implements NodeInterface, Comparable<NodeInterface>{
 	public void accept(VisitorInterface v){
 		v.visit(this);
 	}
+        private class VisitorBroadcast implements VisitorInterface{
+            @Override
+            public void visit(Node n){
+                int trailingZeros = Integer.numberOfTrailingZeros(webID);
+                HashSet<Integer> generatedNeighbors = new HashSet<Integer>();
+                HashSet<Integer> generatedInverseSurrogates = new HashSet<Integer>();
+                int neighbors = webID;
+                int inverseSurrogates = webID | (Integer.highestOneBit(webID) << 1);
+                int bitShifter = 1;
+                for(int i = 0; i < trailingZeros; i++){
+                    generatedNeighbors.add(neighbors | bitShifter);
+                    generatedInverseSurrogates.add(inverseSurrogates | bitShifter);
+                    bitShifter <<= 1;
+                }
+                for(Node node : L.getNeighborsSet()){
+                    if(generatedNeighbors.contains(node.getWebId())){
+                        //do something
+                    }
+                }
+                for(Node node : L.getInverseSurrogateNeighborsSet()){
+                    if(generatedInverseSurrogates.contains(node.getWebId())){
+                        //do something
+                    }
+                }
+            }
+        }
 }
