@@ -7,7 +7,7 @@ import java.io.ObjectOutputStream;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.Random;
-import java.util.TreeSet;
+import java.util.TreeMap;
 import validator.HyPeerWebInterface;
 
 /**
@@ -17,7 +17,7 @@ import validator.HyPeerWebInterface;
 public class HyPeerWeb implements HyPeerWebInterface {
 	private static HyPeerWeb instance;
 	private static Database db;
-	private static TreeSet<Node> nodes;
+	private static TreeMap<Integer, Node> nodes;
 	private static boolean disableDB = false;
 	//Random number generator for getting random nodes
 	private static Random rand = new Random();
@@ -27,8 +27,8 @@ public class HyPeerWeb implements HyPeerWebInterface {
 			removeNodeErr = new Exception("Failed to remove a node"),
 			clearErr = new Exception("Failed to clear the HyPeerWeb");
 	//Trace random insertion for debugging purposes
-	private static ArrayList<Long> randTrace;
-	private static Iterator<Long> randTraceIter;
+	private static ArrayList<Integer> randTrace;
+	private static Iterator<Integer> randTraceIter;
 	private static enum TraceMode{ ON, OFF, READ }
 	private static TraceMode traceMode = TraceMode.OFF;
 	private static String traceLogName = "InsertionTrace.log";
@@ -79,7 +79,7 @@ public class HyPeerWeb implements HyPeerWebInterface {
 	 */
 	public Node removeNode(Node n) throws Exception{
 		//Make sure Node exists in HyPeerWeb
-		if (n == null || !nodes.contains(n))
+		if (n == null || !nodes.containsValue(n))
 			return null;
 		
 		//special case with 1/2 nodes in HyPeerWeb
@@ -94,16 +94,19 @@ public class HyPeerWeb implements HyPeerWebInterface {
 			return removeSecondNode(n);
 		
 		//Find a disconnection point
-		Node replace = this.getRandomNode().findDisconnectNode().disconnectNode(db);
+		//Node replace = nodes.lastEntry().getValue().findDisconnectNode().disconnectNode(db);
+		Node replace = getRandomNode().findDisconnectNode().disconnectNode(db);
 		if (replace == null)
 			throw removeNodeErr;
 		//Remove node from list of nodes
-		System.out.println("BEFORE HEIGHT = "+nodes.size());
-		nodes.remove(replace);
-		System.out.println("AFTER HEIGHT = "+nodes.size());
+		nodes.remove(replace.getWebId());
 		//Replace the node to be deleted
-		if (!n.equals(replace))
+		if (!n.equals(replace)){
+			int newWebID = n.getWebId();
+			nodes.remove(newWebID);
+			nodes.put(newWebID, replace);
 			replace.replaceNode(n);
+		}
 		return n;
 	}
 	/**
@@ -111,24 +114,28 @@ public class HyPeerWeb implements HyPeerWebInterface {
 	 * @return
 	 * @throws Exception 
 	 */
-	private Node removeSecondNode(Node n) throws Exception{
+	private Node removeSecondNode(Node n) throws Exception{		
 		Node last = n.getNeighbors()[0];
 		if (!disableDB){
 			db.beginCommit();
-			int webID = last.getWebId();
-			//TODO database set webid
-			db.setHeight(webID, 0);
-			db.setFold(webID, -1);
-			db.removeNeighbor(webID, n.getWebId());
+			//TODO: FIX THIS ENTIRE THING HERE
+			int old_webID = last.getWebId();
+			//have to delete entry and add entire node
+			db.setHeight(old_webID, 0);
+			db.setFold(old_webID, -1);
+			db.removeNeighbor(old_webID, n.getWebId());
 			if(!db.endCommit())
 				throw removeNodeErr;
 		}
-		//Remove from java structure
+		//Update map structure to reflect changes
+		nodes.remove(0);
+		nodes.remove(1);
+		nodes.put(0, last);
+		//This must come after removing n
 		last.setWebID(0);
 		last.setHeight(0);
-		last.setFold(null);
-		last.removeNeighbor(n);
-		nodes.remove(n);
+		last.L.setFold(null);
+		last.L.removeNeighbor(n);
 		return n;
 	}
 	/**
@@ -139,7 +146,7 @@ public class HyPeerWeb implements HyPeerWebInterface {
 	public void removeAllNodes() throws Exception{
 		if (!disableDB && !db.clear())
 			throw clearErr;
-		nodes = new TreeSet<>();
+		nodes = new TreeMap<>();
 	}
 	
 	/**
@@ -162,8 +169,7 @@ public class HyPeerWeb implements HyPeerWebInterface {
 		if (child == null)
 			throw addNodeErr;
 		//Node successfully added!
-		nodes.add(child);
-		//System.out.println();
+		nodes.put(child.getWebId(), child);
 		return child;
 	}
 	/**
@@ -175,7 +181,7 @@ public class HyPeerWeb implements HyPeerWebInterface {
 		Node first = new Node(0, 0);
 		if (!disableDB && !db.addNode(first))
 			throw addNodeErr;
-		nodes.add(first);
+		nodes.put(0, first);
 		return first;
 	}
 	/**
@@ -185,31 +191,29 @@ public class HyPeerWeb implements HyPeerWebInterface {
 	 */
 	private Node addSecondNode() throws Exception{
 		Node sec = new Node(1, 1),
-			first = nodes.first();
+			first = nodes.firstEntry().getValue();
 		//Update the database first
 		if (!disableDB) {
-			int firstID = first.getWebId(),
-				secID = sec.getWebId();
 			db.beginCommit();
 			db.addNode(sec);
-			db.setHeight(firstID, 1);
+			db.setHeight(0, 1);
 			//reflexive folds
-			db.setFold(firstID, secID);
-			db.setFold(secID, firstID);
+			db.setFold(0, 1);
+			db.setFold(1, 0);
 			//reflexive neighbors
-			db.addNeighbor(firstID, secID);
-			db.addNeighbor(secID, firstID);
+			db.addNeighbor(0, 1);
+			db.addNeighbor(1, 0);
 			if (!db.endCommit())
 				throw addNodeErr;
 		}
 		//Update java struct
 		{
 			first.setHeight(1);
-			first.setFold(sec);
-			sec.setFold(first);
-			first.addNeighbor(sec);
-			sec.addNeighbor(first);
-			nodes.add(sec);
+			first.L.setFold(sec);
+			sec.L.setFold(first);
+			first.L.addNeighbor(sec);
+			sec.L.addNeighbor(first);
+			nodes.put(1, sec);
 			return sec;
 		}
 	}
@@ -221,7 +225,7 @@ public class HyPeerWeb implements HyPeerWebInterface {
 	 * @author John, Josh
 	 */
 	public Node getRandomNode(){
-		long index;
+		int index;
 		if (traceMode == TraceMode.READ){
 			index = randTraceIter.next();
 			//We've reached the end of the log file; start recording
@@ -237,7 +241,7 @@ public class HyPeerWeb implements HyPeerWebInterface {
 				randTrace.add(index);
 		}
 		//Always start at Node with WebID = 0
-		return nodes.first().searchForNode(index);
+		return nodes.firstEntry().getValue().searchForNode(index, false);
 	}
 	
 	//DEBUGGING
@@ -274,7 +278,7 @@ public class HyPeerWeb implements HyPeerWebInterface {
 		try (FileInputStream fis = new FileInputStream("InsertionTrace.log");
 			 ObjectInputStream ois = new ObjectInputStream(fis))
 		{
-			randTrace = (ArrayList<Long>) ois.readObject();
+			randTrace = (ArrayList<Integer>) ois.readObject();
 			randTraceIter = randTrace.iterator();
 			if (randTraceIter.hasNext())
 				traceMode = TraceMode.READ;
@@ -283,11 +287,11 @@ public class HyPeerWeb implements HyPeerWebInterface {
 			return false;
 		}
 	}
-	
+		
 	//VALIDATION
 	@Override
 	public Node[] getOrderedListOfNodes() {
-		return nodes.toArray(new Node[nodes.size()]);
+		return nodes.values().toArray(new Node[nodes.size()]);
 	}
 	/**
 	 * Retrieve a node with the specified webid
@@ -297,20 +301,38 @@ public class HyPeerWeb implements HyPeerWebInterface {
 	 */
 	@Override
 	public Node getNode(int webId){
-		Node n = nodes.floor(new Node(webId, 0));
-		if (n == null || n.getWebId() != webId)
-			return null;
-		return n;
+		return nodes.get(webId);
 	}
-
+	/**
+	 * Gets the first node in the HyPeerWeb
+	 * @return node with webID = 0
+	 */
+	public Node getFirstNode(){
+		if (nodes.isEmpty())
+			return null;
+		return nodes.firstEntry().getValue();
+	}
+	/**
+	 * Gets the last node in the HyPeerWeb
+	 * @return 
+	 */
+	public Node getLastNode(){
+		if (nodes.isEmpty())
+			return null;
+		return nodes.lastEntry().getValue();
+	}
+	/**
+	 * Get the size of the HyPeerWeb
+	 * @return the number of nodes in the web
+	 */
+	public int getSize(){
+		return nodes.size();
+	}
     @Override
     public String toString() {
         StringBuilder builder = new StringBuilder();
-        
-        for(Node n : nodes) {
-            builder.append(n + "\n");
-        }
-        
+        for (Node n : nodes.values())
+            builder.append(n);
         return builder.toString();
     }
 }
