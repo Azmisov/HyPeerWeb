@@ -762,8 +762,8 @@ public class Node implements NodeInterface, Comparable<NodeInterface>{
             @Override
             public void visit(Node n){
                 int trailingZeros = Integer.numberOfTrailingZeros(webID);
-                HashSet<Integer> generatedNeighbors = new HashSet<Integer>();
-                HashSet<Integer> generatedInverseSurrogates = new HashSet<Integer>();
+                HashSet<Integer> generatedNeighbors = new HashSet();
+                HashSet<Integer> generatedInverseSurrogates = new HashSet();
                 int neighbors = webID;
                 int inverseSurrogates = webID | (Integer.highestOneBit(webID) << 1);
                 int bitShifter = 1;
