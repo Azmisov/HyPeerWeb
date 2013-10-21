@@ -749,4 +749,18 @@ public class Node implements NodeInterface, Comparable<NodeInterface>{
 			fdc.removeInverse(fold, null);
 		}
 	}
+	
+	//VISITOR PATTERN
+	private interface VisitorInterface{
+		public void visit(Node n);
+	}
+	private class VisitorSend implements VisitorInterface{
+		@Override
+		public void visit(Node n){
+			//Do something here...
+		}
+	}
+	public void accept(VisitorInterface v){
+		v.visit(this);
+	}
 }

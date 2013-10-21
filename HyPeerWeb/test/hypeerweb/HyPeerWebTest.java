@@ -15,7 +15,7 @@ public class HyPeerWebTest {
 	//Validation variables
 	private final int MAX_TESTS = 50;//use <=100 if testing database
 	private final int TEST_EVERY = 1;
-	private final int GRAPH_LEVELS = 2;
+	private final int GRAPH_LEVELS = 4;
 	private final boolean TEST_DATABASE = false;
 	private final boolean USE_TRACE_LOG = true;
 	private final boolean DRAW_GRAPH = false;
@@ -82,6 +82,7 @@ public class HyPeerWebTest {
 						valid = (new Validator(web)).validate();
 						assertTrue(valid);
 					}
+					//drawGraph(web.getFirstNode());
 				}
 				//After insertion graph
 				System.out.println("DONE "+(t == 0 ? "ADDING" : "DELETING")+" NODES");
