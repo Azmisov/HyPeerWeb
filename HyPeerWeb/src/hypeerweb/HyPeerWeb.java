@@ -1,5 +1,6 @@
 package hypeerweb;
 
+import graph.DrawingThread;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.ObjectInputStream;
@@ -32,6 +33,9 @@ public class HyPeerWeb implements HyPeerWebInterface {
 	private static enum TraceMode{ ON, OFF, READ }
 	private static TraceMode traceMode = TraceMode.OFF;
 	private static String traceLogName = "InsertionTrace.log";
+	//Draw a graph of the HyPeerWeb
+	private static int GRAPH_LEVELS = 3;
+	private DrawingThread graph = new DrawingThread(this);
 	
 	/**
 	 * Private constructor for initializing the HyPeerWeb
@@ -95,7 +99,9 @@ public class HyPeerWeb implements HyPeerWebInterface {
 		
 		//Find a disconnection point
 		//Node replace = nodes.lastEntry().getValue().findDisconnectNode().disconnectNode(db);
-		Node replace = getRandomNode().findDisconnectNode().disconnectNode(db);
+		Node replace = getRandomNode().findDisconnectNode();
+		drawGraph(replace);
+		replace.disconnectNode(db);
 		if (replace == null)
 			throw removeNodeErr;
 		//Remove node from list of nodes
@@ -285,6 +291,18 @@ public class HyPeerWeb implements HyPeerWebInterface {
 			return true;
 		} catch (Exception e){
 			return false;
+		}
+	}
+	/**
+	 * Draws a graph of the HyPeerWeb at a node
+	 * @param n the node to start at
+	 * @throws Exception 
+	 */
+	public void drawGraph(Node n) throws Exception{
+		if (n == null) return;
+		graph.start(n, GRAPH_LEVELS);
+		synchronized (this){
+			this.wait();
 		}
 	}
 		

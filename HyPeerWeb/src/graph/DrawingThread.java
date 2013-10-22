@@ -1,5 +1,7 @@
-package hypeerweb;
+package graph;
 
+import hypeerweb.HyPeerWeb;
+import hypeerweb.Node;
 import java.awt.event.ComponentEvent;
 import java.awt.event.ComponentListener;
 
@@ -13,10 +15,10 @@ public class DrawingThread implements Runnable{
 	private HyPeerWebGraph graph;
 	private boolean running = false;
 	
-	public DrawingThread(Object l) throws Exception{
+	public DrawingThread(HyPeerWeb l) throws Exception{
 		lock = l;
 		t = new Thread();
-		graph = new HyPeerWebGraph();
+		graph = new HyPeerWebGraph(l);
 		graph.setVisible(false);
 		graph.addComponentListener(new ComponentListener(){
 			@Override

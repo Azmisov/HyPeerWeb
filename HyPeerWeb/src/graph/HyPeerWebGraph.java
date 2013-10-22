@@ -1,5 +1,8 @@
-package hypeerweb;
+package graph;
 
+import hypeerweb.HyPeerWeb;
+import hypeerweb.Links;
+import hypeerweb.Node;
 import java.awt.AlphaComposite;
 import java.awt.BasicStroke;
 import java.awt.Color;
@@ -17,6 +20,8 @@ import java.util.HashSet;
 import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.TreeSet;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import javax.swing.JFrame;
 import javax.swing.JPanel;
 
@@ -40,9 +45,8 @@ public class HyPeerWebGraph extends JFrame{
 	private static int winSize = 700;
 	private int levels;
 	
-	public HyPeerWebGraph() throws Exception{
-		web = HyPeerWeb.getInstance();
-		
+	public HyPeerWebGraph(HyPeerWeb web) throws Exception{
+		this.web = web;
 		//Initialize window
 		setTitle("HyPeerWeb Directed Graph");
 		setDefaultCloseOperation(JFrame.HIDE_ON_CLOSE);
@@ -83,8 +87,12 @@ public class HyPeerWebGraph extends JFrame{
 	 * @param level number of levels to go out
 	 */
 	public void drawNode(Node n, int level){
-		levels = level;
-		draw.draw(n);
+		try {
+			levels = level;
+			draw.draw(n);
+		} catch (Exception ex) {
+			System.out.println("Failed to draw graph!!!");
+		}
 	}
 	
 	//INNER DRAWING CLASS:
@@ -130,9 +138,9 @@ public class HyPeerWebGraph extends JFrame{
 			detail = "N:"+n.getNeighbors().length+
 						", SN:"+n.getSurrogateNeighbors().length+
 						", ISN:"+n.getInverseSurrogateNeighbors().length+
-						", F:"+(n.getFold() == null ? "yes" : "no")+
-						", SF:"+(n.getSurrogateFold()== null ? "yes" : "no")+
-						", ISF:"+(n.getInverseSurrogateFold()== null ? "yes" : "no");
+						", F:"+(n.getFold() == null ? "0" : "1")+
+						", SF:"+(n.getSurrogateFold()== null ? "0" : "1")+
+						", ISF:"+(n.getInverseSurrogateFold()== null ? "0" : "1");
 			hide = new HashSet<>();
 			data = new HashMap<>();
 			links = new TreeSet<>();

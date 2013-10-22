@@ -327,6 +327,21 @@ public class Node implements NodeInterface, Comparable<NodeInterface>{
 	private static Criteria disconnectCriteria = new Criteria(){
 		@Override
 		public Node check(Node origin, Node friend, int level){
+			//Always go up to surrogate neighbors first
+			if (level == 0){
+				//First check folds, because they're generally faster
+				Node surr = origin.L.getInverseSurrogateFold();
+				if (surr != null)
+					return origin.L.getFold();
+				if (surr == null)
+					surr = origin.L.getSurrogateFold();
+				//Then check neighbors
+				if (surr == null)
+					surr = origin.L.getHighestInverseSurrogateNeighbor();
+				if (surr != null)
+					return surr;
+			}
+			//Then check for higher nodes
 			Node high = friend.L.getHighestLink();
 			if (high != null && high.getHeight() > origin.getHeight())
 				return high;
@@ -345,9 +360,8 @@ public class Node implements NodeInterface, Comparable<NodeInterface>{
 			We don't need to keep track of visited nodes, since visited nodes will always be lower on the ladder
 		*/
 		Node valid = findValidNode(disconnectCriteria);
-		//From here, we want to pick a node that has a fold
-		if (valid.getFold() == null)
-			valid = valid.getSurrogateFold().getFold();
+		if (valid.L.getInverseSurrogateFold() != null)
+			System.out.println("WHAT IS GOING ON");
 		//Don't pick node zero, since it doesn't have a 
 		if (valid.getParent() == null)
 			System.out.println("bad");
