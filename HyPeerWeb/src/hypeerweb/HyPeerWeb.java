@@ -34,7 +34,7 @@ public class HyPeerWeb implements HyPeerWebInterface {
 	private static TraceMode traceMode = TraceMode.OFF;
 	private static String traceLogName = "InsertionTrace.log";
 	//Draw a graph of the HyPeerWeb
-	private static int GRAPH_LEVELS = 3;
+	private static int GRAPH_LEVELS = 2;
 	private DrawingThread graph = new DrawingThread(this);
 	
 	/**

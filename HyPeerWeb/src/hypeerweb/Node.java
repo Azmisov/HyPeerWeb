@@ -330,14 +330,15 @@ public class Node implements NodeInterface, Comparable<NodeInterface>{
 			//Always go up to surrogate neighbors first
 			if (level == 0){
 				//First check folds, because they're generally faster
-				Node surr = origin.L.getInverseSurrogateFold();
-				if (surr != null)
-					return origin.L.getFold();
-				if (surr == null)
+				//Node surr = origin.L.getInverseSurrogateFold();
+				//if (surr != null)
+				//	return origin.L.getFold();
+				Node surr;
+				//if (surr == null)
 					surr = origin.L.getSurrogateFold();
 				//Then check neighbors
-				if (surr == null)
-					surr = origin.L.getHighestInverseSurrogateNeighbor();
+		//		if (surr == null)
+		//			surr = origin.L.getHighestInverseSurrogateNeighbor();
 				if (surr != null)
 					return surr;
 			}
@@ -359,13 +360,7 @@ public class Node implements NodeInterface, Comparable<NodeInterface>{
 			We keep walking up the ladder until we can go no farther
 			We don't need to keep track of visited nodes, since visited nodes will always be lower on the ladder
 		*/
-		Node valid = findValidNode(disconnectCriteria);
-		if (valid.L.getInverseSurrogateFold() != null)
-			System.out.println("WHAT IS GOING ON");
-		//Don't pick node zero, since it doesn't have a 
-		if (valid.getParent() == null)
-			System.out.println("bad");
-		return valid;
+		return findValidNode(disconnectCriteria);
 	}
 
 	//EN-MASSE DATABASE CHANGE HANDLING

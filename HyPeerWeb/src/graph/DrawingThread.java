@@ -2,8 +2,8 @@ package graph;
 
 import hypeerweb.HyPeerWeb;
 import hypeerweb.Node;
-import java.awt.event.ComponentEvent;
-import java.awt.event.ComponentListener;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 
 /**
  * Thread for drawing a HyPeerWeb graph
@@ -20,20 +20,14 @@ public class DrawingThread implements Runnable{
 		t = new Thread();
 		graph = new HyPeerWebGraph(l);
 		graph.setVisible(false);
-		graph.addComponentListener(new ComponentListener(){
+		graph.addActionListener(new ActionListener(){
 			@Override
-			public void componentHidden(ComponentEvent e) {
+			public void actionPerformed(ActionEvent e) {
 				//Unlock the waiting thread
 				synchronized (lock){
 					lock.notifyAll();
 				}
 			}
-			@Override
-			public void componentShown(ComponentEvent e) {}
-			@Override
-			public void componentResized(ComponentEvent e) {}
-			@Override
-			public void componentMoved(ComponentEvent e) {}
 		});
 	}
 	
