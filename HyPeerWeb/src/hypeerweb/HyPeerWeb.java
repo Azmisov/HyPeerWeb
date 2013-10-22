@@ -34,8 +34,7 @@ public class HyPeerWeb implements HyPeerWebInterface {
 	private static TraceMode traceMode = TraceMode.OFF;
 	private static String traceLogName = "InsertionTrace.log";
 	//Draw a graph of the HyPeerWeb
-	private static int GRAPH_LEVELS = 2;
-	private DrawingThread graph = new DrawingThread(this);
+	private DrawingThread graph;
 	
 	/**
 	 * Private constructor for initializing the HyPeerWeb
@@ -44,6 +43,8 @@ public class HyPeerWeb implements HyPeerWebInterface {
 	private HyPeerWeb() throws Exception{
 		db = Database.getInstance();
 		nodes = db.getAllNodes();
+		//Uncomment this line to diable graph drawing
+		graph = new DrawingThread(this);
 	}
 	/**
 	 * Retrieve the HyPeerWeb singleton
@@ -300,7 +301,7 @@ public class HyPeerWeb implements HyPeerWebInterface {
 	 */
 	public void drawGraph(Node n) throws Exception{
 		if (n == null) return;
-		graph.start(n, GRAPH_LEVELS);
+		graph.start(n);
 		synchronized (this){
 			this.wait();
 		}

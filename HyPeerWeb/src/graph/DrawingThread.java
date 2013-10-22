@@ -34,9 +34,9 @@ public class DrawingThread implements Runnable{
 	@Override
 	public void run(){}
 	
-	public void start(Node n, int levels){
+	public void start(Node n){
 		graph.setVisible(true);
-		graph.drawNode(n, levels);
+		graph.drawNode(n);
 		if (!running){
 			t.start();
 			running = true;

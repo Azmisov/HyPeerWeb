@@ -53,7 +53,7 @@ public class HyPeerWebGraph extends JFrame{
 	private HyPeerWeb web;
 	private Graph draw;
 	private static int winSize = 700;
-	private int levels;
+	private int levels = 2;
 	private ActionListener unpause;
 	private final JSpinner nodeSpin, levelSpin;
 	private boolean deferEvts = false;
@@ -168,10 +168,9 @@ public class HyPeerWebGraph extends JFrame{
 	 * @param n 
 	 * @param level number of levels to go out
 	 */
-	public void drawNode(Node n, int level){
+	public void drawNode(Node n){
 		try {
 			deferEvts = true;
-			levels = level;
 			levelSpin.setValue(levels);
 			nodeSpin.setValue(n.getWebId());
 			deferEvts = false;
@@ -338,7 +337,7 @@ public class HyPeerWebGraph extends JFrame{
 			title = "Graph of Node #"+n.getWebId()+" ("+n.getHeight()+")";
 			if (nParent != null)
 				title += ", child of Node #"+nParent.getWebId()+" ("+nParent.getHeight()+")";
-			detail = "N:"+n.getNeighbors().length+
+			detail = "Link Counts = N:"+n.getNeighbors().length+
 						", SN:"+n.getSurrogateNeighbors().length+
 						", ISN:"+n.getInverseSurrogateNeighbors().length+
 						", F:"+(n.getFold() == null ? "0" : "1")+
