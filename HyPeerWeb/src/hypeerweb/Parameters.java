@@ -12,7 +12,7 @@ import java.util.Map;
  * @author briands
  */
 public class Parameters {
-    HashMap<String, Object> commandMap;
+    private HashMap<String, Object> commandMap;
             
             public Parameters(){
                 commandMap = new HashMap();

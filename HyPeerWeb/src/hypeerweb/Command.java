@@ -1,12 +1,8 @@
-/*
- * To change this template, choose Tools | Templates
- * and open the template in the editor.
- */
 package hypeerweb;
 
 /**
- *
- * @author condiej
+ * A command that can be executed on a node
+ * @author Josh
  */
 public abstract class Command {
     
