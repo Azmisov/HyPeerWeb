@@ -868,24 +868,4 @@ public class Node implements NodeInterface, Comparable<NodeInterface>{
                 }
             }
         }
-        
-        private class Parameters{
-            HashMap<String, Object> commandMap;
-            
-            public Parameters(){
-                commandMap = new HashMap();
-            }
-            
-            public Map getCommandMap(){
-                return commandMap;
-            }
-            
-            public Object get(String name){
-                return commandMap.get(name);
-            }
-            
-            public void set(String name, Object value){
-                commandMap.put(name, value);
-            }
-        }
 }
