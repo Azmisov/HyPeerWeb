@@ -4,6 +4,7 @@
  */
 package hypeerweb;
 
+import graph.DrawingThread;
 import org.junit.Test;
 import static org.junit.Assert.*;
 import validator.Validator;
@@ -15,12 +16,9 @@ public class HyPeerWebTest {
 	//Validation variables
 	private final int MAX_TESTS = 50;//use <=100 if testing database
 	private final int TEST_EVERY = 1;
-	private final int GRAPH_LEVELS = 4;
 	private final boolean TEST_DATABASE = false;
 	private final boolean USE_TRACE_LOG = true;
-	private final boolean DRAW_GRAPH = false;
 	private HyPeerWeb web;
-	private DrawingThread draw;
 	
 	public HyPeerWebTest() throws Exception{
 		web = HyPeerWeb.getInstance();
@@ -36,9 +34,6 @@ public class HyPeerWebTest {
 			//*/
 		}
 		else web.startTrace();
-		//Drawing a HyPeerWeb Graph
-		if (DRAW_GRAPH)
-		    draw = new DrawingThread(this);
 	}
 	
 	/**
@@ -86,8 +81,6 @@ public class HyPeerWebTest {
 				}
 				//After insertion graph
 				System.out.println("DONE "+(t == 0 ? "ADDING" : "DELETING")+" NODES");
-				if (DRAW_GRAPH)
-				    drawGraph(web.getFirstNode());
 			}
 		} catch (Exception e){
 			System.out.println("Fatal Error from HyPeerWeb:");
@@ -100,14 +93,6 @@ public class HyPeerWebTest {
 				System.out.println("WARNING!!! Could not save the insertion trace to log file");
 			System.out.println("ADDED "+(t > 0 ? MAX_TESTS : i)+" NODES");
 			System.out.println("DELETED "+(t == 1 ? i : t == 2 ? MAX_TESTS : 0)+" NODES");
-		}
-	}
-	
-	public void drawGraph(Node n) throws Exception{
-		if (n == null) return;
-		draw.start(n, GRAPH_LEVELS);
-		synchronized (this){
-			this.wait();
 		}
 	}
 }
