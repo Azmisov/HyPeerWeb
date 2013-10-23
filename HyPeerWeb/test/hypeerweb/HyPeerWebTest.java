@@ -4,7 +4,6 @@
  */
 package hypeerweb;
 
-import graph.DrawingThread;
 import org.junit.Test;
 import static org.junit.Assert.*;
 import validator.Validator;
@@ -14,7 +13,7 @@ import validator.Validator;
  */
 public class HyPeerWebTest {
 	//Validation variables
-	private final int MAX_TESTS = 50;//use <=100 if testing database
+	private final int MAX_TESTS = 100;//use <=100 if testing database
 	private final int TEST_EVERY = 1;
 	private final boolean TEST_DATABASE = false;
 	private final boolean USE_TRACE_LOG = true;
