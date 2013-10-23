@@ -1,8 +1,6 @@
 package hypeerweb;
 
-import java.util.ArrayList;
-import java.util.TreeSet;
-import java.util.HashSet;
+import java.util.*;
 import validator.NodeInterface;
 
 /**
@@ -782,6 +780,26 @@ public class Node implements NodeInterface, Comparable<NodeInterface>{
                         //do something
                     }
                 }
+            }
+        }
+        
+        private class Parameters{
+            HashMap<String, Object> commandMap;
+            
+            public Parameters(){
+                commandMap = new HashMap();
+            }
+            
+            public Map getCommandMap(){
+                return commandMap;
+            }
+            
+            public Object get(String name){
+                return commandMap.get(name);
+            }
+            
+            public void set(String name, Object value){
+                commandMap.put(name, value);
             }
         }
 }
