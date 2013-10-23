@@ -767,15 +767,84 @@ public class Node implements NodeInterface, Comparable<NodeInterface>{
 		public void visit(Node n);
 	}
 	private class VisitorSend implements VisitorInterface{
+		int target;
+
+		public VisitorSend(int t) {
+			target = t;
+		}
+
 		@Override
-		public void visit(Node n){
+		public void visit(Node n) {
+			if (n.getWebId() == target) {
+				return; //To be replaced with the action to be performed
+			}
+			int distance = distance(n.getHeight(), n.getWebId());
+			ArrayList<Node> candidates = new ArrayList<Node>();
+			for (Node nn : n.getNeighbors()) {
+				if (distance(nn.getHeight(), nn.getWebId()) > distance) {
+					candidates.add(nn);
+				}
+			}
+			for (Node nn : n.getSurrogateNeighbors()) {
+				if (distance(nn.getHeight(), nn.getWebId()) > distance) {
+					candidates.add(nn);
+				}
+			}
+			for (Node nn : n.getInverseSurrogateNeighbors()) {
+				if (distance(nn.getHeight(), nn.getWebId()) > distance) {
+					candidates.add(nn);
+				}
+			}
+			Node node = n.getFold();
+			if (node != null) {
+				if (distance(node.getHeight(), node.getWebId()) > distance) {
+					candidates.add(node);
+				}
+			}
+			node = n.getSurrogateFold();
+			if (node != null) {
+				if (distance(node.getHeight(), node.getWebId()) > distance) {
+					candidates.add(node);
+				}
+			}
+			node = n.getInverseSurrogateFold();
+			if (node != null) {
+				if (distance(node.getHeight(), node.getWebId()) > distance) {
+					candidates.add(node);
+				}
+			}
+			if (candidates.isEmpty()) {
+				for (Node nn : n.getInverseSurrogateNeighbors()) {
+					if (distance(nn.getHeight(), nn.getWebId()) >= distance) {
+						candidates.add(nn);
+					}
+				}
+			}
+			if (candidates.isEmpty()) {
+				System.err.println("Unexpected: Send can't get any closer to node " + target
+						+ "than node " + n.getWebId());
+			} else {
+				visit(candidates.get(0));
+			}
 			//Do something here...
+		}
+
+		private int distance(int ht, int ID) {
+			int dist = 0;
+			int mask = 1;
+			for (int i = 0; i < ht; i++) {
+				if ((mask & ID) == (mask & target)) {
+					dist++;
+				}
+				mask *= 2;
+			}
+			return dist;
 		}
 	}
 	public void accept(VisitorInterface v){
 		v.visit(this);
 	}
-        private class VisitorBroadcast implements VisitorInterface{
+	private class VisitorBroadcast implements VisitorInterface{
             @Override
             public void visit(Node n){
                 int trailingZeros = Integer.numberOfTrailingZeros(webID);
