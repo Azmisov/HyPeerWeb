@@ -22,7 +22,7 @@ public class Node implements NodeInterface, Comparable<NodeInterface>{
 	private FoldStateInterface foldState = new FoldStateStable(); 
 	//Hash code prime
 	private static long prime = Long.parseLong("2654435761");
-
+	
 	//CONSTRUCTORS
 	/**
 	 * Create a Node with only a WebID
@@ -158,17 +158,13 @@ public class Node implements NodeInterface, Comparable<NodeInterface>{
 				ndc.removeDirect(neighbor, this);
 			}
 		}	
-
 		//remove this from parent neighbor list
 		ndc.removeDirect(parent, this);
-
 		//all SNs of this will have this removed from their ISN list
 		for (Node sn : L.getSurrogateNeighborsSet())
 			ndc.removeInverse(sn, this);
 
 		//Reverse the fold state; we will always have a fold - guaranteed
-		if (L.getFold() == null)
-			System.out.println("Bad disconnect point");
 		L.getFold().getFoldState().reverseFolds(fdc, parent, this);
 
 		//Attempt to update the database
@@ -183,7 +179,6 @@ public class Node implements NodeInterface, Comparable<NodeInterface>{
 			if (!db.endCommit())
 				return null;
 		}
-
 		//Update the Java structure
 		{
 			//reduce parent height by 1
@@ -303,6 +298,7 @@ public class Node implements NodeInterface, Comparable<NodeInterface>{
 	private static Criteria insertCriteria = new Criteria(){
 		@Override
 		public Node check(Node origin, Node friend, int level){
+			//Insertion point is always the lowest point within recurseLevel connections
 			Node low = friend.L.getLowestLink();
 			if (low != null && low.getHeight() < origin.getHeight())
 				return low;
@@ -325,17 +321,21 @@ public class Node implements NodeInterface, Comparable<NodeInterface>{
 	private static Criteria disconnectCriteria = new Criteria(){
 		@Override
 		public Node check(Node origin, Node friend, int level){
+			/* Check all nodes out to "recurseLevel" for higher nodes
+				Any time we find a "higher" node, we go up to it
+				We keep walking up the ladder until we can go no farther
+				We don't need to keep track of visited nodes, since visited nodes will always be lower on the ladder
+				We also never want to delete from a node with children
+			*/
 			//Check for higher nodes
 			Node high = friend.L.getHighestLink();
 			if (high != null && high.getHeight() > origin.getHeight())
 				return high;
 			//Then go up to children, if it has any
 			if (level == 0){
-				int base = origin.getWebId();
-				for (Node child: origin.L.getNeighborsSet()){
-					if (child.getWebId() > base)
-						return child;
-				}
+				Node child = origin.L.getHighestNeighbor();
+				if (child.getWebId() > origin.getWebId())
+					return child;
 			}
 			return null;
 		}
@@ -346,11 +346,6 @@ public class Node implements NodeInterface, Comparable<NodeInterface>{
 	 * @author Josh
 	 */
 	protected Node findDisconnectNode(){
-		/* Check all nodes out to "recurseLevel" for higher nodes
-			Any time we find a "higher" node, we go up to it
-			We keep walking up the ladder until we can go no farther
-			We don't need to keep track of visited nodes, since visited nodes will always be lower on the ladder
-		*/
 		return findValidNode(disconnectCriteria);
 	}
 

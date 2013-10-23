@@ -13,44 +13,38 @@ import validator.Validator;
  */
 public class HyPeerWebTest {
 	//Validation variables
-	private final int MAX_TESTS = 100;//use <=100 if testing database
+	private final int MAX_TESTS = 100;
 	private final int TEST_EVERY = 1;
-	private final boolean TEST_DATABASE = false;
-	private final boolean USE_TRACE_LOG = true;
+	private final boolean
+		USE_DATABASE = false,		//Enables database syncing
+		USE_TRACE_LOG = true,		//Reads (True) or Writes (False) random generated #'s to a file
+		USE_GRAPH = true;			//Starts a new thread for drawing the HyPeerWeb
 	private HyPeerWeb web;
 	
 	public HyPeerWebTest() throws Exception{
-		web = HyPeerWeb.getInstance();
-		if (!TEST_DATABASE)
-			web.disableDatabase();
-		if (USE_TRACE_LOG){
-			//*
-			if (!web.loadTrace()){
-				System.out.println("Could not load insertion trace from log file!!!");
-				System.out.println("Try again or disable USE_TRACE_LOG");
-				fail();
-			}
-			//*/
+		web = HyPeerWeb.getInstance(USE_DATABASE, USE_GRAPH);
+		if (USE_TRACE_LOG && !web.loadTrace()){
+			System.out.println("Could not load insertion trace from log file!!!");
+			System.out.println("Try again or disable USE_TRACE_LOG");
+			fail();
 		}
 		else web.startTrace();
 	}
 	
 	/**
-	 * Test of addNode method, of class HyPeerWeb.
+	 * Test of addNode/removeNode method, of class HyPeerWeb.
 	 */
 	@Test
-	public void testAddNode() throws Exception {
+	public void testNodeAddRemove() throws Exception {
 		int t = 0, i = 1;
 		try{
-			if (TEST_DATABASE){
-				//I put the testHyPeerWeb code here because it was always running after testAddNode and so wasn't testing anything.
+			if (USE_DATABASE){
 				System.out.println("Testing restore");
-				assertTrue((new Validator(web)).validate());//comment out this line to get new HyPeerWeb
+				assertTrue((new Validator(web)).validate()); //comment out this line to get new HyPeerWeb
 				System.out.println("Done testing restore");
 			}
 
-			//Add a bunch of nodes; if it validates afterwards, addNode should be working
-			//We cannot do simulated tests, since addNode inserts at arbitrary places
+			//Add a bunch of nodes, then remove them; if it validates afterwards, methods should be working
 			web.removeAllNodes();
 			boolean valid;
 			int old_size = 0;
@@ -76,7 +70,6 @@ public class HyPeerWebTest {
 						valid = (new Validator(web)).validate();
 						assertTrue(valid);
 					}
-					//drawGraph(web.getFirstNode());
 				}
 				//After insertion graph
 				System.out.println("DONE "+(t == 0 ? "ADDING" : "DELETING")+" NODES");

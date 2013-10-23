@@ -30,7 +30,7 @@ public class HyPeerWeb implements HyPeerWebInterface {
 	//Trace random insertion for debugging purposes
 	private static ArrayList<Integer> randTrace;
 	private static Iterator<Integer> randTraceIter;
-	private static enum TraceMode{ ON, OFF, READ }
+	public static enum TraceMode{ READ, WRITE, OFF }
 	private static TraceMode traceMode = TraceMode.OFF;
 	private static String traceLogName = "InsertionTrace.log";
 	//Draw a graph of the HyPeerWeb
@@ -40,29 +40,29 @@ public class HyPeerWeb implements HyPeerWebInterface {
 	 * Private constructor for initializing the HyPeerWeb
 	 * @author isaac
 	 */
-	private HyPeerWeb() throws Exception{
-		db = Database.getInstance();
-		nodes = db.getAllNodes();
-		//Uncomment this line to diable graph drawing
-		graph = new DrawingThread(this);
+	private HyPeerWeb(boolean useDatabase, boolean useGraph) throws Exception{
+		disableDB = !useDatabase;
+		if (useDatabase){
+			db = Database.getInstance();
+			nodes = db.getAllNodes();
+		}
+		else nodes = new TreeMap<>();
+		if (useGraph)
+			graph = new DrawingThread(this);
 	}
 	/**
 	 * Retrieve the HyPeerWeb singleton
+	 * @param useDatabase should we sync our HyPeerWeb to a database
+	 * @param useGraph is graph drawing enabled?
+	 * @param useTrace should we load 
 	 * @return the singleton
 	 * @author isaac
 	 */
-	public static HyPeerWeb getInstance() throws Exception{
+	public static HyPeerWeb getInstance(boolean useDatabase, boolean useGraph) throws Exception{
 		if (instance != null)
 			return instance;
-		instance = new HyPeerWeb();
+		instance = new HyPeerWeb(useDatabase, useGraph);
 		return instance;
-	}
-	/**
-	 * Disables any writes to the database
-	 * @author isaac
-	 */
-	public void disableDatabase(){
-		disableDB = true;
 	}
 	
 	/**
@@ -100,7 +100,7 @@ public class HyPeerWeb implements HyPeerWebInterface {
 		
 		//Find a disconnection point
 		//Node replace = nodes.lastEntry().getValue().findDisconnectNode().disconnectNode(db);
-		Node replace = getRandomNode().findDisconnectNode().disconnectNode(db);
+		Node replace = getRandomNode().findDisconnectNode().disconnectNode(disableDB ? null : db);
 		if (replace == null)
 			throw removeNodeErr;
 		//Remove node from list of nodes
@@ -235,14 +235,14 @@ public class HyPeerWeb implements HyPeerWebInterface {
 			index = randTraceIter.next();
 			//We've reached the end of the log file; start recording
 			if (!randTraceIter.hasNext())
-				traceMode = TraceMode.ON;
+				traceMode = TraceMode.WRITE;
 		}
 		else{
 			index = rand.nextInt(Integer.MAX_VALUE);
 			index *= Integer.MAX_VALUE;
 			index += rand.nextInt(Integer.MAX_VALUE);
 			//Record this insertion point, if tracing is enabled
-			if (traceMode == TraceMode.ON)
+			if (traceMode == TraceMode.WRITE)
 				randTrace.add(index);
 		}
 		//Always start at Node with WebID = 0
@@ -254,7 +254,7 @@ public class HyPeerWeb implements HyPeerWebInterface {
 	 * Begins tracing random insertion points
 	 */
 	public void startTrace(){
-		traceMode = TraceMode.ON;
+		traceMode = TraceMode.WRITE;
 		randTrace = new ArrayList<>();
 	}
 	/**
@@ -262,7 +262,7 @@ public class HyPeerWeb implements HyPeerWebInterface {
 	 * @return true on success
 	 */
 	public boolean endTrace(){
-		if (traceMode != TraceMode.ON)
+		if (traceMode != TraceMode.WRITE)
 			return true;
 		traceMode = TraceMode.OFF;
 		try (FileOutputStream fos = new FileOutputStream(traceLogName);
@@ -298,6 +298,10 @@ public class HyPeerWeb implements HyPeerWebInterface {
 	 * @throws Exception 
 	 */
 	public void drawGraph(Node n) throws Exception{
+		if (graph == null){
+			System.out.println("HyPeerWeb graphing is disabled");
+			return;
+		}
 		if (n == null) return;
 		graph.start(n);
 		synchronized (this){
