@@ -4,6 +4,7 @@
  */
 package hypeerweb;
 
+import hypeerweb.visitors.SendVisitor;
 import org.junit.Test;
 import static org.junit.Assert.*;
 import validator.Validator;
@@ -18,7 +19,8 @@ public class HyPeerWebTest {
 	private final boolean
 		USE_DATABASE = false,		//Enables database syncing
 		USE_TRACE_LOG = true,		//Reads (True) or Writes (False) random generated #'s to a file
-		USE_GRAPH = true;			//Starts a new thread for drawing the HyPeerWeb
+		USE_GRAPH = true,			//Starts a new thread for drawing the HyPeerWeb
+		TEST_DELETE = false;		//Tests deletion from the HyPeerWeb
 	private HyPeerWeb web;
 	
 	public HyPeerWebTest() throws Exception{
@@ -49,7 +51,7 @@ public class HyPeerWebTest {
 			boolean valid;
 			int old_size = 0;
 			Node temp;
-			for (; t<2; t++){
+			for (; t<(TEST_DELETE ? 2 : 1); t++){
 				System.out.println("BEGIN "+(t == 0 ? "ADDING" : "DELETING")+" NODES");
 				for (i=1; i<=MAX_TESTS; i++){
 					//Add nodes first time around
@@ -74,6 +76,18 @@ public class HyPeerWebTest {
 				//After insertion graph
 				System.out.println("DONE "+(t == 0 ? "ADDING" : "DELETING")+" NODES");
 			}
+			
+			//Test send node
+			Node f1, f2;
+			for (int j=0; j<25; j++){
+				f1 = web.getRandomNode();
+				do{
+					f2 = web.getRandomNode();
+				} while (f2 == f1);
+				SendVisitor x = new SendVisitor(f1.getWebId());
+				x.visit(f2);
+			}
+			
 		} catch (Exception e){
 			System.out.println("Fatal Error from HyPeerWeb:");
 			System.out.println(e);

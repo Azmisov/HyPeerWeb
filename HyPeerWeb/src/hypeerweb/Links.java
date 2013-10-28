@@ -347,4 +347,12 @@ public class Links{
 	protected TreeSet<Node> getInverseSurrogateNeighborsSet(){
 		return inverseSurrogateNeighbors;
 	}
+	/**
+	 * Gets the highest node set as a collection
+	 * Implementor must not modify the values
+	 * @return a set of all connections
+	 */
+	protected TreeSet<Node> getAllLinks(){
+		return highest;
+	}
 }

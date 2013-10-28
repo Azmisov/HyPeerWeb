@@ -10,7 +10,10 @@ import java.util.*;
 public class Main {
 
 	public static void main(String[] args) {
-		int total_errs = 0;
+		int id = 7;
+		int res = id | (Integer.highestOneBit(id) << 1);
+		assert (res == 15);
+		System.out.println(Integer.toBinaryString(res));
 		
 		/* DATABASE TEST CODE
 		try {
@@ -29,7 +32,7 @@ public class Main {
 		}
 		//*/
 		
-		//* HYPEERWEB TEST CODE
+		/* HYPEERWEB TEST CODE
 		try{
 			System.out.println("BEGIN HYPEERWEB CLASS TESTING:\n");
 			HyPeerWeb web = HyPeerWeb.getInstance();
@@ -43,7 +46,7 @@ public class Main {
 		}
 		//*/
 		
-		System.out.println("\nTOTAL ERRS = " + total_errs);
+		//System.out.println("\nTOTAL ERRS = " + total_errs);
 	}
 
 	private static int testSurrogates(Database db) {
