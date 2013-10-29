@@ -7,8 +7,6 @@ import validator.NodeInterface;
 /**
  * The Node class
  * TODO:
- *  - find insert/disconnect point is broken again
- *  - find disconnect point is slow
  *  - disconnect node doesn't sync with database
  *  - make NodeProxy hold webID, height, changingKey, and L (LinksProxy) by default
  *  - make sure we can use == or .equals when we get to proxies
@@ -235,12 +233,8 @@ public class Node implements NodeInterface, Comparable<NodeInterface>{
 	//VISITOR METHODS
 	public Node getSendNode(int target){
 		int base = this.scoreWebIdMatch(target);
-		//A score of 32 indicates an exact match
-		if (base == 32)
-			return this;
-		//Otherwise, try to find a closer node
-		TreeSet<Node> allLinks = L.getAllLinks();
-		for (Node n: allLinks){
+		//Try to find a link with a webid that is closer to the target
+		for (Node n: L.getAllLinks()){
 			if (n.scoreWebIdMatch(target) > base)
 				return n;
 		}
@@ -248,7 +242,7 @@ public class Node implements NodeInterface, Comparable<NodeInterface>{
 		Node sn = L.getHighestSurrogateNeighbor();
 		if (sn.getHeight() >= this.getHeight())
 			return sn;
-		//Otherwise, you're an idiot; that node doesn't exist
+		//Otherwise, that node doesn't exist
 		return null;
 	}	
 	public ArrayList<Node> getBroadcastNodes(){

@@ -27,12 +27,6 @@ public class HyPeerWeb implements HyPeerWebInterface {
 			addNodeErr = new Exception("Failed to add a new node"),
 			removeNodeErr = new Exception("Failed to remove a node"),
 			clearErr = new Exception("Failed to clear the HyPeerWeb");
-	//Trace random insertion for debugging purposes
-	private static ArrayList<Integer> randTrace;
-	private static Iterator<Integer> randTraceIter;
-	public static enum TraceMode{ READ, WRITE, OFF }
-	private static TraceMode traceMode = TraceMode.OFF;
-	private static String traceLogName = "InsertionTrace.log";
 	//Draw a graph of the HyPeerWeb
 	private DrawingThread graph;
 	
@@ -40,13 +34,15 @@ public class HyPeerWeb implements HyPeerWebInterface {
 	 * Private constructor for initializing the HyPeerWeb
 	 * @author isaac
 	 */
-	private HyPeerWeb(boolean useDatabase, boolean useGraph) throws Exception{
+	private HyPeerWeb(boolean useDatabase, boolean useGraph, long seed) throws Exception{
 		disableDB = !useDatabase;
 		if (useDatabase){
 			db = Database.getInstance();
 			nodes = db.getAllNodes();
 		}
 		else nodes = new TreeMap<>();
+		if (seed != -1)
+			rand.setSeed(seed);
 		if (useGraph)
 			graph = new DrawingThread(this);
 	}
@@ -54,14 +50,23 @@ public class HyPeerWeb implements HyPeerWebInterface {
 	 * Retrieve the HyPeerWeb singleton
 	 * @param useDatabase should we sync our HyPeerWeb to a database
 	 * @param useGraph is graph drawing enabled?
-	 * @param useTrace should we load 
+	 * @param seed the random seed number for getting random nodes; use -1
+	 * to get a pseudo-random seed
 	 * @return the singleton
 	 * @author isaac
 	 */
-	public static HyPeerWeb getInstance(boolean useDatabase, boolean useGraph) throws Exception{
+	public static HyPeerWeb getInstance(boolean useDatabase, boolean useGraph, long seed) throws Exception{
 		if (instance != null)
 			return instance;
-		instance = new HyPeerWeb(useDatabase, useGraph);
+		instance = new HyPeerWeb(useDatabase, useGraph, seed);
+		return instance;
+	}
+	/**
+	 * Retrieves the HyPeerWeb singleton if you know it has
+	 * already been initialized by calling the method:
+	 *		getInstance(bool, bool, long)
+	 */
+	public static HyPeerWeb getInstance(){
 		return instance;
 	}
 	
@@ -230,68 +235,11 @@ public class HyPeerWeb implements HyPeerWebInterface {
 	 * @author John, Josh
 	 */
 	public Node getRandomNode(){
-		int index;
-		if (traceMode == TraceMode.READ){
-			index = randTraceIter.next();
-			//We've reached the end of the log file; start recording
-			if (!randTraceIter.hasNext())
-				traceMode = TraceMode.WRITE;
-		}
-		else{
-			index = rand.nextInt(Integer.MAX_VALUE);
-			index *= Integer.MAX_VALUE;
-			index += rand.nextInt(Integer.MAX_VALUE);
-			//Record this insertion point, if tracing is enabled
-			if (traceMode == TraceMode.WRITE)
-				randTrace.add(index);
-		}
 		//Always start at Node with WebID = 0
-		return nodes.firstEntry().getValue().searchForNode(index, false);
+		return nodes.firstEntry().getValue().searchForNode(rand.nextInt(Integer.MAX_VALUE), false);
 	}
 	
-	//DEBUGGING
-	/**
-	 * Begins tracing random insertion points
-	 */
-	public void startTrace(){
-		traceMode = TraceMode.WRITE;
-		randTrace = new ArrayList<>();
-	}
-	/**
-	 * Stops tracing insertion points and saves it to a log file
-	 * @return true on success
-	 */
-	public boolean endTrace(){
-		if (traceMode != TraceMode.WRITE)
-			return true;
-		traceMode = TraceMode.OFF;
-		try (FileOutputStream fos = new FileOutputStream(traceLogName);
-			 ObjectOutputStream oos = new ObjectOutputStream(fos))
-		{
-			oos.writeObject(randTrace);
-			return true;
-		} catch (Exception e){
-			return false;
-		}
-	}
-	/**
-	 * Loads a list of insertion points from the log file
-	 * After calling, getRandomInsertionNode will follow the log's trace
-	 * @return true on success
-	 */
-	public boolean loadTrace(){
-		try (FileInputStream fis = new FileInputStream("InsertionTrace.log");
-			 ObjectInputStream ois = new ObjectInputStream(fis))
-		{
-			randTrace = (ArrayList<Integer>) ois.readObject();
-			randTraceIter = randTrace.iterator();
-			if (randTraceIter.hasNext())
-				traceMode = TraceMode.READ;
-			return true;
-		} catch (Exception e){
-			return false;
-		}
-	}
+	//GRAPHING
 	/**
 	 * Draws a graph of the HyPeerWeb at a node
 	 * @param n the node to start at

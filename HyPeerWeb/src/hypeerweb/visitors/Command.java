@@ -1,4 +1,7 @@
-package hypeerweb;
+package hypeerweb.visitors;
+
+import hypeerweb.Node;
+import hypeerweb.visitors.Parameters;
 
 /**
  * A command that can be executed on a node

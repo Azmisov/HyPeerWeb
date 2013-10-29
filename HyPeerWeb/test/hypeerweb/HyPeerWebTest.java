@@ -13,24 +13,19 @@ import validator.Validator;
  * HyPeerWeb testing
  */
 public class HyPeerWebTest {
-	//Validation variables
-	private final int MAX_TESTS = 100;
-	private final int TEST_EVERY = 1;
+	//Testing variables
+	private final int
+		MAX_TESTS = 500,			//How many times to test add/delete
+		TEST_EVERY = 1,				//How often to validate the HyPeerWeb for add/delete
+		RAND_SEED = 5;				//Seed for getting random nodes (use -1 for a random seed)
 	private final boolean
 		USE_DATABASE = false,		//Enables database syncing
-		USE_TRACE_LOG = true,		//Reads (True) or Writes (False) random generated #'s to a file
 		USE_GRAPH = true,			//Starts a new thread for drawing the HyPeerWeb
 		TEST_DELETE = false;		//Tests deletion from the HyPeerWeb
 	private HyPeerWeb web;
 	
 	public HyPeerWebTest() throws Exception{
-		web = HyPeerWeb.getInstance(USE_DATABASE, USE_GRAPH);
-		if (USE_TRACE_LOG && !web.loadTrace()){
-			System.out.println("Could not load insertion trace from log file!!!");
-			System.out.println("Try again or disable USE_TRACE_LOG");
-			fail();
-		}
-		else web.startTrace();
+		web = HyPeerWeb.getInstance(USE_DATABASE, USE_GRAPH, RAND_SEED);
 	}
 	
 	/**
@@ -79,13 +74,17 @@ public class HyPeerWebTest {
 			
 			//Test send node
 			Node f1, f2;
-			for (int j=0; j<25; j++){
+			for (int j=0; j<2000; j++){
 				f1 = web.getRandomNode();
 				do{
 					f2 = web.getRandomNode();
 				} while (f2 == f1);
 				SendVisitor x = new SendVisitor(f1.getWebId());
 				x.visit(f2);
+				if (!x.wasFound()){
+					System.out.println("sad face :(");
+					System.out.println("From "+f2.getWebId()+" to "+f1.getWebId());
+				}
 			}
 			
 		} catch (Exception e){
@@ -95,8 +94,6 @@ public class HyPeerWebTest {
 			e.printStackTrace();
 			fail();
 		} finally{
-			if (!web.endTrace())
-				System.out.println("WARNING!!! Could not save the insertion trace to log file");
 			System.out.println("ADDED "+(t > 0 ? MAX_TESTS : i)+" NODES");
 			System.out.println("DELETED "+(t == 1 ? i : t == 2 ? MAX_TESTS : 0)+" NODES");
 		}
