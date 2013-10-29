@@ -297,6 +297,13 @@ public class HyPeerWeb implements HyPeerWebInterface {
 	public int getSize(){
 		return nodes.size();
 	}
+	/**
+	 * Is the HyPeerWeb empty?
+	 * @return true if it is empty
+	 */
+	public boolean isEmpty(){
+		return nodes.isEmpty();
+	}
     @Override
     public String toString() {
         StringBuilder builder = new StringBuilder();

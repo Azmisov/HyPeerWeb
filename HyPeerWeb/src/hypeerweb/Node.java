@@ -13,7 +13,7 @@ import validator.NodeInterface;
  * @author Guy
  */
 public class Node implements NodeInterface, Comparable<NodeInterface>{
-	//NODE ATTRIBUTES
+	//Node Attributes
 	private int webID, height;
 	public Links L;
 	//State machines
@@ -633,8 +633,6 @@ public class Node implements NodeInterface, Comparable<NodeInterface>{
 	public Node getInverseSurrogateFold() {
 		return L.getInverseSurrogateFold();
 	}
-	
-	//LINKS & CONNECTIONS
 	/**
 	 * Gets all the nodes connections
 	 * @return a Links class
@@ -643,7 +641,7 @@ public class Node implements NodeInterface, Comparable<NodeInterface>{
 		return L;
 	}
 	
-	//Setters
+	//SETTERS
 	/**
 	 * Sets the node's webid
 	 * @param id the new webid
@@ -657,7 +655,7 @@ public class Node implements NodeInterface, Comparable<NodeInterface>{
 	 * Sets the Height of the Node and updates all pointers
 	 * @param h The new height
 	 */
-	public void setHeight(int h) {
+	protected void setHeight(int h) {
 		//First remove the old key
 		L.broadcastUpdate(this, null);
 		height = h;

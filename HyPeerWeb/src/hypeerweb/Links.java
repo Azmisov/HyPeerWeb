@@ -55,7 +55,6 @@ public class Links{
 	 * @param oldNode the old Node reference (if there was one)
 	 * @param newNode the new Node reference
 	 * @param type the type of connection (Links.Type)
-	 * @param keyChange if true, newNode will be treated as a key change,
 	 * rather than a replacement of oldNode
 	 */
 	public void update(Node oldNode, Node newNode, Type type){
@@ -118,7 +117,6 @@ public class Links{
 	 * changed and the references need to be updated
 	 * @param oldPointer the old node pointer
 	 * @param newPointer the new node pointer
-	 * @param keyChange if true, new node will be treated as a new key, rather
 	 * than a replacement of oldPointer
 	 */
 	public void broadcastUpdate(Node oldPointer, Node newPointer){
