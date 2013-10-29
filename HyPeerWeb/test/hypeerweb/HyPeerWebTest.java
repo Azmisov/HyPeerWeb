@@ -55,18 +55,10 @@ public class HyPeerWebTest {
 			Node temp;
 			int old_size = 0;
 			for (int i=1; i<=MAX_SIZE; i++){
-				//Add nodes first time around
 				if ((temp = web.addNode()) == null)
 					throw new Exception("Added node should not be null!");
 				if (web.getSize() != ++old_size)
 					throw new Exception("HyPeerWeb is not the correct size");
-				//Then delete all nodes
-				else{
-					if ((temp = web.removeNode(web.getFirstNode())) == null)
-						throw new Exception("Removed node should not be null!");
-					if (web.getSize() != --old_size)
-						throw new Exception("HyPeerWeb is not the correct size");
-				}
 				if (i % TEST_EVERY == 0)
 					assertTrue((new Validator(web)).validate());
 			}
@@ -103,6 +95,8 @@ public class HyPeerWebTest {
 		begin("REMOVING ZERO");
 		Node temp;
 		int old_size = web.getSize();
+		System.out.println("new size = "+old_size);
+		assert(old_size == MAX_SIZE);
 		for (int i=1; i<=MAX_SIZE; i++){
 			if ((temp = web.removeNode(web.getFirstNode())) == null)
 				throw new Exception("Removed node should not be null!");
@@ -150,6 +144,7 @@ public class HyPeerWebTest {
 				System.out.println("sad face :(");
 				System.out.println("From "+f2.getWebId()+" to "+f1.getWebId());
 			}
+			assertTrue(x.wasFound());
 		}
 	}
 	
@@ -157,7 +152,7 @@ public class HyPeerWebTest {
 	 * Test of send visitor with invalid target node
 	 */
 	@Test
-	public void testSendInValid() throws Exception {
+	public void testSendInvalid() throws Exception {
 		begin("SENDING INVALID");
 		Random r = new Random();
 		for (int i=0; i<SEND_TESTS; i++){

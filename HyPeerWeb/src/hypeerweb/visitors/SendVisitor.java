@@ -22,7 +22,7 @@ public class SendVisitor implements VisitorInterface{
 	@Override
 	public void visit(Node n) {
 		if (n.getWebId() == targetWebId){
-			System.out.println("Hooray! "+n.getWebId());
+			//Do something productive here
 			found = true;
 			return;
 		}
