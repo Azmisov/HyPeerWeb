@@ -247,7 +247,11 @@ public class Node implements NodeInterface, Comparable<NodeInterface>{
 			return sn;
 		//Otherwise, that node doesn't exist
 		return null;
-	}	
+	}
+	/**
+	 * Get all nodes to broadcast to in a broadcast operation
+	 * @return a list of nodes to broadcast to
+	 */
 	public ArrayList<Node> getBroadcastNodes(){
 		HashSet<Integer>
 				generatedNeighbors = new HashSet(),
@@ -287,10 +291,9 @@ public class Node implements NodeInterface, Comparable<NodeInterface>{
 		 * Checks to see if the "friend" of the "origin" node fits some criteria
 		 * @param origin the originating node
 		 * @param friend a node connected to the origin within "level" neighbor connections
-		 * @param level how far out the friend is from origin
 		 * @return a Node that fits the criteria, otherwise null
 		 */
-		public Node check(Node origin, Node friend, int level);
+		public Node check(Node origin, Node friend);
 	}
 	/**
 	 * Finds a valid node, given a set of criteria
@@ -298,8 +301,6 @@ public class Node implements NodeInterface, Comparable<NodeInterface>{
 	 * @return a valid node
 	 */
 	private Node findValidNode(Criteria x){
-		//For some reason, HyPeerWeb only validates if we
-		//increase the recurse level; don't ask me why...
 		int level = recurseLevel;
 		//Nodes we've checked already
 		TreeSet<Node> visited = new TreeSet<>();
@@ -314,7 +315,7 @@ public class Node implements NodeInterface, Comparable<NodeInterface>{
 		while(true){
 			//Check for valid nodes
 			for (Node parent: parents){
-				if ((temp = x.check(this, parent, recurseLevel-level)) != null)
+				if ((temp = x.check(this, parent)) != null)
 					return temp.findValidNode(x);
 			}
 			//If this was the last level, don't go down any further
@@ -343,7 +344,7 @@ public class Node implements NodeInterface, Comparable<NodeInterface>{
 	 */
 	private static Criteria insertCriteria = new Criteria(){
 		@Override
-		public Node check(Node origin, Node friend, int level){
+		public Node check(Node origin, Node friend){
 			//Insertion point is always the lowest point within recurseLevel connections
 			Node low = friend.L.getLowestLink();
 			if (low != null && low.getHeight() < origin.getHeight())
@@ -366,19 +367,20 @@ public class Node implements NodeInterface, Comparable<NodeInterface>{
 	 */
 	private static Criteria disconnectCriteria = new Criteria(){
 		@Override
-		public Node check(Node origin, Node friend, int level){
+		public Node check(Node origin, Node friend){
 			/* Check all nodes out to "recurseLevel" for higher nodes
 				Any time we find a "higher" node, we go up to it
 				We keep walking up the ladder until we can go no farther
-				We don't need to keep track of visited nodes, since visited nodes will always be lower on the ladder
-				We also never want to delete from a node with children
+				We don't need to keep track of visited nodes, since visited nodes
+				will always be lower on the ladder We also never want to delete
+				from a node with children
 			*/
 			//Check for higher nodes
 			Node high = friend.L.getHighestLink();
 			if (high != null && high.getHeight() > origin.getHeight())
 				return high;
 			//Then go up to children, if it has any
-			if (level == 0){
+			if (origin == friend){
 				Node child = origin.L.getHighestNeighbor();
 				if (child.getWebId() > origin.getWebId())
 					return child;
@@ -662,63 +664,6 @@ public class Node implements NodeInterface, Comparable<NodeInterface>{
 		//Now add back in with the new key
 		L.broadcastUpdate(null, this);
 	}
-	
-	//CLASS OVERRIDES
-	@Override
-	public int compareTo(NodeInterface node) {
-		//If we're trying to remove the key in an ordered collection, changingKey = true
-		//In that case, check the old key value, before it was changed
-		//Currently, we only cache the old height, but we may cache old webId in the future
-		int id = node.getWebId();
-		if (webID == id)
-			return 0;
-		int nh = node.getHeight();
-		return (height == nh ? webID < id : height < nh) ? -1 : 1;
-	}
-	@Override
-	public int hashCode(){
-		return (int) ((this.webID * prime) % Integer.MAX_VALUE);
-	}
-	@Override
-	public boolean equals(Object obj) {
-		if (obj == null || getClass() != obj.getClass())
-			return false;
-		return this.webID == ((Node) obj).getWebId();
-	}
-	@Override
-	public String toString(){
-		StringBuilder builder = new StringBuilder();
-		builder.append("\nNode: ").append(webID).append("(").append(height).append(")");
-		Node f;
-		//Folds
-		if ((f = L.getFold()) != null)
-			builder.append("\n\tFold: ").append(f.getWebId()).
-					append("(").append(f.getHeight()).append(")");
-		if ((f = L.getSurrogateFold()) != null)
-			builder.append("\n\tSFold: ").append(f.getWebId()).
-					append("(").append(f.getHeight()).append(")");
-		if ((f = L.getInverseSurrogateFold()) != null)
-			builder.append("\n\tISFold: ").append(f.getWebId()).
-					append("(").append(f.getHeight()).append(")");
-		//Neighbors
-		TreeSet<Node> temp;
-		if (!(temp = L.getNeighborsSet()).isEmpty()){
-			builder.append("\n\tNeighbors: ");
-			for (Node n : temp)
-				builder.append(n.getWebId()).append("(").append(n.getHeight()).append("), ");
-		}
-		if (!(temp = L.getSurrogateNeighborsSet()).isEmpty()){
-			builder.append("\n\tSNeighbors: ");
-			for (Node n : temp)
-				builder.append(n.getWebId()).append("(").append(n.getHeight()).append("), ");
-		}
-		if (!(temp = L.getInverseSurrogateNeighborsSet()).isEmpty()){
-			builder.append("\n\tISNeighbors: ");
-			for (Node n : temp)
-				builder.append(n.getWebId()).append("(").append(n.getHeight()).append("), ");
-		}
-		return builder.toString();
-	}
 		
 	//FOLD STATE PATTERN
 	/**
@@ -797,5 +742,62 @@ public class Node implements NodeInterface, Comparable<NodeInterface>{
 	//VISITOR PATTERN
 	public void accept(VisitorInterface v){
 		v.visit(this);
+	}
+	
+		//CLASS OVERRIDES
+	@Override
+	public int compareTo(NodeInterface node) {
+		//If we're trying to remove the key in an ordered collection, changingKey = true
+		//In that case, check the old key value, before it was changed
+		//Currently, we only cache the old height, but we may cache old webId in the future
+		int id = node.getWebId();
+		if (webID == id)
+			return 0;
+		int nh = node.getHeight();
+		return (height == nh ? webID < id : height < nh) ? -1 : 1;
+	}
+	@Override
+	public int hashCode(){
+		return (int) ((this.webID * prime) % Integer.MAX_VALUE);
+	}
+	@Override
+	public boolean equals(Object obj) {
+		if (obj == null || getClass() != obj.getClass())
+			return false;
+		return this.webID == ((Node) obj).getWebId();
+	}
+	@Override
+	public String toString(){
+		StringBuilder builder = new StringBuilder();
+		builder.append("\nNode: ").append(webID).append("(").append(height).append(")");
+		Node f;
+		//Folds
+		if ((f = L.getFold()) != null)
+			builder.append("\n\tFold: ").append(f.getWebId()).
+					append("(").append(f.getHeight()).append(")");
+		if ((f = L.getSurrogateFold()) != null)
+			builder.append("\n\tSFold: ").append(f.getWebId()).
+					append("(").append(f.getHeight()).append(")");
+		if ((f = L.getInverseSurrogateFold()) != null)
+			builder.append("\n\tISFold: ").append(f.getWebId()).
+					append("(").append(f.getHeight()).append(")");
+		//Neighbors
+		TreeSet<Node> temp;
+		if (!(temp = L.getNeighborsSet()).isEmpty()){
+			builder.append("\n\tNeighbors: ");
+			for (Node n : temp)
+				builder.append(n.getWebId()).append("(").append(n.getHeight()).append("), ");
+		}
+		if (!(temp = L.getSurrogateNeighborsSet()).isEmpty()){
+			builder.append("\n\tSNeighbors: ");
+			for (Node n : temp)
+				builder.append(n.getWebId()).append("(").append(n.getHeight()).append("), ");
+		}
+		if (!(temp = L.getInverseSurrogateNeighborsSet()).isEmpty()){
+			builder.append("\n\tISNeighbors: ");
+			for (Node n : temp)
+				builder.append(n.getWebId()).append("(").append(n.getHeight()).append("), ");
+		}
+		return builder.toString();
 	}
 }
