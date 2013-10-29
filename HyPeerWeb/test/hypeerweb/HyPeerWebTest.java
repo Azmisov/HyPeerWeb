@@ -138,10 +138,6 @@ public class HyPeerWebTest {
 			} while (f2 == f1);
 			SendVisitor x = new SendVisitor(f1.getWebId());
 			x.visit(f2);
-			if (!x.wasFound()){
-				System.out.println("sad face :(");
-				System.out.println("From "+f2.getWebId()+" to "+f1.getWebId());
-			}
 			assertTrue(x.wasFound());
 		}
 	}
