@@ -31,7 +31,7 @@ public class Node implements NodeInterface, Comparable<NodeInterface>{
 	public Node(int id, int height) {
 		this.webID = id;
 		this.height = height;
-		L = new Links();
+		L = new Links(this);
 	}
 	/**
 	 * Create a Node with all of its data
@@ -48,7 +48,7 @@ public class Node implements NodeInterface, Comparable<NodeInterface>{
 	public Node(int id, int h, Node f, Node sf, Node isf, ArrayList<Node> n, ArrayList<Node> sn, ArrayList<Node> isn){
 		webID = id;
 		height = h;
-		L =  new Links(f, sf, isf, n, sn, isn);		
+		L =  new Links(this, f, sf, isf, n, sn, isn);		
 	}
 
 	//ADD OR REMOVE NODES
@@ -128,6 +128,8 @@ public class Node implements NodeInterface, Comparable<NodeInterface>{
 	protected void replaceNode(Node toReplace){
 		//Swap out connections
 		L = toReplace.getLinks();
+		//Inherit the node's fold state
+		foldState = toReplace.getFoldState();
 		//Change WebID/Height, this must come before updating connections
 		//Otherwise, the Neighbor Sets will be tainted with incorrect webID's
 		webID = toReplace.getWebId();
@@ -577,15 +579,14 @@ public class Node implements NodeInterface, Comparable<NodeInterface>{
 	 */
 	@Override
 	public Node getParent() {
-		Node lowest = this;
-		int lowID = this.webID, temp;
+		if (webID == 0)
+			return null;
+		int parID = webID & ~Integer.highestOneBit(webID);
 		for (Node n : L.getNeighborsSet()) {
-			if ((temp = n.getWebId()) < lowID){
-				lowID = temp;
-				lowest = n;
-			}
+			if (parID == n.getWebId())
+				return n;
 		}
-		return lowest == this ? null : lowest;
+		return null;
 	}
 	/**
 	 * Get the node's neighbors
@@ -744,7 +745,7 @@ public class Node implements NodeInterface, Comparable<NodeInterface>{
 		v.visit(this);
 	}
 	
-		//CLASS OVERRIDES
+	//CLASS OVERRIDES
 	@Override
 	public int compareTo(NodeInterface node) {
 		//If we're trying to remove the key in an ordered collection, changingKey = true
@@ -772,6 +773,7 @@ public class Node implements NodeInterface, Comparable<NodeInterface>{
 		builder.append("\nNode: ").append(webID).append("(").append(height).append(")");
 		Node f;
 		//Folds
+		//builder.append("\n\tFold State: ").append(foldState instanceof FoldStateStable ? "Stable" : "Unstable");
 		if ((f = L.getFold()) != null)
 			builder.append("\n\tFold: ").append(f.getWebId()).
 					append("(").append(f.getHeight()).append(")");

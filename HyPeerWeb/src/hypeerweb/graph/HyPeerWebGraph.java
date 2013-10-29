@@ -343,6 +343,7 @@ public class HyPeerWebGraph extends JFrame{
 						", F:"+(n.getFold() == null ? "0" : "1")+
 						", SF:"+(n.getSurrogateFold()== null ? "0" : "1")+
 						", ISF:"+(n.getInverseSurrogateFold()== null ? "0" : "1");
+			System.out.println("Drawing Graph of..."+n);
 			hide.clear();
 			data.clear();
 			links.clear();

@@ -104,7 +104,6 @@ public class HyPeerWeb implements HyPeerWebInterface {
 			return removeSecondNode(n);
 		
 		//Find a disconnection point
-		//Node replace = nodes.lastEntry().getValue().findDisconnectNode().disconnectNode(db);
 		Node replace = getRandomNode().findDisconnectNode().disconnectNode(disableDB ? null : db);
 		if (replace == null)
 			throw removeNodeErr;

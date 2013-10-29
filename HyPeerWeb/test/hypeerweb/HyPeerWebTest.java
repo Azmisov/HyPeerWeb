@@ -93,7 +93,6 @@ public class HyPeerWebTest {
 		begin("REMOVING ZERO");
 		Node temp;
 		int old_size = web.getSize();
-		System.out.println("new size = "+old_size);
 		assert(old_size == MAX_SIZE);
 		for (int i=1; i<=MAX_SIZE; i++){
 			if ((temp = web.removeNode(web.getFirstNode())) == null)
@@ -111,10 +110,11 @@ public class HyPeerWebTest {
 	@Test
 	public void testRemoveRandom() throws Exception {
 		begin("REMOVING RANDOM");
-		Node temp;
+		Node temp, rand;
 		int old_size = web.getSize();
 		for (int i=1; i<=MAX_SIZE; i++){
-			if ((temp = web.removeNode(web.getRandomNode())) == null)
+			rand = web.getRandomNode();
+			if ((temp = web.removeNode(rand)) == null)
 				throw new Exception("Removed node should not be null!");
 			if (web.getSize() != --old_size)
 				throw new Exception("HyPeerWeb is not the correct size");

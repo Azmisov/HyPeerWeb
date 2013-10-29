@@ -1,7 +1,10 @@
 package hypeerweb;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.TreeSet;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * Maintains all node connections
@@ -11,6 +14,7 @@ public class Links{
 	public static enum Type {
 		FOLD, SFOLD, ISFOLD, NEIGHBOR, SNEIGHBOR, ISNEIGHBOR
 	}
+	private Node backLink;
 	private Node fold;
 	private Node surrogateFold;
 	private Node inverseSurrogateFold;
@@ -19,14 +23,15 @@ public class Links{
 	private TreeSet<Node> inverseSurrogateNeighbors;
 	private TreeSet<Node> highest;
 	
-	public Links(){
+	public Links(Node back){
+		backLink = back;
 		neighbors = new TreeSet<>();
 		surrogateNeighbors = new TreeSet<>();
 		inverseSurrogateNeighbors = new TreeSet<>();
 		highest = new TreeSet<>();
 	}
-	public Links(Node f, Node sf, Node isf, ArrayList<Node> n, ArrayList<Node> sn, ArrayList<Node> isn){
-		this();
+	public Links(Node back, Node f, Node sf, Node isf, ArrayList<Node> n, ArrayList<Node> sn, ArrayList<Node> isn){
+		this(back);
 		//Add everything to the highest set as well
 		//Add folds
 		fold = f;
@@ -55,7 +60,6 @@ public class Links{
 	 * @param oldNode the old Node reference (if there was one)
 	 * @param newNode the new Node reference
 	 * @param type the type of connection (Links.Type)
-	 * rather than a replacement of oldNode
 	 */
 	public void update(Node oldNode, Node newNode, Type type){
 		switch (type){
@@ -120,7 +124,7 @@ public class Links{
 	 * than a replacement of oldPointer
 	 */
 	public void broadcastUpdate(Node oldPointer, Node newPointer){
-		//NOTE: we reverse surrogate/inverse-surrogate connections
+		//NOTE: we reverse surrogate/inverse-surrogate connection types
 		//In the case of folds, we do not have to search for an oldPointer
 		if (fold != null)
 			fold.L.update(null, newPointer, Type.FOLD);
