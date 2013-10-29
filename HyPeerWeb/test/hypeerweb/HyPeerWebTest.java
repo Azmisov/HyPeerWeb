@@ -41,16 +41,15 @@ public class HyPeerWebTest {
 	public void populate() throws Exception{
 		//Restore the database, if we haven't already
 		if (!hasRestored && USE_DATABASE){
-			begin("RESTORE");
+			System.out.println("Restoring...");
 			assertTrue((new Validator(web)).validate());
 			web.removeAllNodes();
 			hasRestored = true;
-			end();
 		}
 		//Populate the DB with nodes, if needed
 		//Add a bunch of nodes if it validates afterwards, methods should be working
 		if (!hasPopulated || web.isEmpty()){
-			begin("ADDING");
+			System.out.println("Populating...");
 			web.removeAllNodes();
 			Node temp;
 			int old_size = 0;
@@ -63,7 +62,6 @@ public class HyPeerWebTest {
 					assertTrue((new Validator(web)).validate());
 			}
 			hasPopulated = true;
-			end();
 		}
 	}
 	public void begin(String type){

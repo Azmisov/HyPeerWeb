@@ -235,15 +235,17 @@ public class Node implements NodeInterface, Comparable<NodeInterface>{
 	 * @return a Node that is closer to the target WebID
 	 */
 	public Node getCloserNode(int target){
-		int base = this.scoreWebIdMatch(target);
+		//Trying to find a negative node is a waste of time
+		if (target < 0) return null;
 		//Try to find a link with a webid that is closer to the target
+		int base = this.scoreWebIdMatch(target);
 		for (Node n: L.getAllLinks()){
 			if (n.scoreWebIdMatch(target) > base)
 				return n;
 		}
 		//If none are closer, get a SNeighbor
 		Node sn = L.getHighestSurrogateNeighbor();
-		if (sn.scoreWebIdMatch(target) >= base)
+		if (sn != null && sn.scoreWebIdMatch(target) >= base)
 			return sn;
 		//Otherwise, that node doesn't exist
 		return null;

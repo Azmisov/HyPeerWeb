@@ -27,13 +27,7 @@ public class SendVisitor implements VisitorInterface{
 			return;
 		}
 		Node next = n.getCloserNode(targetWebId);
-		if (next == null){
-			System.out.println("You are an idiot");
-			System.out.println("Failed to find node #"+targetWebId);
-			try{
-				(HyPeerWeb.getInstance()).drawGraph(n);
-			}catch(Exception e){}
-		}
-		else next.accept(this);
+		if (next != null)
+			next.accept(this);
 	}
 }
