@@ -1,4 +1,4 @@
-package graph;
+package hypeerweb.graph;
 
 import hypeerweb.HyPeerWeb;
 import hypeerweb.Links;

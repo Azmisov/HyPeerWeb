@@ -17,7 +17,7 @@ public class Links{
 	private TreeSet<Node> neighbors;
 	private TreeSet<Node> surrogateNeighbors;
 	private TreeSet<Node> inverseSurrogateNeighbors;
-	public TreeSet<Node> highest;
+	private TreeSet<Node> highest;
 	
 	public Links(){
 		neighbors = new TreeSet<>();
@@ -86,7 +86,7 @@ public class Links{
 				break;
 		}
 		//Update the highest connection list
-		//Make sure this node isn't another link type
+		//Make sure this node isn't being referenced elsewhere
 		if (oldNode != null && (!(fold == oldNode || surrogateFold == oldNode ||
 			inverseSurrogateFold == oldNode || neighbors.contains(oldNode) ||
 			surrogateNeighbors.contains(oldNode) || inverseSurrogateNeighbors.contains(oldNode))))

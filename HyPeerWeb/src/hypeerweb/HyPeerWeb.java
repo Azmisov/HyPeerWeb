@@ -1,6 +1,6 @@
 package hypeerweb;
 
-import graph.DrawingThread;
+import hypeerweb.graph.DrawingThread;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.ObjectInputStream;

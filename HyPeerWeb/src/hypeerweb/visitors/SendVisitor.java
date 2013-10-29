@@ -26,7 +26,7 @@ public class SendVisitor implements VisitorInterface{
 			found = true;
 			return;
 		}
-		Node next = n.getSendNode(targetWebId);
+		Node next = n.getCloserNode(targetWebId);
 		if (next == null){
 			System.out.println("You are an idiot");
 			System.out.println("Failed to find node #"+targetWebId);

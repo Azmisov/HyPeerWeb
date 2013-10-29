@@ -221,9 +221,7 @@ public class Node implements NodeInterface, Comparable<NodeInterface>{
 	}
 	/**
 	 * Scores how well a webID matches a search key compared to a base score
-	 * @param idKey the webId search key
 	 * @param idSearch the query result webID
-	 * @param base the base score
 	 * @return how many bits are set in the number
 	 */
 	private int scoreWebIdMatch(int idSearch){
@@ -231,7 +229,12 @@ public class Node implements NodeInterface, Comparable<NodeInterface>{
 	}
 	
 	//VISITOR METHODS
-	public Node getSendNode(int target){
+	/**
+	 * Get a closer Link to a target WebID
+	 * @param target the WebID we're searching for
+	 * @return a Node that is closer to the target WebID
+	 */
+	public Node getCloserNode(int target){
 		int base = this.scoreWebIdMatch(target);
 		//Try to find a link with a webid that is closer to the target
 		for (Node n: L.getAllLinks()){
@@ -240,7 +243,7 @@ public class Node implements NodeInterface, Comparable<NodeInterface>{
 		}
 		//If none are closer, get a SNeighbor
 		Node sn = L.getHighestSurrogateNeighbor();
-		if (sn.getHeight() >= this.getHeight())
+		if (sn.scoreWebIdMatch(target) >= base)
 			return sn;
 		//Otherwise, that node doesn't exist
 		return null;
@@ -251,7 +254,7 @@ public class Node implements NodeInterface, Comparable<NodeInterface>{
 				generatedInverseSurrogates = new HashSet();
 		ArrayList<Node> found = new ArrayList<>();
 		int id = this.getWebId(),
-			//Add a one bit to left-end of id
+			//Add a one bit to left-end of id, to get neighbor's children
 			id_surr = id | (Integer.highestOneBit(id) << 1),
 			trailingZeros = Integer.numberOfTrailingZeros(id);
 		//Flip each of the trailing zeros, one at a time
@@ -261,12 +264,12 @@ public class Node implements NodeInterface, Comparable<NodeInterface>{
 			generatedInverseSurrogates.add(id_surr | bitShifter);
 			bitShifter <<= 1;
 		}
-		//If any of the (surr)neighbors match these webId's, we
-		//should broadcast to them
+		//If any of the neighbors match these webId's, we should broadcast to them
 		for(Node node : L.getNeighborsSet()){
 			if (generatedNeighbors.contains(node.getWebId()))
 				found.add(node);
 		}
+		//Broadcast to any of our neighbor's children, if we have links to them
 		for(Node node : L.getInverseSurrogateNeighborsSet()){
 			if (generatedInverseSurrogates.contains(node.getWebId()))
 				found.add(node);
