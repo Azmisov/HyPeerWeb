@@ -4,7 +4,7 @@ import hypeerweb.HyPeerWeb;
 import hypeerweb.Node;
 
 public class SendVisitor implements VisitorInterface{
-	private int targetWebId;
+	protected int targetWebId;
 	private boolean found = false;
 	
 	/**
@@ -15,6 +15,10 @@ public class SendVisitor implements VisitorInterface{
 		this.targetWebId = targetWebId;
 	}
 	
+	public SendVisitor(){
+		targetWebId = 0;
+	}
+	
 	public boolean wasFound(){
 		return found;
 	}
@@ -22,12 +26,17 @@ public class SendVisitor implements VisitorInterface{
 	@Override
 	public void visit(Node n) {
 		if (n.getWebId() == targetWebId){
-			//Do something productive here
+			performTargetOperation(n);
 			found = true;
 			return;
 		}
+		performIntermediateOperation(n);
 		Node next = n.getCloserNode(targetWebId);
 		if (next != null)
 			next.accept(this);
 	}
+	
+	protected void performTargetOperation(Node node){}
+	
+	protected void performIntermediateOperation(Node node){}
 }
