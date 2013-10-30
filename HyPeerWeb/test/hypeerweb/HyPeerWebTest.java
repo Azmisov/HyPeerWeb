@@ -20,12 +20,12 @@ import validator.Validator;
 public class HyPeerWebTest {
 	//Testing variables
 	private final int
-		MAX_SIZE = 500,				//Maximum HyPeerWeb size for tests
+		MAX_SIZE = 50,				//Maximum HyPeerWeb size for tests
 		TEST_EVERY = 1,				//How often to validate the HyPeerWeb for add/delete
-		SEND_TESTS = 2000,			//How many times to test send operation
+		SEND_TESTS = 50,			//How many times to test send operation
 		RAND_SEED = -1;				//Seed for getting random nodes (use -1 for a random seed)
 	private final boolean
-		USE_DATABASE = false,		//Enables database syncing
+		USE_DATABASE = true,		//Enables database syncing
 		USE_GRAPH = true;			//Starts a new thread for drawing the HyPeerWeb
 	private HyPeerWeb web;
 	
