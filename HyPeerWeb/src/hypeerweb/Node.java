@@ -11,7 +11,7 @@ import validator.NodeInterface;
  *  - make sure we can use == or .equals when we get to proxies
  * @author Guy
  */
-public class Node implements NodeInterface, Comparable<NodeInterface>{
+public class Node implements NodeInterface{
 	//Node Attributes
 	private int webID, height;
 	public Links L;
