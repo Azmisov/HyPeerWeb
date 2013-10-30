@@ -5,7 +5,9 @@
 package hypeerweb;
 
 import hypeerweb.visitors.SendVisitor;
+import java.util.HashSet;
 import java.util.Random;
+import java.util.Set;
 import org.junit.After;
 import org.junit.Test;
 import static org.junit.Assert.*;
@@ -157,5 +159,26 @@ public class HyPeerWebTest {
 			x.visit(web.getFirstNode());
 			assertFalse(x.wasFound());
 		}
+	}
+	
+	@Test
+	public void testBroadcast() {
+		begin("TESTING BROADCAST");
+		ListNodes x = new ListNodes();
+		x.visit(web.getRandomNode());
+		System.out.println("Size: " + x.getNodeList().size());
+		if(x.getNodeList().size() < web.getSize()) {
+			for(Node n : web.getOrderedListOfNodes()) {
+				if(!x.getNodeList().contains(n)){
+					System.out.println("Missing: " + n);
+				}
+			}
+		}
+		assertTrue(x.getNodeList().size() == web.getSize());
+		for(Node n : x.getNodeList()) {
+			assertTrue(web.getNode(n.getWebId()) != null);
+		}
+		Set<Node> set = new HashSet<>(x.getNodeList());
+		assertTrue(set.size() == x.getNodeList().size());
 	}
 }
