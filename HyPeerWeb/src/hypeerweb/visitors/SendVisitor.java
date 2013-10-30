@@ -1,11 +1,9 @@
 package hypeerweb.visitors;
 
-import hypeerweb.HyPeerWeb;
 import hypeerweb.Node;
 
 public class SendVisitor implements VisitorInterface{
 	protected int targetWebId;
-	private boolean found = false;
 	
 	/**
 	 * Creates a new Send operation visitor
@@ -18,22 +16,17 @@ public class SendVisitor implements VisitorInterface{
 	public SendVisitor(){
 		targetWebId = 0;
 	}
-	
-	public boolean wasFound(){
-		return found;
-	}
 
 	@Override
 	public void visit(Node n) {
-		if (n.getWebId() == targetWebId){
+		if (n.getWebId() == targetWebId)
 			performTargetOperation(n);
-			found = true;
-			return;
+		else{
+			performIntermediateOperation(n);
+			Node next = n.getCloserNode(targetWebId);
+			if (next != null)
+				next.accept(this);
 		}
-		performIntermediateOperation(n);
-		Node next = n.getCloserNode(targetWebId);
-		if (next != null)
-			next.accept(this);
 	}
 	
 	protected void performTargetOperation(Node node){}
