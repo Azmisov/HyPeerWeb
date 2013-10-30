@@ -21,7 +21,8 @@ public class Node implements NodeInterface, Comparable<NodeInterface>{
 	private FoldStateInterface foldState = new FoldStateStable(); 
 	//Hash code prime
 	private static long prime = Long.parseLong("2654435761");
-	private int attribute = 0; //Used to test send and broadcast methods
+	//Used to test send and broadcast methods
+	private static final HashMap<String, Object> attributes = new HashMap<>();;
 	
 	//CONSTRUCTORS
 	/**
@@ -803,12 +804,12 @@ public class Node implements NodeInterface, Comparable<NodeInterface>{
 		}
 		return builder.toString();
 	}
-	public void setAttribute(int i)
-	{
-		attribute = i;
+	
+	//NODE ATTRIBUTES
+	public void setAttribute(String name, Object value){
+		attributes.put(name, value);
 	}
-	public int getAttribute()
-	{
-		return attribute;
+	public Object getAttribute(String name){
+		return attributes.get(name);
 	}
 }
