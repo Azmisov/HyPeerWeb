@@ -21,6 +21,7 @@ public class Node implements NodeInterface, Comparable<NodeInterface>{
 	private FoldStateInterface foldState = new FoldStateStable(); 
 	//Hash code prime
 	private static long prime = Long.parseLong("2654435761");
+	private int attribute = 0; //Used to test send and broadcast methods
 	
 	//CONSTRUCTORS
 	/**
@@ -801,5 +802,13 @@ public class Node implements NodeInterface, Comparable<NodeInterface>{
 				builder.append(n.getWebId()).append("(").append(n.getHeight()).append("), ");
 		}
 		return builder.toString();
+	}
+	public void setAttribute(int i)
+	{
+		attribute = i;
+	}
+	public int getAttribute()
+	{
+		return attribute;
 	}
 }
