@@ -23,11 +23,10 @@ public class HyPeerWebTest {
 		MAX_SIZE = 500,				//Maximum HyPeerWeb size for tests
 		TEST_EVERY = 1,				//How often to validate the HyPeerWeb for add/delete
 		SEND_TESTS = 2000,			//How many times to test send operation
-		RAND_SEED = 5;				//Seed for getting random nodes (use -1 for a random seed)
+		RAND_SEED = -1;				//Seed for getting random nodes (use -1 for a random seed)
 	private final boolean
 		USE_DATABASE = false,		//Enables database syncing
-		USE_GRAPH = true,			//Starts a new thread for drawing the HyPeerWeb
-		TEST_DELETE = false;		//Tests deletion from the HyPeerWeb
+		USE_GRAPH = true;			//Starts a new thread for drawing the HyPeerWeb
 	private HyPeerWeb web;
 	
 	public HyPeerWebTest() throws Exception{
@@ -134,13 +133,15 @@ public class HyPeerWebTest {
 		begin("SENDING VALID");
 		Node f1, f2;
 		for (int j=0; j<SEND_TESTS; j++){
+			wasFound = false;
 			f1 = web.getRandomNode();
 			do{
 				f2 = web.getRandomNode();
 			} while (f2 == f1);
-			SendVisitor x = new SendVisitor(f1.getWebId());
+			TestSendVisitor x = new TestSendVisitor(f1.getWebId());
 			x.visit(f2);
-			assertTrue(x.wasFound());
+			assertTrue(wasFound);
+			assert((boolean) f1.getAttribute("Found"));
 		}
 	}
 	
@@ -152,12 +153,13 @@ public class HyPeerWebTest {
 		begin("SENDING INVALID");
 		Random r = new Random();
 		for (int i=0; i<SEND_TESTS; i++){
+			wasFound = false;
 			int bad_id = r.nextInt();
 			while (web.getNode(bad_id) != null)
 				bad_id *= 3;
-			SendVisitor x = new SendVisitor(bad_id);
+			TestSendVisitor x = new TestSendVisitor(bad_id);
 			x.visit(web.getFirstNode());
-			assertFalse(x.wasFound());
+			assertFalse(wasFound);
 		}
 	}
 	
@@ -180,5 +182,19 @@ public class HyPeerWebTest {
 		}
 		Set<Node> set = new HashSet<>(x.getNodeList());
 		assertTrue(set.size() == x.getNodeList().size());
+	}
+	
+	private boolean wasFound;
+	public class TestSendVisitor extends SendVisitor {
+
+	    public TestSendVisitor(int targetWebId) {
+		super(targetWebId);
+	    }
+
+	    @Override
+	    protected void performTargetOperation(Node node) {
+		node.setAttribute("Found", true);
+		wasFound = true;
+	    }
 	}
 }
