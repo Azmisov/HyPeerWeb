@@ -263,7 +263,7 @@ public class Node implements NodeInterface, Comparable<NodeInterface>{
 		ArrayList<Node> found = new ArrayList<>();
 		int id = this.getWebId(),
 			//Add a one bit to left-end of id, to get neighbor's children
-			id_surr = id | (Integer.highestOneBit(id) << 1),
+			id_surr = id | ((1 << (height - 1)) << 1),
 			trailingZeros = Integer.numberOfTrailingZeros(id);
 		//Flip each of the trailing zeros, one at a time
 		int bitShifter = 1;
