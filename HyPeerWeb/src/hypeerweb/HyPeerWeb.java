@@ -1,12 +1,7 @@
 package hypeerweb;
 
 import hypeerweb.graph.DrawingThread;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
-import java.util.ArrayList;
-import java.util.Iterator;
+import java.util.HashMap;
 import java.util.Random;
 import java.util.TreeMap;
 import validator.HyPeerWebInterface;
@@ -17,9 +12,8 @@ import validator.HyPeerWebInterface;
  */
 public class HyPeerWeb implements HyPeerWebInterface {
 	private static HyPeerWeb instance;
-	private static Database db;
+	private static Database db = null;
 	private static TreeMap<Integer, Node> nodes;
-	private static boolean disableDB = false;
 	//Random number generator for getting random nodes
 	private static Random rand = new Random();
 	//Error messages
@@ -35,7 +29,6 @@ public class HyPeerWeb implements HyPeerWebInterface {
 	 * @author isaac
 	 */
 	private HyPeerWeb(boolean useDatabase, boolean useGraph, long seed) throws Exception{
-		disableDB = !useDatabase;
 		if (useDatabase){
 			db = Database.getInstance();
 			nodes = db.getAllNodes();
@@ -104,7 +97,7 @@ public class HyPeerWeb implements HyPeerWebInterface {
 			return removeSecondNode(n);
 		
 		//Find a disconnection point
-		Node replace = getRandomNode().findDisconnectNode().disconnectNode(disableDB ? null : db);
+		Node replace = getRandomNode().findDisconnectNode().disconnectNode(db);
 		if (replace == null)
 			throw removeNodeErr;
 		//Remove node from list of nodes
@@ -114,37 +107,21 @@ public class HyPeerWeb implements HyPeerWebInterface {
 			int newWebID = n.getWebId();
 			nodes.remove(newWebID);
 			nodes.put(newWebID, replace);
-			replace.replaceNode(n);
+			replace.replaceNode(db, n);
 		}
 		return n;
 	}
 	/**
-	 * 
-	 * @return
-	 * @throws Exception 
+	 * Remove the second to last node
+	 * @return the removed node
+	 * @throws Exception if it fails to modify the database
 	 */
 	private Node removeSecondNode(Node n) throws Exception{		
 		Node last = n.getNeighbors()[0];
-		if (!disableDB){
-			db.beginCommit();
-			//TODO: FIX THIS ENTIRE THING HERE
-			int old_webID = last.getWebId();
-			//have to delete entry and add entire node
-			db.setHeight(old_webID, 0);
-			db.setFold(old_webID, -1);
-			db.removeNeighbor(old_webID, n.getWebId());
-			if(!db.endCommit())
-				throw removeNodeErr;
-		}
-		//Update map structure to reflect changes
-		nodes.remove(0);
-		nodes.remove(1);
-		nodes.put(0, last);
-		//This must come after removing n
-		last.setWebID(0);
-		last.setHeight(0);
-		last.L.setFold(null);
-		last.L.removeNeighbor(n);
+		//Save the remaining node's attributes
+		HashMap<String, Object> attrs = last.getAllAttributes();
+		removeAllNodes();
+		addFirstNode().setAllAttributes(attrs);
 		return n;
 	}
 	/**
@@ -153,7 +130,7 @@ public class HyPeerWeb implements HyPeerWebInterface {
 	 * @throws Exception if it fails to clear the HyPeerWeb
 	 */
 	public void removeAllNodes() throws Exception{
-		if (!disableDB && !db.clear())
+		if (db != null && !db.clear())
 			throw clearErr;
 		nodes = new TreeMap<>();
 	}
@@ -174,7 +151,7 @@ public class HyPeerWeb implements HyPeerWebInterface {
 			return addSecondNode();
 		
 		//Otherwise, use the normal insertion algorithm
-		Node child = this.getRandomNode().findInsertionNode().addChild(disableDB ? null : db);
+		Node child = this.getRandomNode().findInsertionNode().addChild(db);
 		if (child == null)
 			throw addNodeErr;
 		//Node successfully added!
@@ -188,7 +165,7 @@ public class HyPeerWeb implements HyPeerWebInterface {
 	 */
 	private Node addFirstNode() throws Exception{
 		Node first = new Node(0, 0);
-		if (!disableDB && !db.addNode(first))
+		if (db != null && !db.addNode(first))
 			throw addNodeErr;
 		nodes.put(0, first);
 		return first;
@@ -202,7 +179,7 @@ public class HyPeerWeb implements HyPeerWebInterface {
 		Node sec = new Node(1, 1),
 			first = nodes.firstEntry().getValue();
 		//Update the database first
-		if (!disableDB) {
+		if (db != null) {
 			db.beginCommit();
 			db.addNode(sec);
 			db.setHeight(0, 1);

@@ -14,9 +14,6 @@ import java.util.TreeMap;
  * @author isaac
  * TODO, future:
  * - make prepared statement interface
- * - update removeNode test cases
- * - disable auto-commit for mass edits (addNode)
- * - reuse auto-commit code
  */
 public final class Database {
 	//Reference to singleton
@@ -190,6 +187,21 @@ public final class Database {
 	
 	///FULL NODE OPERATIONS
 	/**
+	 * Replace a node
+	 * @param removeWebID the old webid
+	 * @param replaceWebID the new one
+	 * @param replacement the replacement 
+	 * @return true, if the operation was successful; if there is already
+	 * a row with new_webid, it will fail
+	 */
+	public boolean replaceNode(int removeWebID, int replaceWebID, Node replacement){
+		beginCommit();
+		removeNode(removeWebID);
+		removeNode(replaceWebID);
+		addNode(replacement);
+		return endCommit();
+	}
+	/**
 	 * Add a node to the database
 	 *
 	 * @param node the node to add
@@ -249,7 +261,7 @@ public final class Database {
 		sqlUpdate("DELETE FROM SurrogateNeighbors WHERE WebID=" + webid + ";");
 		return endCommit();
 	}
-		
+	
 	/**
 	 * Makes nodes from data stored in database
 	 * @return a TreeSet<Node> containing all nodes stored in database

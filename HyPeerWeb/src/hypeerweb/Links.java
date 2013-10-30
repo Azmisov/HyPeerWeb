@@ -1,10 +1,7 @@
 package hypeerweb;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.TreeSet;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 /**
  * Maintains all node connections
@@ -14,7 +11,6 @@ public class Links{
 	public static enum Type {
 		FOLD, SFOLD, ISFOLD, NEIGHBOR, SNEIGHBOR, ISNEIGHBOR
 	}
-	private Node backLink;
 	private Node fold;
 	private Node surrogateFold;
 	private Node inverseSurrogateFold;
@@ -23,15 +19,13 @@ public class Links{
 	private TreeSet<Node> inverseSurrogateNeighbors;
 	private TreeSet<Node> highest;
 	
-	public Links(Node back){
-		backLink = back;
+	public Links(){
 		neighbors = new TreeSet<>();
 		surrogateNeighbors = new TreeSet<>();
 		inverseSurrogateNeighbors = new TreeSet<>();
 		highest = new TreeSet<>();
 	}
-	public Links(Node back, Node f, Node sf, Node isf, ArrayList<Node> n, ArrayList<Node> sn, ArrayList<Node> isn){
-		this(back);
+	public Links(Node f, Node sf, Node isf, ArrayList<Node> n, ArrayList<Node> sn, ArrayList<Node> isn){
 		//Add everything to the highest set as well
 		//Add folds
 		fold = f;

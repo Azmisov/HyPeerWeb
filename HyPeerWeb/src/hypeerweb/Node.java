@@ -7,7 +7,6 @@ import validator.NodeInterface;
 /**
  * The Node class
  * TODO:
- *  - disconnect node doesn't sync with database
  *  - make NodeProxy hold webID, height, changingKey, and L (LinksProxy) by default
  *  - make sure we can use == or .equals when we get to proxies
  * @author Guy
@@ -22,7 +21,7 @@ public class Node implements NodeInterface, Comparable<NodeInterface>{
 	//Hash code prime
 	private static long prime = Long.parseLong("2654435761");
 	//Used to test send and broadcast methods
-	private static final HashMap<String, Object> attributes = new HashMap<>();;
+	private static HashMap<String, Object> attributes = new HashMap<>();
 	
 	//CONSTRUCTORS
 	/**
@@ -33,7 +32,7 @@ public class Node implements NodeInterface, Comparable<NodeInterface>{
 	public Node(int id, int height) {
 		this.webID = id;
 		this.height = height;
-		L = new Links(this);
+		L = new Links();
 	}
 	/**
 	 * Create a Node with all of its data
@@ -50,7 +49,7 @@ public class Node implements NodeInterface, Comparable<NodeInterface>{
 	public Node(int id, int h, Node f, Node sf, Node isf, ArrayList<Node> n, ArrayList<Node> sn, ArrayList<Node> isn){
 		webID = id;
 		height = h;
-		L =  new Links(this, f, sf, isf, n, sn, isn);		
+		L =  new Links(f, sf, isf, n, sn, isn);		
 	}
 
 	//ADD OR REMOVE NODES
@@ -127,7 +126,8 @@ public class Node implements NodeInterface, Comparable<NodeInterface>{
 	 * @param toReplace the node to replace
 	 * @author isaac
 	 */
-	protected void replaceNode(Node toReplace){
+	protected boolean replaceNode(Database db, Node toReplace){
+		int oldWebID = this.webID;
 		//Swap out connections
 		L = toReplace.getLinks();
 		//Inherit the node's fold state
@@ -138,6 +138,8 @@ public class Node implements NodeInterface, Comparable<NodeInterface>{
 		height = toReplace.getHeight();
 		//Notify all connections that their reference has changed
 		L.broadcastUpdate(toReplace, this);
+		//Commit to the database, if needed
+		return db != null ? db.replaceNode(webID, oldWebID, this) : true;
 	}
 	/**
 	 * Disconnects an edge node to replace a node that
@@ -811,5 +813,11 @@ public class Node implements NodeInterface, Comparable<NodeInterface>{
 	}
 	public Object getAttribute(String name){
 		return attributes.get(name);
+	}
+	public void setAllAttributes(HashMap<String, Object> attrs){
+		attributes = attrs;
+	}
+	public HashMap<String, Object> getAllAttributes(){
+		return attributes;
 	}
 }
