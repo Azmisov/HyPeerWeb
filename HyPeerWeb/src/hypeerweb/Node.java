@@ -14,6 +14,9 @@ import validator.NodeInterface;
 public class Node implements NodeInterface{
 	//Node Attributes
 	private int webID, height;
+	/**
+	 * A reference to a node's connections
+	 */
 	public Links L;
 	//State machines
 	private static final int recurseLevel = 2; //2 = neighbor's neighbors
@@ -26,8 +29,8 @@ public class Node implements NodeInterface{
 	//CONSTRUCTORS
 	/**
 	 * Create a Node with only a WebID
-	 *
-	 * @param id The WebID of the Node
+	 * @param id the WebID of the node
+	 * @param height  the height of the node
 	 */
 	public Node(int id, int height) {
 		this.webID = id;
@@ -123,7 +126,9 @@ public class Node implements NodeInterface{
 	}
 	/**
 	 * Replaces a node with this node
+	 * @param db a reference to the database singleton
 	 * @param toReplace the node to replace
+	 * @return true, if the replacement was successful
 	 * @author isaac
 	 */
 	protected boolean replaceNode(Database db, Node toReplace){
@@ -194,53 +199,16 @@ public class Node implements NodeInterface{
 		}
 	}
 	
-	//SEARCH FOR NODE
-	/**
-	 * Finds and returns the node whose WebID is closest to the given long
-	 * Assumed to always start with the node with WebID of zero
-	 * @param index The value to get as close as possible to
-	 * @author John
-	 */
-	public Node searchForNode(int index, boolean exactMatch){
-		//Exact matches will have a score of 32
-		int base = scoreWebIdMatch(index), score;
-		if (base == 32) return this;
-		//Check fold first, since it may be faster
-		Node fold_ref = L.getFold();
-		if (fold_ref == null)
-			fold_ref = L.getSurrogateFold();
-		if (fold_ref != null && (score = fold_ref.scoreWebIdMatch(index)) > base)
-			return score == 32 ? fold_ref : fold_ref.searchForNode(index, exactMatch);
-		//Otherwise, check neighbors
-		for (Node n: L.getNeighborsSet()){
-			if ((score = n.scoreWebIdMatch(index)) > base)
-				return score == 32 ? n : n.searchForNode(index, exactMatch);
-		}
-		//If we're looking for an exact node, go down to sneighbors
-		if (exactMatch && webID != index){
-			for (Node n: L.getSurrogateNeighborsSet()){
-				if ((score = n.scoreWebIdMatch(index)) >= base)
-					return score == 32 ? n : n.searchForNode(index, exactMatch);
-			}
-		}
-		return this;
-	}
-	/**
-	 * Scores how well a webID matches a search key compared to a base score
-	 * @param idSearch the query result webID
-	 * @return how many bits are set in the number
-	 */
-	private int scoreWebIdMatch(int idSearch){
-		return Integer.bitCount(~(webID ^ idSearch));
-	}
-	
 	//VISITOR METHODS
 	/**
 	 * Get a closer Link to a target WebID
 	 * @param target the WebID we're searching for
-	 * @return a Node that is closer to the target WebID
+	 * @param mustBeCloser if false, it will get surrogate neighbors of equal
+	 * closeness, provided no other link is closer
+	 * @return a Node that is closer to the target WebID; null, if there are
+	 * no closer nodes or if the target is negative
 	 */
-	public Node getCloserNode(int target){
+	public Node getCloserNode(int target, boolean mustBeCloser){
 		//Trying to find a negative node is a waste of time
 		if (target < 0) return null;
 		//Try to find a link with a webid that is closer to the target
@@ -250,11 +218,22 @@ public class Node implements NodeInterface{
 				return n;
 		}
 		//If none are closer, get a SNeighbor
-		Node sn = L.getHighestSurrogateNeighbor();
-		if (sn != null && sn.scoreWebIdMatch(target) >= base)
-			return sn;
+		if (!mustBeCloser){
+			for (Node sn: L.getSurrogateNeighborsSet()){
+				if (sn != null && sn.scoreWebIdMatch(target) == base)
+					return sn;
+			}
+		}
 		//Otherwise, that node doesn't exist
 		return null;
+	}
+	/**
+	 * Scores how well a webID matches a search key compared to a base score
+	 * @param idSearch the query result webID
+	 * @return how many bits are set in the number
+	 */
+	public int scoreWebIdMatch(int idSearch){
+		return Integer.bitCount(~(webID ^ idSearch));
 	}
 	/**
 	 * Get all nodes to broadcast to in a broadcast operation
@@ -291,8 +270,8 @@ public class Node implements NodeInterface{
 	
 	//FIND VALID NODES
 	/**
-	 * This is the Command Pattern
-	 * Yeah. That's right.
+	 * Defines a set of criteria for a valid node point
+	 * (whether that be for an insertionPoint or disconnectPoint)
 	 */
 	private static interface Criteria{
 		/**
@@ -745,6 +724,10 @@ public class Node implements NodeInterface{
 	}
 	
 	//VISITOR PATTERN
+	/**
+	 * Accept a visitor for traversal
+	 * @param v a HyPeerWeb visitor
+	 */
 	public void accept(VisitorInterface v){
 		v.visit(this);
 	}
@@ -808,15 +791,33 @@ public class Node implements NodeInterface{
 	}
 	
 	//NODE ATTRIBUTES
+	/**
+	 * Set a node data attribute
+	 * @param name the name of the attribute (key)
+	 * @param value the data to hold under this name
+	 */
 	public void setAttribute(String name, Object value){
 		attributes.put(name, value);
 	}
+	/**
+	 * Retrieve data stored under a particular name
+	 * @param name the name the data was stored under
+	 * @return the data object, or null, if it doesn't exist
+	 */
 	public Object getAttribute(String name){
 		return attributes.get(name);
 	}
+	/**
+	 * Sets all the node's data
+	 * @param attrs a key-value name pair HashMap
+	 */
 	public void setAllAttributes(HashMap<String, Object> attrs){
 		attributes = attrs;
 	}
+	/**
+	 * Retrieves all the node's data
+	 * @return node data as a key-value name pair HashMap
+	 */
 	public HashMap<String, Object> getAllAttributes(){
 		return attributes;
 	}

@@ -15,6 +15,11 @@ public class DrawingThread implements Runnable{
 	private HyPeerWebGraph graph;
 	private boolean running = false;
 	
+	/**
+	 * Create a new thread for drawing graphs of nodes in the HyPeerWeb
+	 * @param l an instance of the HyPeerWeb segment
+	 * @throws Exception if the thread fails to initialize
+	 */
 	public DrawingThread(HyPeerWeb l) throws Exception{
 		lock = l;
 		t = new Thread();
@@ -34,9 +39,14 @@ public class DrawingThread implements Runnable{
 	@Override
 	public void run(){}
 	
+	/**
+	 * Start drawing a graph of a node
+	 * @param n the node to draw
+	 */
 	public void start(Node n){
 		graph.setVisible(true);
 		graph.drawNode(n);
+		//Start the thread, if it hasn't started already
 		if (!running){
 			t.start();
 			running = true;

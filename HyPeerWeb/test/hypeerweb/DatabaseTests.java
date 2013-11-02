@@ -1,13 +1,11 @@
+package hypeerweb;
 
-import hypeerweb.Node;
-import hypeerweb.Database;
-import hypeerweb.HyPeerWeb;
 import java.util.*;
 
 /**
  * Dummy class for testing out your code
  */
-public class Main {
+public class DatabaseTests {
 
 	public static void main(String[] args) {
 		int id = 7;

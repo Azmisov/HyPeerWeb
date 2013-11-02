@@ -37,16 +37,15 @@ import javax.swing.event.ChangeListener;
 
 /**
  * Draws a directed graph of a HyPeerWeb node
- * Red-links = neighbors
- * Green-links = sneighbors
- * Pink-links = isneighbors
- * Cyan = selected node
- * Yellow = selected node's children
- * Green = selcted node's parent
- * 
- * - Right click a node hide it
- * - Middle click to restore all hidden nodes
- * 
+ * <li>Red-links = neighbors</li>
+ * <li>Green-links = sneighbors</li>
+ * <li>Pink-links = isneighbors</li>
+ * <li>Cyan = selected node</li>
+ * <li>Yellow = selected node's children</li>
+ * <li>Green = selcted node's parent</li>
+ * <b>Hotkeys:</b><br/>
+ * <li>Right click a node hide it</li>
+ * <li>Middle click to restore all hidden nodes</li>
  * @author isaac
  */
 public class HyPeerWebGraph extends JFrame{
@@ -58,6 +57,11 @@ public class HyPeerWebGraph extends JFrame{
 	private final JSpinner nodeSpin, levelSpin;
 	private boolean deferEvts = false;
 	
+	/**
+	 * Creates a new JFrame that can draw graphs of HyPeerWeb nodes
+	 * @param web an instance of the HyPeerWeb segment
+	 * @throws Exception if the window fails to initialize
+	 */
 	public HyPeerWebGraph(final HyPeerWeb web) throws Exception{
 		this.web = web;
 		//Initialize window
@@ -153,7 +157,7 @@ public class HyPeerWebGraph extends JFrame{
 	
 	/**
 	 * Listen for unpause handler
-	 * @param al 
+	 * @param al an action listener
 	 */
 	public void addActionListener(ActionListener al){
 		unpause = al;
@@ -164,9 +168,8 @@ public class HyPeerWebGraph extends JFrame{
 	}
 	
 	/**
-	 * Draws the specified node out to levels
-	 * @param n 
-	 * @param level number of levels to go out
+	 * Draws the specified node
+	 * @param n the node to draw
 	 */
 	public void drawNode(Node n){
 		try {

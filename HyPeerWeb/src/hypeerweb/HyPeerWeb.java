@@ -1,6 +1,7 @@
 package hypeerweb;
 
 import hypeerweb.graph.DrawingThread;
+import hypeerweb.visitors.SendVisitor;
 import java.util.HashMap;
 import java.util.Random;
 import java.util.TreeMap;
@@ -16,11 +17,13 @@ public class HyPeerWeb implements HyPeerWebInterface {
 	private static TreeMap<Integer, Node> nodes;
 	//Random number generator for getting random nodes
 	private static Random rand = new Random();
+	private static SendVisitor randVisitor;
 	//Error messages
 	private static Exception
 			addNodeErr = new Exception("Failed to add a new node"),
 			removeNodeErr = new Exception("Failed to remove a node"),
-			clearErr = new Exception("Failed to clear the HyPeerWeb");
+			clearErr = new Exception("Failed to clear the HyPeerWeb"),
+			replaceErr = new Exception("Failed to replace a node. Warning! Your HyPeerWeb is corrupted.");
 	//Draw a graph of the HyPeerWeb
 	private DrawingThread graph;
 	
@@ -41,14 +44,16 @@ public class HyPeerWeb implements HyPeerWebInterface {
 	}
 	/**
 	 * Retrieve the HyPeerWeb singleton
-	 * @param useDatabase should we sync our HyPeerWeb to a database
-	 * @param useGraph is graph drawing enabled?
+	 * @param useDatabase should we sync our HyPeerWeb to a database;
+	 *	Warning! Database access can be very slow
+	 * @param useGraph is graph drawing enabled {@link #drawGraph(hypeerweb.Node)}
 	 * @param seed the random seed number for getting random nodes; use -1
-	 * to get a pseudo-random seed
-	 * @return the singleton
+	 *	to get a pseudo-random seed
+	 * @return a reference to the initialized HyPeerWeb singleton
+	 * @throws Exception if there was a database error
 	 * @author isaac
 	 */
-	public static HyPeerWeb getInstance(boolean useDatabase, boolean useGraph, long seed) throws Exception{
+	public static HyPeerWeb initialize(boolean useDatabase, boolean useGraph, long seed) throws Exception{
 		if (instance != null)
 			return instance;
 		instance = new HyPeerWeb(useDatabase, useGraph, seed);
@@ -57,7 +62,8 @@ public class HyPeerWeb implements HyPeerWebInterface {
 	/**
 	 * Retrieves the HyPeerWeb singleton if you know it has
 	 * already been initialized by calling the method:
-	 *		getInstance(bool, bool, long)
+	 *		initialize(bool, bool, long)
+	 * @return a previously initialized HyPeerWeb; null, if no HyPeerWeb has been initialized
 	 */
 	public static HyPeerWeb getInstance(){
 		return instance;
@@ -75,8 +81,8 @@ public class HyPeerWeb implements HyPeerWebInterface {
 	}
 	/**
 	 * Removes the node
-	 * @param webid the node to remove
-	 * @return the removed node, or null if it doesn't exist
+	 * @param n the node to remove
+	 * @return the removed node, or null if it doesn't exist in the HyPeerWeb
 	 * @throws Exception if it fails to remove the node
 	 * @author isaac
 	 */
@@ -107,7 +113,8 @@ public class HyPeerWeb implements HyPeerWebInterface {
 			int newWebID = n.getWebId();
 			nodes.remove(newWebID);
 			nodes.put(newWebID, replace);
-			replace.replaceNode(db, n);
+			if (!replace.replaceNode(db, n))
+				throw replaceErr;
 		}
 		return n;
 	}
@@ -151,7 +158,7 @@ public class HyPeerWeb implements HyPeerWebInterface {
 			return addSecondNode();
 		
 		//Otherwise, use the normal insertion algorithm
-		Node child = this.getRandomNode().findInsertionNode().addChild(db);
+		Node child = getRandomNode().findInsertionNode().addChild(db);
 		if (child == null)
 			throw addNodeErr;
 		//Node successfully added!
@@ -205,14 +212,18 @@ public class HyPeerWeb implements HyPeerWebInterface {
 	}
 	
 	/**
-	 * Retrieves a random node in the HyPeerWeb that is a valid
-	 * insertion point
-	 * @return a random node that is a valid insertion point
+	 * Retrieves a random node in the HyPeerWeb
+	 * @return a random node; null, if there are no nodes
 	 * @author John, Josh
 	 */
 	public Node getRandomNode(){
 		//Always start at Node with WebID = 0
-		return nodes.firstEntry().getValue().searchForNode(rand.nextInt(Integer.MAX_VALUE), false);
+		if (nodes.isEmpty())
+			return null;
+		Node first = nodes.firstEntry().getValue();
+		randVisitor = new SendVisitor(rand.nextInt(Integer.MAX_VALUE), true);
+		randVisitor.visit(first);
+		return randVisitor.getFinalNode();
 	}
 	
 	//GRAPHING
@@ -240,7 +251,6 @@ public class HyPeerWeb implements HyPeerWebInterface {
 	}
 	/**
 	 * Retrieve a node with the specified webid
-	 * @param webid the webid of the node
 	 * @return the node with the specified webid; otherwise null
 	 * @author isaac
 	 */

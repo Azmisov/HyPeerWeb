@@ -11,7 +11,6 @@ import java.util.Set;
 import org.junit.After;
 import org.junit.Test;
 import static org.junit.Assert.*;
-import org.junit.Before;
 import validator.Validator;
 
 /**
@@ -19,31 +18,40 @@ import validator.Validator;
  */
 public class HyPeerWebTest {
 	//Testing variables
-	private final int
-		MAX_SIZE = 50,				//Maximum HyPeerWeb size for tests
-		TEST_EVERY = 1,				//How often to validate the HyPeerWeb for add/delete
-		SEND_TESTS = 50,			//How many times to test send operation
-		RAND_SEED = -1;				//Seed for getting random nodes (use -1 for a random seed)
-	private final boolean
-		USE_DATABASE = true,		//Enables database syncing
-		USE_GRAPH = true;			//Starts a new thread for drawing the HyPeerWeb
-	private HyPeerWeb web;
+	private static final int
+		MAX_SIZE = 50,					//Maximum HyPeerWeb size for tests
+		TEST_EVERY = 1,					//How often to validate the HyPeerWeb for add/delete
+		SEND_TESTS = 2000,				//How many times to test send operation
+		RAND_SEED = -1;					//Seed for getting random nodes (use -1 for a random seed)
+	private static final boolean
+		USE_DATABASE = false,			//Enables database syncing
+		USE_GRAPH = false;				//Starts a new thread for drawing the HyPeerWeb
+	private static HyPeerWeb web;
+	private static String curTest;
+	private static boolean hasRestored, hasPopulated;
 	
 	public HyPeerWebTest() throws Exception{
-		web = HyPeerWeb.getInstance(USE_DATABASE, USE_GRAPH, RAND_SEED);
+		web = HyPeerWeb.initialize(USE_DATABASE, USE_GRAPH, RAND_SEED);
+		hasRestored = hasPopulated = false;
 	}
 	
 	/**
 	 * Populates the HyPeerWeb with some nodes
 	 */
-	private String curTest;
-	private boolean hasRestored = false, hasPopulated = false;
-	@Before
 	public void populate() throws Exception{
 		//Restore the database, if we haven't already
 		if (!hasRestored && USE_DATABASE){
 			System.out.println("Restoring...");
-			assertTrue((new Validator(web)).validate());
+			try{
+				if (!(new Validator(web)).validate())
+					throw new Exception("FATAL ERROR: Could not restore the old database");
+			} catch (Exception e){
+				System.out.println("The database must be corrupt. Did you previously force execution to stop?");
+				System.out.println("Deleting the old database... Rerun the tests two more times to verify it works");
+				Database badDB = Database.getInstance();
+				badDB.clear();
+				throw e;
+			}
 			web.removeAllNodes();
 			hasRestored = true;
 		}
@@ -65,8 +73,9 @@ public class HyPeerWebTest {
 			hasPopulated = true;
 		}
 	}
-	public void begin(String type){
+	public void begin(String type) throws Exception{
 		curTest = type;
+		populate();
 		System.out.println("BEGIN:\t"+type);
 	}
 	@After
@@ -131,17 +140,21 @@ public class HyPeerWebTest {
 	public void testSendValid() throws Exception {
 		//Test send node
 		begin("SENDING VALID");
-		Node f1, f2;
+		Node f1, f2, found;
 		for (int j=0; j<SEND_TESTS; j++){
-			wasFound = false;
 			f1 = web.getRandomNode();
 			do{
 				f2 = web.getRandomNode();
 			} while (f2 == f1);
-			TestSendVisitor x = new TestSendVisitor(f1.getWebId());
+			SendVisitor x = new SendVisitor(f1.getWebId());
 			x.visit(f2);
-			assertTrue(wasFound);
-			assert((boolean) f1.getAttribute("Found"));
+			found = x.getFinalNode();
+			if (found == null){
+				System.out.println("f1 = " + f1);
+				System.out.println("f2 = " + f2);
+			}
+			assertNotNull(found);
+			assert(found.getWebId() == f1.getWebId());
 		}
 	}
 	
@@ -153,22 +166,20 @@ public class HyPeerWebTest {
 		begin("SENDING INVALID");
 		Random r = new Random();
 		for (int i=0; i<SEND_TESTS; i++){
-			wasFound = false;
 			int bad_id = r.nextInt();
 			while (web.getNode(bad_id) != null)
 				bad_id *= 3;
-			TestSendVisitor x = new TestSendVisitor(bad_id);
+			SendVisitor x = new SendVisitor(bad_id);
 			x.visit(web.getFirstNode());
-			assertFalse(wasFound);
+			assertNull(x.getFinalNode());
 		}
 	}
 	
 	@Test
-	public void testBroadcast() {
+	public void testBroadcast() throws Exception {
 		begin("TESTING BROADCAST");
-		ListNodes x = new ListNodes();
+		ListNodesVisitor x = new ListNodesVisitor();
 		x.visit(web.getRandomNode());
-		System.out.println("Size: " + x.getNodeList().size());
 		if(x.getNodeList().size() < web.getSize()) {
 			for(Node n : web.getOrderedListOfNodes()) {
 				if(!x.getNodeList().contains(n)){
@@ -182,19 +193,5 @@ public class HyPeerWebTest {
 		}
 		Set<Node> set = new HashSet<>(x.getNodeList());
 		assertTrue(set.size() == x.getNodeList().size());
-	}
-	
-	private boolean wasFound;
-	public class TestSendVisitor extends SendVisitor {
-
-	    public TestSendVisitor(int targetWebId) {
-		super(targetWebId);
-	    }
-
-	    @Override
-	    protected void performTargetOperation(Node node) {
-		node.setAttribute("Found", true);
-		wasFound = true;
-	    }
 	}
 }

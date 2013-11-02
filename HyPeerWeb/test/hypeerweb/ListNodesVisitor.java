@@ -1,7 +1,3 @@
-/*
- * To change this template, choose Tools | Templates
- * and open the template in the editor.
- */
 package hypeerweb;
 
 import hypeerweb.visitors.BroadcastVisitor;
@@ -12,7 +8,7 @@ import java.util.List;
  *
  * @author Joshua
  */
-public class ListNodesVisitor extends BroadcastVisitor {
+public class ListNodesVisitor extends BroadcastVisitor{
 	
 	private List<Node> nodeList;
 	
