@@ -8,6 +8,9 @@ import java.util.TreeSet;
  * @author isaac
  */
 public class Links{
+	/**
+	 * All the possible node link/connection types
+	 */
 	public static enum Type {
 		FOLD, SFOLD, ISFOLD, NEIGHBOR, SNEIGHBOR, ISNEIGHBOR
 	}
@@ -19,14 +22,25 @@ public class Links{
 	private TreeSet<Node> inverseSurrogateNeighbors;
 	private TreeSet<Node> highest;
 	
+	/**
+	 * Creates an empty links object
+	 */
 	public Links(){
 		neighbors = new TreeSet<>();
 		surrogateNeighbors = new TreeSet<>();
 		inverseSurrogateNeighbors = new TreeSet<>();
 		highest = new TreeSet<>();
 	}
+	/**
+	 * Creates a links object with predefined connections
+	 * @param f fold
+	 * @param sf surrogate fold
+	 * @param isf inverse surrogate fold
+	 * @param n list of neighbors
+	 * @param sn list of surrogate neighbors
+	 * @param isn list of inverse surrogate neighbors
+	 */
 	public Links(Node f, Node sf, Node isf, ArrayList<Node> n, ArrayList<Node> sn, ArrayList<Node> isn){
-		this();
 		//Add everything to the highest set as well
 		//Add folds
 		fold = f;
@@ -56,8 +70,7 @@ public class Links{
 	 * @param newNode the new Node reference
 	 * @param type the type of connection (Links.Type)
 	 */
-	public void update(Node oldNode, Node newNode, Type type){
-		//Add it to the appropriate structure
+	protected void update(Node oldNode, Node newNode, Type type){
 		switch (type){
 			case FOLD:
 				oldNode = fold;
@@ -74,38 +87,54 @@ public class Links{
 			case NEIGHBOR:
 				if (oldNode != null)
 					neighbors.remove(oldNode);
-				if (newNode != null)
-					neighbors.add(newNode);
 				break;
 			case SNEIGHBOR:
 				if (oldNode != null)
 					surrogateNeighbors.remove(oldNode);
-				if (newNode != null)
-					surrogateNeighbors.add(newNode);
 				break;
 			case ISNEIGHBOR:
 				if (oldNode != null)
 					inverseSurrogateNeighbors.remove(oldNode);
-				if (newNode != null)
-					inverseSurrogateNeighbors.add(newNode);
 				break;
 		}
 		//Update the highest connection list
-		if (oldNode != null)
+		//Make sure this node isn't being referenced elsewhere
+		if (oldNode != null && (!(fold == oldNode || surrogateFold == oldNode ||
+			inverseSurrogateFold == oldNode || neighbors.contains(oldNode) ||
+			surrogateNeighbors.contains(oldNode) || inverseSurrogateNeighbors.contains(oldNode))))
+		{
 			highest.remove(oldNode);
-		if (newNode != null)
+		}
+		//Add it to the appropriate structure
+		//Change the key back to the changed value
+		if (newNode != null){
+			switch (type){
+				case NEIGHBOR:
+					neighbors.add(newNode);
+					break;
+				case SNEIGHBOR:
+					surrogateNeighbors.add(newNode);
+					break;
+				case ISNEIGHBOR:
+					inverseSurrogateNeighbors.add(newNode);
+					break;
+			}
+			//Update the highest connection list
 			highest.add(newNode);
+		}
 	}
 	
 	//BROADCAST AND NOTIFICATION
 	/**
 	 * Notifies all incoming pointers that the current node has
 	 * changed and the references need to be updated
-	 * @param n the new node pointer
+	 * @param oldPointer the old node pointer
+	 * @param newPointer the new node pointer
+	 * than a replacement of oldPointer
 	 */
-	public void updateIncomingPointers(Node oldPointer, Node newPointer){
-		//NOTE: we reverse surrogate/inverse-surrogate connections
-		//Fold connections do not need a reference to the old node (pass null)
+	protected void broadcastUpdate(Node oldPointer, Node newPointer){
+		//NOTE: we reverse surrogate/inverse-surrogate connection types
+		//In the case of folds, we do not have to search for an oldPointer
 		if (fold != null)
 			fold.L.update(null, newPointer, Type.FOLD);
 		if (surrogateFold != null)
@@ -125,48 +154,48 @@ public class Links{
 	 * Adds a Neighbor to the set of Neighbors
 	 * @param n the neighbor node
 	 */
-	public void addNeighbor(Node n) {
+	protected void addNeighbor(Node n) {
 		update(null, n, Type.NEIGHBOR);
 	}
 	/**
 	 * Removes a neighbor node
 	 * @param n the node to remove
 	 */
-	public void removeNeighbor(Node n){
+	protected void removeNeighbor(Node n){
 		update(n, null, Type.NEIGHBOR);
 	}
 	/**
 	 * Adds a Surrogate Neighbor
 	 * @param sn the new node
 	 */
-	public void addSurrogateNeighbor(Node sn) {
+	protected void addSurrogateNeighbor(Node sn) {
 		update(null, sn, Type.SNEIGHBOR);
 	}
 	/**
 	 * Removes a surrogate neighbor
 	 * @param sn the node to remove
 	 */
-	public void removeSurrogateNeighbor(Node sn){
+	protected void removeSurrogateNeighbor(Node sn){
 		update(sn, null, Type.SNEIGHBOR);
 	}
 	/**
 	 * Adds an Inverse Surrogate Neighbor
 	 * @param isn the new node
 	 */
-	public void addInverseSurrogateNeighbor(Node isn) {
+	protected void addInverseSurrogateNeighbor(Node isn) {
 		update(null, isn, Type.ISNEIGHBOR);
 	}
 	/**
 	 * Removes the given node as an inverse surrogate neighbor
 	 * @param isn Node to remove from inverse surrogate neighbor set
 	 */
-	public void removeInverseSurrogateNeighbor(Node isn){
+	protected void removeInverseSurrogateNeighbor(Node isn){
 		update(isn, null, Type.ISNEIGHBOR);
 	}
 	/**
 	 * Removes all the IS neighbors from the node
 	 */
-	public void removeAllInverseSurrogateNeighbors(){
+	protected void removeAllInverseSurrogateNeighbors(){
 		highest.removeAll(inverseSurrogateNeighbors);
 		inverseSurrogateNeighbors.clear();
 	}
@@ -174,21 +203,21 @@ public class Links{
 	 * Sets the the fold connection
 	 * @param f the new fold node
 	 */
-	public void setFold(Node f) {
+	protected void setFold(Node f) {
 		update(null, f, Type.FOLD);
 	}
 	/**
 	 * Sets the surrogate fold of the node
 	 * @param sf the new surrogate fold node
 	 */
-	public void setSurrogateFold(Node sf) {
+	protected void setSurrogateFold(Node sf) {
 		update(null, sf, Type.SFOLD);
 	}
 	/**
 	 * Sets the Inverse Surrogate Fold of the Node
 	 * @param isf the new Inverse Surrogate Fold of the Node
 	 */
-	public void setInverseSurrogateFold(Node isf) {
+	protected void setInverseSurrogateFold(Node isf) {
 		update(null, isf, Type.ISFOLD);
 	}
 	
@@ -328,5 +357,13 @@ public class Links{
 	 */
 	protected TreeSet<Node> getInverseSurrogateNeighborsSet(){
 		return inverseSurrogateNeighbors;
+	}
+	/**
+	 * Gets the highest node set as a collection
+	 * Implementor must not modify the values
+	 * @return a set of all connections
+	 */
+	protected TreeSet<Node> getAllLinks(){
+		return highest;
 	}
 }

@@ -1,20 +1,17 @@
+package hypeerweb;
 
-import hypeerweb.Node;
-import hypeerweb.Database;
-import hypeerweb.HyPeerWeb;
 import java.util.*;
 
 /**
  * Dummy class for testing out your code
  */
-public class Main {
+public class DatabaseTests {
 
 	public static void main(String[] args) {
-		int x = 0 & 1;
-		System.out.println(Integer.toBinaryString(x));
-		return;
-		
-		int total_errs = 0;
+		int id = 7;
+		int res = id | (Integer.highestOneBit(id) << 1);
+		assert (res == 15);
+		System.out.println(Integer.toBinaryString(res));
 		
 		/* DATABASE TEST CODE
 		try {
@@ -33,7 +30,7 @@ public class Main {
 		}
 		//*/
 		
-		//* HYPEERWEB TEST CODE
+		/* HYPEERWEB TEST CODE
 		try{
 			System.out.println("BEGIN HYPEERWEB CLASS TESTING:\n");
 			HyPeerWeb web = HyPeerWeb.getInstance();
@@ -47,7 +44,7 @@ public class Main {
 		}
 		//*/
 		
-		System.out.println("\nTOTAL ERRS = " + total_errs);
+		//System.out.println("\nTOTAL ERRS = " + total_errs);
 	}
 
 	private static int testSurrogates(Database db) {

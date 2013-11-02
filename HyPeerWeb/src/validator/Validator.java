@@ -59,10 +59,12 @@ public class Validator {
             valid = valid && validateNode(node);
         }
         
-        if(!valid) {
+		/*
+        if (!valid) {
             System.out.println("\nNodes in HyPeerWeb of size " + nodes.length + ":");
             System.out.println(hypeerWeb.toString());
         }
+		//*/
 
         return valid;
     }

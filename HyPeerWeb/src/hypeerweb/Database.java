@@ -12,11 +12,6 @@ import java.util.TreeMap;
 /**
  * Low-level Database access class
  * @author isaac
- * TODO, future:
- * - make prepared statement interface
- * - update removeNode test cases
- * - disable auto-commit for mass edits (addNode)
- * - reuse auto-commit code
  */
 public final class Database {
 	//Reference to singleton
@@ -79,8 +74,8 @@ public final class Database {
 	}
 	/**
 	 * Gets the singleton instance of the Database class
-	 *
 	 * @return singleton Database reference
+	 * @throws Exception if there was an error connecting to the database
 	 * @author isaac
 	 */
 	public static Database getInstance() throws Exception {
@@ -102,9 +97,10 @@ public final class Database {
 	}
 	/**
 	 * Removes all data from the database, leaving the structure intact.
+	 * @return true if we could successfully clear the database
 	 * @author john
 	 */
-	public boolean clear(){
+	protected boolean clear(){
 		beginCommit();
 		sqlUpdate("delete from `Nodes`;");
 		sqlUpdate("delete from `Neighbors`;");
@@ -154,7 +150,7 @@ public final class Database {
 	 * Starts a commit
 	 * @author isaac
 	 */
-	public void beginCommit(){
+	protected void beginCommit(){
 		if (commitStack == 0){
 			commitFail = false;
 			autocommit = false;
@@ -167,7 +163,7 @@ public final class Database {
 	 * @return true, if the commit was successful
 	 * @author isaac
 	 */
-	public boolean endCommit(){
+	protected boolean endCommit(){
 		if (--commitStack == 0){
 			boolean ret = commitFail ? false : sqlUpdate("COMMIT;");
 			clearCommit();
@@ -190,13 +186,28 @@ public final class Database {
 	
 	///FULL NODE OPERATIONS
 	/**
+	 * Replace a node
+	 * @param removeWebID the old webid
+	 * @param replaceWebID the new one
+	 * @param replacement the replacement 
+	 * @return true, if the operation was successful; if there is already
+	 * a row with new_webid, it will fail
+	 */
+	protected boolean replaceNode(int removeWebID, int replaceWebID, Node replacement){
+		beginCommit();
+		removeNode(removeWebID);
+		removeNode(replaceWebID);
+		addNode(replacement);
+		return endCommit();
+	}
+	/**
 	 * Add a node to the database
 	 *
 	 * @param node the node to add
 	 * @return true if the node was successfully added
 	 * @author guy
 	 */
-	public boolean addNode(Node node) {
+	protected boolean addNode(Node node) {
 		beginCommit();
 
 		//Nodes table
@@ -226,12 +237,13 @@ public final class Database {
 	 *
 	 * @param webid the node's WebID
 	 * @param height the node's height
-	 * @param fold the WebID of the node's Fold
-	 * @param sfold the WebID of the surrogate
+	 * @param fold the WebID of the node's fold
+	 * @param sfold the WebID of the node's surrogate fold
+	 * @param isfold the WebID of the node's inverse surrogate fold
 	 * @return true if the node was successfully added
 	 * @author brian
 	 */
-	public boolean addNode(int webid, int height, Node fold, Node sfold, Node isfold) {
+	protected boolean addNode(int webid, int height, Node fold, Node sfold, Node isfold) {
 		return addNode(new Node(webid, height, fold, sfold, isfold,
 					null, null, null));
 	}
@@ -242,17 +254,18 @@ public final class Database {
 	 * @return true if the node was successfully removed
 	 * @author brian
 	 */
-	public boolean removeNode(int webid){
+	protected boolean removeNode(int webid){
 		beginCommit();
 		sqlUpdate("DELETE FROM Nodes WHERE WebId=" + webid + ";");
 		sqlUpdate("DELETE FROM Neighbors WHERE WebID=" + webid + " OR Neighbor="+ webid +";");
 		sqlUpdate("DELETE FROM SurrogateNeighbors WHERE WebID=" + webid + ";");
 		return endCommit();
 	}
-		
+	
 	/**
 	 * Makes nodes from data stored in database
 	 * @return a TreeSet<Node> containing all nodes stored in database
+	 * @throws Exception if retrieval fails
 	 */
 	public TreeMap<Integer, Node> getAllNodes() throws Exception{
 		TreeMap<Integer, Node> tsnodes = new TreeMap<>();
@@ -333,7 +346,7 @@ public final class Database {
 	 * @return true if the operation was successful
 	 * @author isaac
 	 */
-	public boolean setHeight(int webid, int height) {
+	protected boolean setHeight(int webid, int height) {
 		return setColumn(webid, "Height", height);
 	}
 	/**
@@ -344,7 +357,7 @@ public final class Database {
 	 * @return true if the operation was successful
 	 * @author isaac
 	 */
-	public boolean setFold(int webid, int foldid) {
+	protected boolean setFold(int webid, int foldid) {
 		return setColumn(webid, "Fold", foldid);
 	}
 	/**
@@ -355,18 +368,17 @@ public final class Database {
 	 * @return true if the operation was successful
 	 * @author isaac
 	 */
-	public boolean setSurrogateFold(int webid, int sfoldid) {
+	protected boolean setSurrogateFold(int webid, int sfoldid) {
 		return setColumn(webid, "SurrogateFold", sfoldid);
 	}
 	/**
 	 * Set the Inverse Surrogate Fold node of another node
-	 * 
 	 * @param webid the WebId of the node to modify
-	 * @param sfoldid the WebId of the node's surrogate fold
+	 * @param isfoldid the WebId of the node's surrogate fold
 	 * @return true if the operation was successful
 	 * @author isaac
 	 */
-	public boolean setInverseSurrogateFold(int webid, int isfoldid) {
+	protected boolean setInverseSurrogateFold(int webid, int isfoldid) {
 		return setColumn(webid, "InverseSurrogateFold", isfoldid);
 	}
 	/**
@@ -429,7 +441,7 @@ public final class Database {
 	 * @return true if neighbor was successfully added
 	 * @author josh
 	 */
-	public boolean addNeighbor(int webid, int neighbor) {
+	protected boolean addNeighbor(int webid, int neighbor) {
 		return sqlUpdate("INSERT INTO Neighbors (WebId, Neighbor) VALUES ("+webid+", "+neighbor+");");
 	}
 	/**
@@ -440,7 +452,7 @@ public final class Database {
 	 * @return true if neighbor was successfully removed
 	 * @author josh
 	 */
-	public boolean removeNeighbor(int webid, int neighbor) {
+	protected boolean removeNeighbor(int webid, int neighbor) {
 		return sqlUpdate("DELETE FROM Neighbors WHERE "+
 							"(WebId="+webid+" AND Neighbor = "+neighbor+") OR "+
 							"(WebID="+neighbor+" AND Neighbor="+webid+");");
@@ -468,7 +480,7 @@ public final class Database {
 	 * @return true, if the neighbor was successfully added
 	 * @author john
 	 */
-	public boolean addSurrogateNeighbor(int webid, int neighbor) {
+	protected boolean addSurrogateNeighbor(int webid, int neighbor) {
 		return sqlUpdate("INSERT INTO SurrogateNeighbors VALUES(" + webid + "," + neighbor + ");");
 	}
 	/**
@@ -479,7 +491,7 @@ public final class Database {
 	 * @return true, if the neighbor was successfully removed
 	 * @author john
 	 */
-	public boolean removeSurrogateNeighbor(int webid, int neighbor) {
+	protected boolean removeSurrogateNeighbor(int webid, int neighbor) {
 		return sqlUpdate("DELETE FROM SurrogateNeighbors WHERE WebID=" + webid
 				+ " AND SurrogateNeighbor=" + neighbor + ";");
 	}
@@ -488,11 +500,10 @@ public final class Database {
 	 * Note that this is simply a reflexive operation to removeSurrogateNeighbor
 	 * 
 	 * @param webid the WebId of the parent node
-	 * @param neighbor the WebId of the neighbor node to remove
 	 * @return true, if the neighbor was successfully removed
 	 * @author isaac
 	 */
-	public boolean removeAllInverseSurrogateNeighbors(int webid) {
+	protected boolean removeAllInverseSurrogateNeighbors(int webid) {
 		return sqlUpdate("DELETE FROM SurrogateNeighbors WHERE SurrogateNeighbor="+webid+";");
 	}
 	/**

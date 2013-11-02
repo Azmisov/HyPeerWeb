@@ -1,11 +1,20 @@
-package hypeerweb;
+package hypeerweb.graph;
 
+import hypeerweb.HyPeerWeb;
+import hypeerweb.Links;
+import hypeerweb.Node;
 import java.awt.AlphaComposite;
 import java.awt.BasicStroke;
+import java.awt.BorderLayout;
 import java.awt.Color;
+import java.awt.Dimension;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.Stroke;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.event.ComponentEvent;
+import java.awt.event.ComponentListener;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.awt.event.MouseMotionListener;
@@ -17,79 +26,168 @@ import java.util.HashSet;
 import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.TreeSet;
+import javax.swing.JButton;
 import javax.swing.JFrame;
+import javax.swing.JLabel;
 import javax.swing.JPanel;
+import javax.swing.JSpinner;
+import javax.swing.SpinnerNumberModel;
+import javax.swing.event.ChangeEvent;
+import javax.swing.event.ChangeListener;
 
 /**
  * Draws a directed graph of a HyPeerWeb node
- * Red-links = neighbors
- * Pink-links = isneighbors
- * Green-links = sneighbors
- * Cyan = selected node
- * Yellow = selected node's children
- * Green = selcted node's parent
- * 
- * - Right click a node hide it
- * - Middle click to restore all hidden nodes
- * 
+ * <li>Red-links = neighbors</li>
+ * <li>Green-links = sneighbors</li>
+ * <li>Pink-links = isneighbors</li>
+ * <li>Cyan = selected node</li>
+ * <li>Yellow = selected node's children</li>
+ * <li>Green = selcted node's parent</li>
+ * <b>Hotkeys:</b><br/>
+ * <li>Right click a node hide it</li>
+ * <li>Middle click to restore all hidden nodes</li>
  * @author isaac
  */
 public class HyPeerWebGraph extends JFrame{
 	private HyPeerWeb web;
 	private Graph draw;
 	private static int winSize = 700;
-	private int levels;
+	private int levels = 2;
+	private ActionListener unpause;
+	private final JSpinner nodeSpin, levelSpin;
+	private boolean deferEvts = false;
 	
-	public HyPeerWebGraph() throws Exception{
-		web = HyPeerWeb.getInstance();
-		
+	/**
+	 * Creates a new JFrame that can draw graphs of HyPeerWeb nodes
+	 * @param web an instance of the HyPeerWeb segment
+	 * @throws Exception if the window fails to initialize
+	 */
+	public HyPeerWebGraph(final HyPeerWeb web) throws Exception{
+		this.web = web;
 		//Initialize window
 		setTitle("HyPeerWeb Directed Graph");
 		setDefaultCloseOperation(JFrame.HIDE_ON_CLOSE);
 		setSize(winSize, winSize+100);
-		draw = new Graph();
-		add(draw);
+		setLayout(new BorderLayout(0, 4));
+		addComponentListener(new ComponentListener(){
+			@Override
+			public void componentHidden(ComponentEvent e) {
+				unpause();
+			}
+			@Override
+			public void componentShown(ComponentEvent e) {}
+			@Override
+			public void componentResized(ComponentEvent e) {}
+			@Override
+			public void componentMoved(ComponentEvent e) {}
+		});
 		
-		//Mouse listeners
-		addMouseListener(new MouseListener(){
+		//Toolbar
+		JPanel bar = new JPanel();
+		nodeSpin = new JSpinner();
+		nodeSpin.setModel(new SpinnerNumberModel(2, 0, null, 1));
+		nodeSpin.setPreferredSize(new Dimension(45, 25));
+		nodeSpin.addChangeListener(new ChangeListener(){
 			@Override
-			public void mousePressed(MouseEvent e) {
-				draw.mouseClick(e.getButton());
-			}
-			@Override
-			public void mouseReleased(MouseEvent e) {}
-			@Override
-			public void mouseClicked(MouseEvent e) {}
-			@Override
-			public void mouseEntered(MouseEvent e) {}
-			@Override
-			public void mouseExited(MouseEvent e) {}
-		});
-		addMouseMotionListener(new MouseMotionListener(){
-			@Override
-			public void mouseDragged(MouseEvent e) {
-				draw.dragMouse(e.getX(), e.getY()-20);
-			}
-			@Override
-			public void mouseMoved(MouseEvent e) {
-				draw.moveMouse(e.getX(), e.getY()-20);
+			public void stateChanged(ChangeEvent e) {
+				if (!deferEvts){
+					Node n = web.getNode((int) nodeSpin.getValue());
+					if (n != null) draw.draw(n);
+				}
 			}
 		});
+		bar.add(new JLabel("WebID:"));
+		bar.add(nodeSpin);
+		levelSpin = new JSpinner();
+		levelSpin.setPreferredSize(new Dimension(35, 25));
+		levelSpin.setModel(new SpinnerNumberModel(2, 0, null, 1));
+		levelSpin.addChangeListener(new ChangeListener(){
+			@Override
+			public void stateChanged(ChangeEvent e) {
+				if (!deferEvts){
+					levels = (int) levelSpin.getValue();
+					draw.redraw(true);
+				}
+			}
+		});
+		bar.add(new JLabel("Levels:"));
+		bar.add(levelSpin);
+		bar.add(new JLabel("Selected:"));
+		JButton hideBtn = new JButton("Hide");
+		hideBtn.addActionListener(new ActionListener(){
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				draw.hideNode();
+			}
+		});
+		hideBtn.setToolTipText("Right click");
+		JButton viewBtn = new JButton("View");
+		viewBtn.addActionListener(new ActionListener(){
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				draw.viewSelected();
+			}
+		});
+		bar.add(hideBtn);
+		bar.add(viewBtn);
+		bar.add(new JLabel("Other:"));
+		JButton unhideBtn = new JButton("Unhide");
+		unhideBtn.addActionListener(new ActionListener(){
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				draw.unhideNodes();
+			}
+		});
+		unhideBtn.setToolTipText("Middle click");
+		JButton contBtn = new JButton("Unpause");
+		contBtn.addActionListener(new ActionListener(){
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				unpause();
+			}
+		});
+		bar.add(unhideBtn);
+		bar.add(contBtn);
+		
+		//Add toolbar and drawing together
+		add(bar, BorderLayout.PAGE_START);
+		draw = new Graph();
+		add(draw, BorderLayout.CENTER);
 	}
 	
 	/**
-	 * Draws the specified node out to levels
-	 * @param n 
-	 * @param level number of levels to go out
+	 * Listen for unpause handler
+	 * @param al an action listener
 	 */
-	public void drawNode(Node n, int level){
-		levels = level;
-		draw.draw(n);
+	public void addActionListener(ActionListener al){
+		unpause = al;
+	}
+	private void unpause(){
+		if (unpause != null)
+			unpause.actionPerformed(null);
+	}
+	
+	/**
+	 * Draws the specified node
+	 * @param n the node to draw
+	 */
+	public void drawNode(Node n){
+		try {
+			deferEvts = true;
+			levelSpin.setValue(levels);
+			nodeSpin.setValue(n.getWebId());
+			deferEvts = false;
+			draw.draw(n);
+		} catch (Exception ex) {
+			System.out.println("Failed to draw graph!!!");
+		}
 	}
 	
 	//INNER DRAWING CLASS:
 	private class Graph extends JPanel{
+		//Graph stuff
 		private String title;					//Graph title
+		//Node stuff
 		private String detail;					//Node details
 		private Node n;							//Node we are going to draw
 		private Node nParent;					//The node's parent
@@ -115,51 +213,45 @@ public class HyPeerWebGraph extends JFrame{
 			strokeISN = new BasicStroke(2, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND, 10, dash2, 10);
 		//Drawing buffer
 		private BufferedImage buffer;
-		private Entry<Node, DrawData> selected;
+		private Entry<Node, DrawData> active, selected;
 		private boolean redraw = false;
 		
-		/**
-		 * Draws the specified node
-		 */
-		public void draw(Node n){
-			this.n = n;
-			nParent = n.getParent();
-			title = "Graph of Node #"+n.getWebId()+" ("+n.getHeight()+")";
-			if (nParent != null)
-				title += ", child of Node #"+nParent.getWebId()+" ("+nParent.getHeight()+")";
-			detail = "N:"+n.getNeighbors().length+
-						", SN:"+n.getSurrogateNeighbors().length+
-						", ISN:"+n.getInverseSurrogateNeighbors().length+
-						", F:"+(n.getFold() == null ? "yes" : "no")+
-						", SF:"+(n.getSurrogateFold()== null ? "yes" : "no")+
-						", ISF:"+(n.getInverseSurrogateFold()== null ? "yes" : "no");
+		public Graph(){
 			hide = new HashSet<>();
 			data = new HashMap<>();
 			links = new TreeSet<>();
-			buffer = null;
-			repaint();
+			//Mouse listeners
+			addMouseListener(new MouseListener(){
+				@Override
+				public void mousePressed(MouseEvent e) {
+					mouseClick(e.getButton());
+				}
+				@Override
+				public void mouseClicked(MouseEvent e) {}
+				@Override
+				public void mouseReleased(MouseEvent e) {}
+				@Override
+				public void mouseEntered(MouseEvent e) {}
+				@Override
+				public void mouseExited(MouseEvent e) {}
+			});
+			addMouseMotionListener(new MouseMotionListener(){
+				@Override
+				public void mouseDragged(MouseEvent e) {
+					dragMouse(e.getX(), e.getY());
+				}
+				@Override
+				public void mouseMoved(MouseEvent e) {
+					moveMouse(e.getX(), e.getY());
+				}
+			});
 		}
-		/**
-		 * Draws the mouse cursor
-		 * @param x x-coordinate
-		 * @param y y-coordinate
-		 */
+		
+		//MOUSE
 		public void moveMouse(int x, int y){
 			mx = x;
 			my = y;
-			//Highlight a node for selection
-			Point2D temp;
-			for (Entry<Node, DrawData> datum: data.entrySet()){
-				if (datum.getValue().coord.distance(mx, my) <= nodeSize){
-					selected = datum;
-					repaint();
-					return;
-				}
-			}
-			if (selected != null){
-				selected = null;
-				repaint();
-			}
+			highlightNode();
 		}
 		public void dragMouse(int x, int y){
 			//Rotate, if a node is selected
@@ -169,39 +261,110 @@ public class HyPeerWebGraph extends JFrame{
 				double px = ddParent.coord.getX(),
 						py = ddParent.coord.getY();
 				ddParent.skew += Math.atan2(y-py, x-px)-Math.atan2(my-py, mx-px);
-				redraw();
+				redraw(false);
 			}
 			mx = x;
 			my = y;
 		}
 		public void mouseClick(int button){
-			if (button == MouseEvent.BUTTON2){
-				hide.clear();
-				redraw();
-			}
-			//Hide all nodes descending from this one
-			if (button == MouseEvent.BUTTON3 && selected != null){
-				hide.add(selected.getKey());
-				ArrayList<Node> nodes = selected.getValue().children;
-				while (nodes != null && !nodes.isEmpty()){
-					hide.addAll(nodes);
-					ArrayList<Node> temp = new ArrayList<>();
-					for (Node z: nodes){
-						ArrayList<Node> childs = data.get(z).children;
-						if (childs != null)
-							temp.addAll(childs);
-					}
-					nodes = temp;
-				}
-				redraw();
+			switch (button){
+				case MouseEvent.BUTTON1:
+					selectNode();
+					break;
+				case MouseEvent.BUTTON2:
+					unhideNodes();
+					break;
+				case MouseEvent.BUTTON3:
+					selectNode();
+					hideNode();
+					break;
 			}
 		}
 		
-		private void redraw(){
-			redraw = true;
+		//ACTIONS
+		public void viewSelected(){
+			if (selected != null)
+				draw(selected.getKey());
+		}
+		public void highlightNode(){
+			//Highlight a node for selection
+			Point2D temp;
+			for (Entry<Node, DrawData> datum: data.entrySet()){
+				if (datum.getValue().coord.distance(mx, my) <= nodeSize){
+					if (active != datum){
+						active = datum;
+						repaint();
+					}
+					return;
+				}
+			}
+			if (active != null){
+				active = null;
+				repaint();
+			}
+		}
+		public void selectNode(){
+			if (active != null){
+				selected = active;
+				repaint();
+			}
+		}
+		public void hideNode(){
+			if (selected == null)
+				return;
+			//Hide all nodes descending from this one
+			hide.add(selected.getKey());
+			ArrayList<Node> nodes = selected.getValue().children;
+			while (nodes != null && !nodes.isEmpty()){
+				hide.addAll(nodes);
+				ArrayList<Node> temp = new ArrayList<>();
+				for (Node z: nodes){
+					ArrayList<Node> childs = data.get(z).children;
+					if (childs != null)
+						temp.addAll(childs);
+				}
+				nodes = temp;
+			}
+			selected = null;
+			redraw(false);
+		}
+		public void unhideNodes(){
+			hide.clear();
+			redraw(false);
+		}
+		
+		//DRAWING
+		public void draw(Node n){
+			this.n = n;
+			nParent = n.getParent();
+			title = "Graph of Node #"+n.getWebId()+" ("+n.getHeight()+")";
+			if (nParent != null)
+				title += ", child of Node #"+nParent.getWebId()+" ("+nParent.getHeight()+")";
+			detail = "Link Counts = N:"+n.getNeighbors().length+
+						", SN:"+n.getSurrogateNeighbors().length+
+						", ISN:"+n.getInverseSurrogateNeighbors().length+
+						", F:"+(n.getFold() == null ? "0" : "1")+
+						", SF:"+(n.getSurrogateFold()== null ? "0" : "1")+
+						", ISF:"+(n.getInverseSurrogateFold()== null ? "0" : "1");
+			System.out.println("Drawing Graph of..."+n);
+			hide.clear();
+			data.clear();
+			links.clear();
+			selected = null;
+			active = null;
+			buffer = null;
 			repaint();
 		}
-		
+		private void redraw(boolean force){
+			if (force){
+				selected = null;
+				active = null;
+				buffer = null;
+				data.clear();
+			}
+			redraw = !force;
+			repaint();
+		}
 		@Override
 		protected void paintComponent(Graphics g) {
 			super.paintComponent(g);
@@ -210,10 +373,10 @@ public class HyPeerWebGraph extends JFrame{
 			if (buffer != null && !redraw){
 				g2.drawImage(buffer, null, 0, 0);
 				//Selected nodes
-				if (selected != null){
-					DrawData temp = selected.getValue();
+				if (active != null){
+					DrawData temp = active.getValue();
 					g2.setColor(Color.CYAN);
-					repaintNode(g2, selected.getKey());
+					repaintNode(g2, active.getKey());
 					//Children of selection
 					if (temp.children != null){
 						g2.setColor(Color.YELLOW);
@@ -226,6 +389,7 @@ public class HyPeerWebGraph extends JFrame{
 						repaintNode(g2, temp.parent);
 					}
 				}
+				drawSelected(g2);
 				return;
 			}
 			//Draw a node
@@ -247,7 +411,7 @@ public class HyPeerWebGraph extends JFrame{
 				ArrayList<Node> parents = new ArrayList<>();
 				ArrayList<Node> friends;
 				parents.add(n);
-				for (int level = 0; level <= levels; level++){
+				for (int level = 0; level < levels; level++){
 					radius /= 2;
 					friends = new ArrayList<>();
 					for (Node parent: parents){
@@ -261,6 +425,7 @@ public class HyPeerWebGraph extends JFrame{
 				gbi.setComposite(compMode);
 				paintLinks(gbi);
 				g2.drawImage(buffer, null, 0, 0);
+				drawSelected(g2);
 			}
 			redraw = false;
 		}
@@ -343,6 +508,15 @@ public class HyPeerWebGraph extends JFrame{
 				g.drawString(n.getWebId()+" ("+n.getHeight()+")", x+5, y-5);
 			}
 		}
+		private void drawSelected(Graphics2D g2){
+			if (selected != null){
+				DrawData d = selected.getValue();
+				g2.setColor(Color.BLACK);
+				//g2.setComposite(compMode);
+				int s = nodeSize*2;
+				g2.drawOval((int) d.coord.getX()-nodeSize, (int) d.coord.getY()-nodeSize, s, s);
+			}
+		}
 		/**
 		 * Draws all links between the nodes in the graph
 		 * @param g graphics context
@@ -385,12 +559,12 @@ public class HyPeerWebGraph extends JFrame{
 			links.removeAll(badLinks);
 		}
 		
+		//DATA STRUCTURES
 		private void addNodeData(Node n, Node parent, ArrayList<Node> children, double skew, int level, Point2D coord){
 			if (coord == null)
 				coord = new Point2D.Double();
 			data.put(n, new DrawData(parent, children, skew, level, coord));
 		}
-		
 		private class Link implements Comparable{
 			public Node origin;
 			public Node friend;

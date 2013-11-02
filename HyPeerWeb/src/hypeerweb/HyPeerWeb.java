@@ -1,11 +1,8 @@
 package hypeerweb;
 
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
-import java.util.ArrayList;
-import java.util.Iterator;
+import hypeerweb.graph.DrawingThread;
+import hypeerweb.visitors.SendVisitor;
+import java.util.HashMap;
 import java.util.Random;
 import java.util.TreeMap;
 import validator.HyPeerWebInterface;
@@ -16,48 +13,60 @@ import validator.HyPeerWebInterface;
  */
 public class HyPeerWeb implements HyPeerWebInterface {
 	private static HyPeerWeb instance;
-	private static Database db;
+	private static Database db = null;
 	private static TreeMap<Integer, Node> nodes;
-	private static boolean disableDB = false;
 	//Random number generator for getting random nodes
 	private static Random rand = new Random();
+	private static SendVisitor randVisitor;
 	//Error messages
 	private static Exception
 			addNodeErr = new Exception("Failed to add a new node"),
 			removeNodeErr = new Exception("Failed to remove a node"),
-			clearErr = new Exception("Failed to clear the HyPeerWeb");
-	//Trace random insertion for debugging purposes
-	private static ArrayList<Integer> randTrace;
-	private static Iterator<Integer> randTraceIter;
-	private static enum TraceMode{ ON, OFF, READ }
-	private static TraceMode traceMode = TraceMode.OFF;
-	private static String traceLogName = "InsertionTrace.log";
+			clearErr = new Exception("Failed to clear the HyPeerWeb"),
+			replaceErr = new Exception("Failed to replace a node. Warning! Your HyPeerWeb is corrupted.");
+	//Draw a graph of the HyPeerWeb
+	private DrawingThread graph;
 	
 	/**
 	 * Private constructor for initializing the HyPeerWeb
 	 * @author isaac
 	 */
-	private HyPeerWeb() throws Exception{
-		db = Database.getInstance();
-		nodes = db.getAllNodes();
+	private HyPeerWeb(boolean useDatabase, boolean useGraph, long seed) throws Exception{
+		if (useDatabase){
+			db = Database.getInstance();
+			nodes = db.getAllNodes();
+		}
+		else nodes = new TreeMap<>();
+		if (seed != -1)
+			rand.setSeed(seed);
+		if (useGraph)
+			graph = new DrawingThread(this);
 	}
 	/**
 	 * Retrieve the HyPeerWeb singleton
-	 * @return the singleton
+	 * @param useDatabase should we sync our HyPeerWeb to a database;
+	 *	Warning! Database access can be very slow
+	 * @param useGraph is graph drawing enabled {@link #drawGraph(hypeerweb.Node)}
+	 * @param seed the random seed number for getting random nodes; use -1
+	 *	to get a pseudo-random seed
+	 * @return a reference to the initialized HyPeerWeb singleton
+	 * @throws Exception if there was a database error
 	 * @author isaac
 	 */
-	public static HyPeerWeb getInstance() throws Exception{
+	public static HyPeerWeb initialize(boolean useDatabase, boolean useGraph, long seed) throws Exception{
 		if (instance != null)
 			return instance;
-		instance = new HyPeerWeb();
+		instance = new HyPeerWeb(useDatabase, useGraph, seed);
 		return instance;
 	}
 	/**
-	 * Disables any writes to the database
-	 * @author isaac
+	 * Retrieves the HyPeerWeb singleton if you know it has
+	 * already been initialized by calling the method:
+	 *		initialize(bool, bool, long)
+	 * @return a previously initialized HyPeerWeb; null, if no HyPeerWeb has been initialized
 	 */
-	public void disableDatabase(){
-		disableDB = true;
+	public static HyPeerWeb getInstance(){
+		return instance;
 	}
 	
 	/**
@@ -72,8 +81,8 @@ public class HyPeerWeb implements HyPeerWebInterface {
 	}
 	/**
 	 * Removes the node
-	 * @param webid the node to remove
-	 * @return the removed node, or null if it doesn't exist
+	 * @param n the node to remove
+	 * @return the removed node, or null if it doesn't exist in the HyPeerWeb
 	 * @throws Exception if it fails to remove the node
 	 * @author isaac
 	 */
@@ -94,10 +103,7 @@ public class HyPeerWeb implements HyPeerWebInterface {
 			return removeSecondNode(n);
 		
 		//Find a disconnection point
-		//Node replace = nodes.lastEntry().getValue().findDisconnectNode().disconnectNode(db);
-		Node random = getRandomNode();
-		System.out.println("Random node == " + random.getWebId());
-		Node replace = random.findDisconnectNode().disconnectNode(db);
+		Node replace = getRandomNode().findDisconnectNode().disconnectNode(db);
 		if (replace == null)
 			throw removeNodeErr;
 		//Remove node from list of nodes
@@ -107,37 +113,22 @@ public class HyPeerWeb implements HyPeerWebInterface {
 			int newWebID = n.getWebId();
 			nodes.remove(newWebID);
 			nodes.put(newWebID, replace);
-			replace.replaceNode(n);
+			if (!replace.replaceNode(db, n))
+				throw replaceErr;
 		}
 		return n;
 	}
 	/**
-	 * 
-	 * @return
-	 * @throws Exception 
+	 * Remove the second to last node
+	 * @return the removed node
+	 * @throws Exception if it fails to modify the database
 	 */
 	private Node removeSecondNode(Node n) throws Exception{		
 		Node last = n.getNeighbors()[0];
-		if (!disableDB){
-			db.beginCommit();
-			//TODO: FIX THIS ENTIRE THING HERE
-			int old_webID = last.getWebId();
-			//have to delete entry and add entire node
-			db.setHeight(old_webID, 0);
-			db.setFold(old_webID, -1);
-			db.removeNeighbor(old_webID, n.getWebId());
-			if(!db.endCommit())
-				throw removeNodeErr;
-		}
-		//Update map structure to reflect changes
-		nodes.remove(0);
-		nodes.remove(1);
-		nodes.put(0, last);
-		//This must come after removing n
-		last.setWebID(0);
-		last.setHeight(0);
-		last.L.setFold(null);
-		last.L.removeNeighbor(n);
+		//Save the remaining node's attributes
+		HashMap<String, Object> attrs = last.getAllAttributes();
+		removeAllNodes();
+		addFirstNode().setAllAttributes(attrs);
 		return n;
 	}
 	/**
@@ -146,7 +137,7 @@ public class HyPeerWeb implements HyPeerWebInterface {
 	 * @throws Exception if it fails to clear the HyPeerWeb
 	 */
 	public void removeAllNodes() throws Exception{
-		if (!disableDB && !db.clear())
+		if (db != null && !db.clear())
 			throw clearErr;
 		nodes = new TreeMap<>();
 	}
@@ -167,12 +158,11 @@ public class HyPeerWeb implements HyPeerWebInterface {
 			return addSecondNode();
 		
 		//Otherwise, use the normal insertion algorithm
-		Node child = this.getRandomNode().findInsertionNode().addChild(disableDB ? null : db);
+		Node child = getRandomNode().findInsertionNode().addChild(db);
 		if (child == null)
 			throw addNodeErr;
 		//Node successfully added!
 		nodes.put(child.getWebId(), child);
-		//System.out.println();
 		return child;
 	}
 	/**
@@ -182,7 +172,7 @@ public class HyPeerWeb implements HyPeerWebInterface {
 	 */
 	private Node addFirstNode() throws Exception{
 		Node first = new Node(0, 0);
-		if (!disableDB && !db.addNode(first))
+		if (db != null && !db.addNode(first))
 			throw addNodeErr;
 		nodes.put(0, first);
 		return first;
@@ -196,7 +186,7 @@ public class HyPeerWeb implements HyPeerWebInterface {
 		Node sec = new Node(1, 1),
 			first = nodes.firstEntry().getValue();
 		//Update the database first
-		if (!disableDB) {
+		if (db != null) {
 			db.beginCommit();
 			db.addNode(sec);
 			db.setHeight(0, 1);
@@ -222,72 +212,35 @@ public class HyPeerWeb implements HyPeerWebInterface {
 	}
 	
 	/**
-	 * Retrieves a random node in the HyPeerWeb that is a valid
-	 * insertion point
-	 * @return a random node that is a valid insertion point
+	 * Retrieves a random node in the HyPeerWeb
+	 * @return a random node; null, if there are no nodes
 	 * @author John, Josh
 	 */
 	public Node getRandomNode(){
-		int index;
-		if (traceMode == TraceMode.READ){
-			index = randTraceIter.next();
-			//We've reached the end of the log file; start recording
-			if (!randTraceIter.hasNext())
-				traceMode = TraceMode.ON;
-		}
-		else{
-			index = rand.nextInt(Integer.MAX_VALUE);
-			index *= Integer.MAX_VALUE;
-			index += rand.nextInt(Integer.MAX_VALUE);
-			//Record this insertion point, if tracing is enabled
-			if (traceMode == TraceMode.ON)
-				randTrace.add(index);
-		}
 		//Always start at Node with WebID = 0
-		return nodes.firstEntry().getValue().searchForNode(index, false);
+		if (nodes.isEmpty())
+			return null;
+		Node first = nodes.firstEntry().getValue();
+		randVisitor = new SendVisitor(rand.nextInt(Integer.MAX_VALUE), true);
+		randVisitor.visit(first);
+		return randVisitor.getFinalNode();
 	}
 	
-	//DEBUGGING
+	//GRAPHING
 	/**
-	 * Begins tracing random insertion points
+	 * Draws a graph of the HyPeerWeb at a node
+	 * @param n the node to start at
+	 * @throws Exception 
 	 */
-	public void startTrace(){
-		traceMode = TraceMode.ON;
-		randTrace = new ArrayList<>();
-	}
-	/**
-	 * Stops tracing insertion points and saves it to a log file
-	 * @return true on success
-	 */
-	public boolean endTrace(){
-		if (traceMode != TraceMode.ON)
-			return true;
-		traceMode = TraceMode.OFF;
-		try (FileOutputStream fos = new FileOutputStream(traceLogName);
-			 ObjectOutputStream oos = new ObjectOutputStream(fos))
-		{
-			oos.writeObject(randTrace);
-			return true;
-		} catch (Exception e){
-			return false;
+	public void drawGraph(Node n) throws Exception{
+		if (graph == null){
+			System.out.println("HyPeerWeb graphing is disabled");
+			return;
 		}
-	}
-	/**
-	 * Loads a list of insertion points from the log file
-	 * After calling, getRandomInsertionNode will follow the log's trace
-	 * @return true on success
-	 */
-	public boolean loadTrace(){
-		try (FileInputStream fis = new FileInputStream("InsertionTrace.log");
-			 ObjectInputStream ois = new ObjectInputStream(fis))
-		{
-			randTrace = (ArrayList<Integer>) ois.readObject();
-			randTraceIter = randTrace.iterator();
-			if (randTraceIter.hasNext())
-				traceMode = TraceMode.READ;
-			return true;
-		} catch (Exception e){
-			return false;
+		if (n == null) return;
+		graph.start(n);
+		synchronized (this){
+			this.wait();
 		}
 	}
 		
@@ -298,7 +251,6 @@ public class HyPeerWeb implements HyPeerWebInterface {
 	}
 	/**
 	 * Retrieve a node with the specified webid
-	 * @param webid the webid of the node
 	 * @return the node with the specified webid; otherwise null
 	 * @author isaac
 	 */
@@ -331,14 +283,18 @@ public class HyPeerWeb implements HyPeerWebInterface {
 	public int getSize(){
 		return nodes.size();
 	}
+	/**
+	 * Is the HyPeerWeb empty?
+	 * @return true if it is empty
+	 */
+	public boolean isEmpty(){
+		return nodes.isEmpty();
+	}
     @Override
     public String toString() {
         StringBuilder builder = new StringBuilder();
-        
-        for (Node n : nodes.values()) {
+        for (Node n : nodes.values())
             builder.append(n);
-        }
-        
         return builder.toString();
     }
 }
