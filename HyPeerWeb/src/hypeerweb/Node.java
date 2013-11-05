@@ -33,6 +33,7 @@ public class Node implements NodeInterface{
 	 * @param height  the height of the node
 	 */
 	public Node(int id, int height) {
+		assert(id > 0 && height > 0);
 		this.webID = id;
 		this.height = height;
 		L = new Links();
@@ -50,6 +51,7 @@ public class Node implements NodeInterface{
 	 * @param isn An ArrayList containing the Inverse Surrogate Neighbors of the Node
 	 */
 	public Node(int id, int h, Node f, Node sf, Node isf, ArrayList<Node> n, ArrayList<Node> sn, ArrayList<Node> isn){
+		assert(id > 0 && h > 0);
 		webID = id;
 		height = h;
 		L =  new Links(f, sf, isf, n, sn, isn);		
