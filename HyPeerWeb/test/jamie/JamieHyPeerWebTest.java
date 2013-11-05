@@ -83,6 +83,7 @@ public class JamieHyPeerWebTest {
 	public void testAdd() throws Exception {
 		//This is a dummy method for populate()
 		//Don't remove this method
+		begin("ADDING");
 	}
 	
 	/**
