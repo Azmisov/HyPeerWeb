@@ -64,11 +64,8 @@ public class Node implements NodeInterface{
 	 */
 	protected Node addChild(Database db){
 		//Get new height and child's WebID
-		int childHeight = this.getHeight()+1,
-			childWebID = 1;
-		for (int i=1; i<childHeight; i++)
-			childWebID <<= 1;
-		childWebID |= this.getWebId();
+		int childHeight = height+1,
+			childWebID = (1 << height) | webID;
 		Node child = new Node(childWebID, childHeight);
 				
 		//Set neighbours (Guy)
