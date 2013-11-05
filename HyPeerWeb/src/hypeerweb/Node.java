@@ -220,7 +220,7 @@ public class Node implements NodeInterface{
 		//If none are closer, get a SNeighbor
 		if (!mustBeCloser){
 			for (Node sn: L.getSurrogateNeighborsSet()){
-				if (sn != null && sn.scoreWebIdMatch(target) == base)
+				if (sn.scoreWebIdMatch(target) == base)
 					return sn;
 			}
 		}
