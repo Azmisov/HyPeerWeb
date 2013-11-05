@@ -19,7 +19,7 @@ import validator.Validator;
 public class HyPeerWebTest {
 	//Testing variables
 	private static final int
-		MAX_SIZE = 50,					//Maximum HyPeerWeb size for tests
+		MAX_SIZE = 500,					//Maximum HyPeerWeb size for tests
 		TEST_EVERY = 1,					//How often to validate the HyPeerWeb for add/delete
 		SEND_TESTS = 2000,				//How many times to test send operation
 		RAND_SEED = -1;					//Seed for getting random nodes (use -1 for a random seed)
@@ -194,4 +194,46 @@ public class HyPeerWebTest {
 		Set<Node> set = new HashSet<>(x.getNodeList());
 		assertTrue(set.size() == x.getNodeList().size());
 	}
+	
+	@Test
+    public void whiteBoxIsaac(){
+        //TESTS FOR METHOD: getCloserNode()
+        /* Internal boundary value test for (target < 0)
+         * target = 0 (equal)
+         * target = 1 (slightly larger)
+         * target = -1 (slightly smaller)
+         */
+        
+        /* Loop testing for L.getAllLinks()
+         * Node has no links (skip loop entirely)
+         * one link (with one loop pass)
+         * two links (with two loop passes)
+         * > two links (with an arbitrary number of passes)
+         */
+        
+        /* Relational testing for
+         *
+         */
+        
+        /*
+        //Trying to find a negative node is a waste of time
+        if (target < 0) return null;
+        //Try to find a link with a webid that is closer to the target
+        int base = this.scoreWebIdMatch(target);
+        for (Node n: L.getAllLinks()){
+            if (n.scoreWebIdMatch(target) > base)
+                return n;
+        }
+        //If none are closer, get a SNeighbor
+        if (!mustBeCloser){
+            for (Node sn: L.getSurrogateNeighborsSet()){
+                if (sn != null && sn.scoreWebIdMatch(target) == base)
+                    return sn;
+            }
+        }
+        //Otherwise, that node doesn't exist
+        return null;
+		*/
+    }
+
 }
