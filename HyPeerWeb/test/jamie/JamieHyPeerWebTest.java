@@ -1,18 +1,16 @@
 package jamie;
 
-import jamie.gui.SendVisitor;
-import jamie.model.HyperWeb;
-import jamie.model.Node;
-import jamie.model.WebID;
-import jamie.simulation.NodeInterface;
-import jamie.simulation.Validator;
+import gui.SendVisitor;
+import model.HyperWeb;
+import model.Node;
+import model.WebID;
+import simulation.NodeInterface;
+import simulation.Validator;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Random;
 import java.util.Set;
-import java.util.TreeSet;
 import org.junit.After;
 import org.junit.Test;
 import static org.junit.Assert.*;
@@ -61,8 +59,8 @@ public class JamieHyPeerWebTest {
 				new_size = web.getOrderedListOfNodes().length;
 				if (new_size != ++old_size)
 					throw new Exception("HyPeerWeb is not the correct size: expected "+old_size+" but found "+new_size);
-				if (i % TEST_EVERY == 0)
-					assertTrue((new Validator(web)).validate());
+//				if (i % TEST_EVERY == 0)
+//					assertTrue((new Validator(web)).validate());
 			}
 			hasPopulated = true;
 		}
@@ -94,37 +92,48 @@ public class JamieHyPeerWebTest {
 		Node node = (Node) web.getNode(0);
 		testSend(node, node);//partition 2
 		testSend(node, (Node) node.getNeighbors()[0]);//partition 3
-		Node.loadHyperWeb(new HashMap());
+		
+		//Partition 4 -> simulate a sand pile
+		int NODE_SIZE = 9;
+		web = new HyperWeb();
 		assert(web.getOrderedListOfNodes().length == 0);
-		for(int i = 0; i < 9; i++)
+		for(int i = 0; i < NODE_SIZE; i++)
 			web.addNode();
-		assert(web.getOrderedListOfNodes().length == 9);
+		assert(web.getOrderedListOfNodes().length == NODE_SIZE);
 		for(Node n : (Node[]) web.getOrderedListOfNodes()){
-			if(n.getSurNeighborList().size() > 0)
+			if(n.getSurNeighborList().size() > 0){
 				node = n;
+				break;
+			}
 		}
 		assertTrue(node.getSurrogateNeighbors().length > 0);
-		//Find a webID that go through the designated path
-		int testWebID = 0, base, temp;
-		foundID: while (true){
-			node = (Node) web.getNode(testWebID);
-			ArrayList<Node> links = new ArrayList();
+		assertTrue((new Validator(web)).validate());
+		
+		ArrayList<Node> links = new ArrayList();
 			links.addAll(Arrays.asList((Node[])node.getInverseSurrogateNeighbors()));
 			links.addAll(Arrays.asList((Node[])node.getNeighbors()));
+
+		int testWebID = 0, base, temp, iters = 0;
+		foundID: while (true){
+			if (iters++ > 600){
+				System.out.println("Infinite loop");
+				fail();
+			}
 			base = scoreWebIdMatch(node, testWebID);
 			for (Node n: links){
-				if (scoreWebIdMatch(node, testWebID) > base){
+				if (scoreWebIdMatch(n, testWebID) > base){
 					testWebID++;
 					continue foundID;
 				}
 			}
 			for (NodeInterface sn: node.getSurrogateNeighbors()){
-				if (scoreWebIdMatch(node, testWebID) == base)
+				if (scoreWebIdMatch((Node) sn, testWebID) == base)
 					break foundID;
 			}			
 		}
-		Node closer = node.sendNode(new WebID(testWebID));
-		assertTrue(Arrays.asList(node.getSurrogateNeighbors()).contains(closer));
+		//Node closer = node.sendNode(new WebID(testWebID));
+		//assertTrue(Arrays.asList(node.getSurrogateNeighbors()).contains(closer));
+		testSend(node, (Node) web.getNode(testWebID));
 	}
 	
 	public int scoreWebIdMatch(Node node, int idSearch){

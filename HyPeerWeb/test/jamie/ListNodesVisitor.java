@@ -1,7 +1,7 @@
 package jamie;
 
-import jamie.gui.BroadcastVisitor;
-import jamie.model.Node;
+import gui.BroadcastVisitor;
+import model.Node;
 import java.util.ArrayList;
 import java.util.List;
 
