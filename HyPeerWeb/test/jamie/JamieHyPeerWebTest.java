@@ -6,9 +6,13 @@ import jamie.model.Node;
 import jamie.model.WebID;
 import jamie.simulation.NodeInterface;
 import jamie.simulation.Validator;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Random;
 import java.util.Set;
+import java.util.TreeSet;
 import org.junit.After;
 import org.junit.Test;
 import static org.junit.Assert.*;
@@ -77,9 +81,60 @@ public class JamieHyPeerWebTest {
 	}
 	
 	/**
-	 * Test of addNode method
+	 * Equivalent Partitions:
+	 * 1. Send to node not in hypeerweb. (Tested with sendInvalid()).
+	 * 2. Send to self.
+	 * 3. Send to immediate connection.
+	 * 4. Send to node in another sand pile, where the send method could get stuck
+	 *	  in a local maxima.
 	 */
 	@Test
+	public void testSendToEquivalentPartitions() throws Exception{
+		begin("Send to equivalent partitions");
+		Node node = (Node) web.getNode(0);
+		testSend(node, node);//partition 2
+		testSend(node, (Node) node.getNeighbors()[0]);//partition 3
+		Node.loadHyperWeb(new HashMap());
+		assert(web.getOrderedListOfNodes().length == 0);
+		for(int i = 0; i < 9; i++)
+			web.addNode();
+		assert(web.getOrderedListOfNodes().length == 9);
+		for(Node n : (Node[]) web.getOrderedListOfNodes()){
+			if(n.getSurNeighborList().size() > 0)
+				node = n;
+		}
+		assertTrue(node.getSurrogateNeighbors().length > 0);
+		//Find a webID that go through the designated path
+		int testWebID = 0, base, temp;
+		foundID: while (true){
+			node = (Node) web.getNode(testWebID);
+			ArrayList<Node> links = new ArrayList();
+			links.addAll(Arrays.asList((Node[])node.getInverseSurrogateNeighbors()));
+			links.addAll(Arrays.asList((Node[])node.getNeighbors()));
+			base = scoreWebIdMatch(node, testWebID);
+			for (Node n: links){
+				if (scoreWebIdMatch(node, testWebID) > base){
+					testWebID++;
+					continue foundID;
+				}
+			}
+			for (NodeInterface sn: node.getSurrogateNeighbors()){
+				if (scoreWebIdMatch(node, testWebID) == base)
+					break foundID;
+			}			
+		}
+		Node closer = node.sendNode(new WebID(testWebID));
+		assertTrue(Arrays.asList(node.getSurrogateNeighbors()).contains(closer));
+	}
+	
+	public int scoreWebIdMatch(Node node, int idSearch){
+		return Integer.bitCount(~(node.getWebId() ^ idSearch));
+	}
+	
+	/**
+	 * Test of addNode method
+	 */
+	//@Test
 	public void testAdd() throws Exception {
 		//This is a dummy method for populate()
 		//Don't remove this method
@@ -89,7 +144,7 @@ public class JamieHyPeerWebTest {
 	/**
 	 * Test of removeNode method (from zero, every time)
 	 */
-	@Test
+	//@Test
 	public void testRemoveRandom() throws Exception {
 		begin("REMOVING RANDOM");
 		Node temp;
@@ -115,24 +170,30 @@ public class JamieHyPeerWebTest {
 		begin("SENDING VALID");
 		Node f1, f2;
 		for (int j=0; j<SEND_TESTS; j++){
-			sendFound = false;
-			found = null;
+			
 			f1 = Node.getRandomNode();
 			do{
 				f2 = Node.getRandomNode();
 			} while (f2 == f1);
-			SendVisitor x = new SendVisitor(f1.getWebID()){
-				@Override
-				protected void targetOperation(Node node) {
-					sendFound = true;
-					found = node;
-				}
-			};
-			x.visit(f2);
-			assertTrue(sendFound);
-			assertNotNull(found);
-			assert(found.getWebId() == f1.getWebId());
+			testSend(f1, f2);
 		}
+	}
+	
+	private void testSend(Node f1, Node f2){
+		sendFound = false;
+		found = null;
+		
+		SendVisitor x = new SendVisitor(f1.getWebID()){
+			@Override
+			protected void targetOperation(Node node) {
+			sendFound = true;
+			found = node;
+		}
+		};
+		x.visit(f2);
+		assertTrue(sendFound);
+		assertNotNull(found);
+		assert(found.getWebId() == f1.getWebId());
 	}
 	
 	/**
