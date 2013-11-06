@@ -24,7 +24,7 @@ public class Node implements NodeInterface{
 	//Hash code prime
 	private static long prime = Long.parseLong("2654435761");
 	//Used to test send and broadcast methods
-	private static HashMap<String, Object> attributes = new HashMap<>();
+	private HashMap<String, Object> attributes = new HashMap<>();
 	
 	//CONSTRUCTORS
 	/**
