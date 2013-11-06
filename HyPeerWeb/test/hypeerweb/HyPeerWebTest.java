@@ -5,9 +5,11 @@
 package hypeerweb;
 
 import hypeerweb.visitors.SendVisitor;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Random;
 import java.util.Set;
+import java.util.TreeSet;
 import org.junit.After;
 import org.junit.Test;
 import static org.junit.Assert.*;
@@ -28,11 +30,9 @@ public class HyPeerWebTest {
 		USE_GRAPH = false;				//Starts a new thread for drawing the HyPeerWeb
 	private static HyPeerWeb web;
 	private static String curTest;
-	private static boolean hasRestored, hasPopulated;
 	
 	public HyPeerWebTest() throws Exception{
 		web = HyPeerWeb.initialize(USE_DATABASE, USE_GRAPH, RAND_SEED);
-		hasRestored = hasPopulated = false;
 	}
 	
 	/**
@@ -40,7 +40,8 @@ public class HyPeerWebTest {
 	 */
 	public void populate() throws Exception{
 		//Restore the database, if we haven't already
-		if (!hasRestored && USE_DATABASE){
+		//*
+		if (USE_DATABASE){
 			System.out.println("Restoring...");
 			try{
 				if (!(new Validator(web)).validate())
@@ -53,11 +54,11 @@ public class HyPeerWebTest {
 				throw e;
 			}
 			web.removeAllNodes();
-			hasRestored = true;
 		}
+		//*/
 		//Populate the DB with nodes, if needed
 		//Add a bunch of nodes if it validates afterwards, methods should be working
-		if (!hasPopulated || web.isEmpty()){
+		if (web.isEmpty()){
 			System.out.println("Populating...");
 			web.removeAllNodes();
 			Node temp;
@@ -70,7 +71,6 @@ public class HyPeerWebTest {
 				if (i % TEST_EVERY == 0)
 					assertTrue((new Validator(web)).validate());
 			}
-			hasPopulated = true;
 		}
 	}
 	public void begin(String type) throws Exception{
@@ -195,5 +195,4 @@ public class HyPeerWebTest {
 		Set<Node> set = new HashSet<>(x.getNodeList());
 		assertTrue(set.size() == x.getNodeList().size());
 	}
-
 }

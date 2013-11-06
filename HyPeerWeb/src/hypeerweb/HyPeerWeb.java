@@ -16,10 +16,10 @@ public class HyPeerWeb implements HyPeerWebInterface {
 	private static Database db = null;
 	private static TreeMap<Integer, Node> nodes;
 	//Random number generator for getting random nodes
-	private static Random rand = new Random();
+	private static final Random rand = new Random();
 	private static SendVisitor randVisitor;
 	//Error messages
-	private static Exception
+	private static final Exception
 			addNodeErr = new Exception("Failed to add a new node"),
 			removeNodeErr = new Exception("Failed to remove a node"),
 			clearErr = new Exception("Failed to clear the HyPeerWeb"),

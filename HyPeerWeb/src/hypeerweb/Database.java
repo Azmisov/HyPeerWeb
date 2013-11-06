@@ -292,7 +292,7 @@ public final class Database {
 			if ((id = rs.getInt("Fold")) != -1){
 				n = tsnodes.get(id);
 				if (n == null){
-					n = new Node(id, -1);
+					n = new Node(id, 0);
 					tsnodes.put(id, n);
 				}
 				raw.L.setFold(n);
@@ -300,7 +300,7 @@ public final class Database {
 			if ((id = rs.getInt("SurrogateFold")) != -1){
 				n = tsnodes.get(id);
 				if (n == null){
-					n = new Node(id, -1);
+					n = new Node(id, 0);
 					tsnodes.put(id, n);
 				}
 				raw.L.setSurrogateFold(n);
@@ -308,7 +308,7 @@ public final class Database {
 			if ((id = rs.getInt("InverseSurrogateFold")) != -1){
 				n = tsnodes.get(id);
 				if (n == null){
-					n = new Node(id, -1);
+					n = new Node(id, 0);
 					tsnodes.put(id, n);
 				}
 				raw.L.setInverseSurrogateFold(n);
