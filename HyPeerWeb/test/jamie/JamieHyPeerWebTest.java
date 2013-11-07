@@ -28,7 +28,7 @@ public class JamieHyPeerWebTest {
 	private static final int
 		MAX_SIZE = 500,					//Maximum HyPeerWeb size for tests
 		TEST_EVERY = 1,					//How often to validate the HyPeerWeb for add/delete
-		SEND_TESTS = 7000;				//How many times to test send operation
+		SEND_TESTS = 500;				//How many times to test send operation
 	private static HyperWeb web;
 	private static String curTest;
 	private static boolean hasPopulated;
@@ -170,9 +170,12 @@ public class JamieHyPeerWebTest {
 		Random r = new Random();
 		for (int i=0; i<SEND_TESTS; i++){
 			sendFound = false;
-			int bad_id = r.nextInt();
-			while (web.getNode(bad_id) != null)
+			int bad_id = r.nextInt() % 100;
+			if(bad_id < 0)
+				bad_id *= -1;
+			while (web.getNode(bad_id) != null){
 				bad_id *= 3;
+			}
 			SendVisitor x = new SendVisitor(new WebID(bad_id)){
 				@Override
 				protected void targetOperation(Node node) {
