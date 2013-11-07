@@ -215,8 +215,6 @@ public class JamieHyPeerWebTest {
 	private int testBroadcast(Node node){
 		ListNodesVisitor x = new ListNodesVisitor();
 		x.visit(node);
-		//assertTrue(x.getNodeList().size() == web.getOrderedListOfNodes().length);
-		
 		return x.getNodeList().size();
 	}
 }
