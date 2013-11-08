@@ -12,7 +12,7 @@ import java.awt.event.ActionListener;
 public class DrawingThread implements Runnable{
 	private final Thread t;
 	private final Object lock;
-	private HyPeerWebGraph graph;
+	private final HyPeerWebGraph graph;
 	private boolean running = false;
 	
 	/**

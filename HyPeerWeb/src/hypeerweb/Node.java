@@ -24,7 +24,7 @@ public class Node implements NodeInterface{
 	//Hash code prime
 	private static long prime = Long.parseLong("2654435761");
 	//Used to test send and broadcast methods
-	private static HashMap<String, Object> attributes = new HashMap<>();
+	private HashMap<String, Object> attributes = new HashMap<>();
 	
 	//CONSTRUCTORS
 	/**
@@ -33,6 +33,7 @@ public class Node implements NodeInterface{
 	 * @param height  the height of the node
 	 */
 	public Node(int id, int height) {
+		assert(id >= 0 && height >= 0);
 		this.webID = id;
 		this.height = height;
 		L = new Links();
@@ -50,6 +51,7 @@ public class Node implements NodeInterface{
 	 * @param isn An ArrayList containing the Inverse Surrogate Neighbors of the Node
 	 */
 	public Node(int id, int h, Node f, Node sf, Node isf, ArrayList<Node> n, ArrayList<Node> sn, ArrayList<Node> isn){
+		assert(id >= 0 && h >= 0);
 		webID = id;
 		height = h;
 		L =  new Links(f, sf, isf, n, sn, isn);		
@@ -64,11 +66,8 @@ public class Node implements NodeInterface{
 	 */
 	protected Node addChild(Database db){
 		//Get new height and child's WebID
-		int childHeight = this.getHeight()+1,
-			childWebID = 1;
-		for (int i=1; i<childHeight; i++)
-			childWebID <<= 1;
-		childWebID |= this.getWebId();
+		int childHeight = height+1,
+			childWebID = (1 << height) | webID;
 		Node child = new Node(childWebID, childHeight);
 				
 		//Set neighbours (Guy)
@@ -220,7 +219,7 @@ public class Node implements NodeInterface{
 		//If none are closer, get a SNeighbor
 		if (!mustBeCloser){
 			for (Node sn: L.getSurrogateNeighborsSet()){
-				if (sn != null && sn.scoreWebIdMatch(target) == base)
+				if (sn.scoreWebIdMatch(target) == base)
 					return sn;
 			}
 		}
