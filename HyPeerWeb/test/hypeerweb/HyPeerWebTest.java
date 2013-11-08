@@ -27,7 +27,7 @@ public class HyPeerWebTest {
 		RAND_SEED = -1;					//Seed for getting random nodes (use -1 for a random seed)
 	private static final boolean
 		USE_DATABASE = false,			//Enables database syncing
-		USE_GRAPH = false;				//Starts a new thread for drawing the HyPeerWeb
+		USE_GRAPH = true;				//Starts a new thread for drawing the HyPeerWeb
 	private static HyPeerWeb web;
 	private static String curTest;
 	
@@ -94,6 +94,7 @@ public class HyPeerWebTest {
 		//This is a dummy method for populate()
 		//Don't remove this method
 		begin("ADDING");
+		web.drawGraph(web.getFirstNode());
 	}
 	
 	/**

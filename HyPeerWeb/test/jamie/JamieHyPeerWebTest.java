@@ -149,11 +149,10 @@ public class JamieHyPeerWebTest {
 		found = null;
 		
 		SendVisitor x = new SendVisitor(f1.getWebID()){
-			@Override
 			protected void targetOperation(Node node) {
-			sendFound = true;
-			found = node;
-		}
+				sendFound = true;
+				found = node;
+			}
 		};
 		x.visit(f2);
 		assertTrue(sendFound);
