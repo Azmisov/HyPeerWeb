@@ -138,7 +138,6 @@ public class ChatTab extends JPanel{
 		return cu;
 	}
 	
-	
 	//CHAT HTML MACROS
 	/**
 	 * Write a single chat message's HTML

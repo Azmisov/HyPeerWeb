@@ -21,18 +21,17 @@ import validator.Validator;
 public class HyPeerWebTest {
 	//Testing variables
 	private static final int
-		MAX_SIZE = 500,					//Maximum HyPeerWeb size for tests
+		MAX_SIZE = 8,					//Maximum HyPeerWeb size for tests
 		TEST_EVERY = 1,					//How often to validate the HyPeerWeb for add/delete
 		SEND_TESTS = 2000,				//How many times to test send operation
 		RAND_SEED = -1;					//Seed for getting random nodes (use -1 for a random seed)
-	private static final boolean
-		USE_DATABASE = false,			//Enables database syncing
-		USE_GRAPH = true;				//Starts a new thread for drawing the HyPeerWeb
-	private static HyPeerWeb web;
+	private static final String
+		DB_NAME = null;	//Enables database syncing
+	private static HyPeerWeb<Node> web;
 	private static String curTest;
 	
 	public HyPeerWebTest() throws Exception{
-		web = HyPeerWeb.initialize(USE_DATABASE, USE_GRAPH, RAND_SEED);
+		web = new HyPeerWeb(DB_NAME, RAND_SEED);
 	}
 	
 	/**
@@ -41,15 +40,15 @@ public class HyPeerWebTest {
 	public void populate() throws Exception{
 		//Restore the database, if we haven't already
 		//*
-		if (USE_DATABASE){
+		if (DB_NAME != null){
 			System.out.println("Restoring...");
 			try{
 				if (!(new Validator(web)).validate())
 					throw new Exception("FATAL ERROR: Could not restore the old database");
 			} catch (Exception e){
-				System.out.println("The database must be corrupt. Did you previously force execution to stop?");
+				System.out.println("The database <"+DB_NAME+"> must be corrupt. Did you previously force execution to stop?");
 				System.out.println("Deleting the old database... Rerun the tests two more times to verify it works");
-				Database badDB = Database.getInstance();
+				Database badDB = Database.getInstance(DB_NAME);
 				badDB.clear();
 				throw e;
 			}
@@ -94,7 +93,6 @@ public class HyPeerWebTest {
 		//This is a dummy method for populate()
 		//Don't remove this method
 		begin("ADDING");
-		web.drawGraph(web.getFirstNode());
 	}
 	
 	/**

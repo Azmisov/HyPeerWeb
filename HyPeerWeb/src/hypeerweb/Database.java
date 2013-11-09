@@ -6,6 +6,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.TreeMap;
 
@@ -14,9 +15,14 @@ import java.util.TreeMap;
  * @author isaac
  */
 public final class Database {
-	//Reference to singleton
-	private static Database singleton;
+	//Reference to databases we're managing
+	private static HashMap<String, Database> singleton = new HashMap();
+	//Has the database driver been loaded?
 	private static boolean IS_CONNECTED = true;
+	private static final String
+			driverErr = "Could not load database driver!",
+			connErr = "Could not connect to the database!",
+			createErr = "Could not create the database!";
 	//Database connection and default statement
 	private Connection db;
 	private Statement stmt;
@@ -29,22 +35,22 @@ public final class Database {
 	/**
 	 * Private constructor for the singleton - Initializes database connection -
 	 * Creates database if it doesn't exist
-	 *
 	 * @author isaac
 	 */
-	private Database() throws Exception {
+	private Database(String dbName) throws Exception {
 		//Load the database driver
 		try {
 			Class.forName("org.sqlite.JDBC");
 		} catch (ClassNotFoundException e) {
-			System.out.println("Could not load database driver!");
+			System.out.println(driverErr);
+			IS_CONNECTED = false;
 			throw e;
 		}
 		//Open a database connection
 		try {
-			db = DriverManager.getConnection("jdbc:sqlite:HyPeerWeb.sqlite");
-		} catch (Exception e) {
-			System.out.println("Could not connect to the database!");
+			db = DriverManager.getConnection("jdbc:sqlite:"+dbName);
+		} catch (SQLException e) {
+			System.out.println(connErr);
 			throw e;
 		}
 		//Setup the database, if not already there
@@ -64,36 +70,44 @@ public final class Database {
 			//it should never be called directly
 			stmt = db.createStatement(ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY);
 			stmt.setQueryTimeout(5);
-			//Setup the database (... except here)
+			//(... except here) Setup the database
 			stmt.executeUpdate(db_setup);
 		} catch (SQLException e) {
-			System.out.println("Could not create the database!");
+			System.out.println(createErr);
 			throw e;
 		}
 		sqlbuffer = new StringBuilder();
 	}
 	/**
 	 * Gets the singleton instance of the Database class
+	 * @param dbName the database name (e.g. HyPeerWeb.sqlite)
 	 * @return singleton Database reference
 	 * @throws Exception if there was an error connecting to the database
 	 * @author isaac
 	 */
-	public static Database getInstance() throws Exception {
-		//First time connect
-		if (IS_CONNECTED && singleton == null) {
-			try {
-				singleton = new Database();
-			} catch (Exception e) {
-				IS_CONNECTED = false;
-				throw e;
-			}
+	public static Database getInstance(String dbName) throws Exception {
+		//Failed to load DB driver
+		if (!IS_CONNECTED)
+			throw new Exception(driverErr);
+		Database instance = null;
+		//Previously created database
+		if (singleton.containsKey(dbName)){
+			instance = singleton.get(dbName);
+			if (instance == null)
+				throw new Exception(connErr);
+			return instance;
 		}
-		//Failed connection
-		if (!IS_CONNECTED) {
-			throw new Exception("Failed to connect to database");
+		//First time connect
+		try {
+			instance = new Database(dbName);
+		} catch (Exception e) {
+			throw e;
+		} finally{
+			if (IS_CONNECTED)
+				singleton.put(dbName, instance);
 		}
 		//Successful connection available
-		return singleton;
+		return instance;
 	}
 	/**
 	 * Removes all data from the database, leaving the structure intact.

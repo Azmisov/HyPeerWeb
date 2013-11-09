@@ -1,6 +1,5 @@
 package hypeerweb;
 
-import gui.DrawingThread;
 import hypeerweb.visitors.SendVisitor;
 import java.util.HashMap;
 import java.util.Random;
@@ -24,31 +23,27 @@ public class HyPeerWeb<T extends Node> implements HyPeerWebInterface {
 			removeNodeErr = new Exception("Failed to remove a node"),
 			clearErr = new Exception("Failed to clear the HyPeerWeb"),
 			replaceErr = new Exception("Failed to replace a node. Warning! Your HyPeerWeb is corrupted.");
-	//Draw a graph of the HyPeerWeb
-	private DrawingThread graph;
 	
 	/**
 	 * Constructor for initializing the HyPeerWeb
-	 * @param useDatabase should we sync our HyPeerWeb to a database;
-	 *	Warning! Database access can be very slow
-	 * @param useGraph is graph drawing enabled {@link #drawGraph(hypeerweb.Node)}
+	 * @param dbName should we sync our HyPeerWeb to a database;
+	 *	Warning! Database access can be very slow (e.g. "HyPeerWeb.sqlite")
 	 * @param seed the random seed number for getting random nodes; use -1
 	 *	to get a pseudo-random seed
 	 * @throws Exception if there was a database error
 	 * @author isaac
 	 */
-	public HyPeerWeb(boolean useDatabase, boolean useGraph, long seed) throws Exception{
-		if (useDatabase){
-			db = Database.getInstance();
+	public HyPeerWeb(String dbName, long seed) throws Exception{
+		if (dbName != null){
+			db = Database.getInstance(dbName);
 			nodes = db.getAllNodes();
 		}
 		else nodes = new TreeMap<>();
 		if (seed != -1)
 			rand.setSeed(seed);
-		if (useGraph)
-			graph = new DrawingThread(this);
 	}
 	
+	// <editor-fold defaultstate="collapsed" desc="REMOVE NODE">
 	/**
 	 * Removes the node of specified webid
 	 * @param webid the webid of the node to remove
@@ -121,7 +116,9 @@ public class HyPeerWeb<T extends Node> implements HyPeerWebInterface {
 			throw clearErr;
 		nodes = new TreeMap<>();
 	}
+	// </editor-fold>
 	
+	// <editor-fold defaultstate="collapsed" desc="ADD NODE">
 	/**
 	 * Adds a new node to the HyPeerWeb
 	 * @return the new node
@@ -190,6 +187,7 @@ public class HyPeerWeb<T extends Node> implements HyPeerWebInterface {
 			return (T) sec;
 		}
 	}
+	// </editor-fold>
 	
 	/**
 	 * Retrieves a random node in the HyPeerWeb
@@ -205,26 +203,8 @@ public class HyPeerWeb<T extends Node> implements HyPeerWebInterface {
 		randVisitor.visit(first);
 		return (T) randVisitor.getFinalNode();
 	}
-	
-	//GRAPHING
-	/**
-	 * Draws a graph of the HyPeerWeb at a node
-	 * @param n the node to start at
-	 * @throws Exception 
-	 */
-	public void drawGraph(Node n) throws Exception{
-		if (graph == null){
-			System.out.println("HyPeerWeb graphing is disabled");
-			return;
-		}
-		if (n == null) return;
-		graph.start(n);
-		synchronized (this){
-			this.wait();
-		}
-	}
-		
-	//VALIDATION
+
+	// <editor-fold defaultstate="collapsed" desc="VALIDATION">
 	@Override
 	public T[] getOrderedListOfNodes() {
 		return (T[]) nodes.values().toArray(new Node[nodes.size()]);
@@ -277,4 +257,5 @@ public class HyPeerWeb<T extends Node> implements HyPeerWebInterface {
             builder.append(n);
         return builder.toString();
     }
+	// </editor-fold>
 }
