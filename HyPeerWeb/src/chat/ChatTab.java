@@ -1,15 +1,22 @@
-package gui.chat;
+package chat;
 
+import java.awt.CardLayout;
 import java.awt.Dimension;
-import java.awt.FlowLayout;
+import java.awt.Font;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.Insets;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.io.IOException;
 import java.io.StringWriter;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Random;
 import javax.swing.*;
 import javax.swing.border.Border;
+import javax.swing.event.ListDataEvent;
+import javax.swing.event.ListDataListener;
 import javax.swing.text.BadLocationException;
 import javax.swing.text.Element;
 import javax.swing.text.html.HTML.Tag;
@@ -23,28 +30,23 @@ import javax.swing.text.html.StyleSheet;
  */
 public class ChatTab extends JPanel{
 	//Active chat users and their associated colors
-	private class ChatUser{
-		String color;
-		String name;
-		public ChatUser(String n){
-			//Random username color
-			int r = (int) Math.round(Math.random()*250);
-			int g = (int) Math.round(Math.random()*250);
-			int b = (int) Math.round(Math.random()*250);
-			color = String.format("#%02x%02x%02x", r, g, b);
-			name = n;
-		}
-	}
 	private final HashMap<Integer, ChatUser> chatUsers = new HashMap();
+	private final DefaultComboBoxModel<ChatUser> chatUsersLst = new DefaultComboBoxModel();
 	//The last user that chatted something
 	//If they send another message, we don't want to display their name twice
 	private ChatUser lastUserTo, lastUserFrom;
+	
+	//Notify listeners of new message commands
+	private final ArrayList<SendListener> listeners = new ArrayList();
 	
 	//Editing the chat log display
 	private final HTMLDocument document;
 	private final HTMLEditorKit editor;
 	private final Element cursor;
 	private boolean needBreak = false;
+	
+	//Different layouts depending on amount of users
+	private static final String EMPTY = "Empty", FILLED = "Filled";
 	
 	public ChatTab(Border padding, String title){
 		//The chat log is on top, the tools are on the bottom
@@ -76,15 +78,6 @@ public class ChatTab extends JPanel{
 		//to drop out of the "welcome message" p-tag
 		needBreak = true;
 		writeTag(Tag.P);
-		
-		ChatUser isaac = userUpdate(0, "user91023");
-		writeMessage(isaac, null, "Hello world");
-		userUpdate(0, "isaac");
-		writeMessage(isaac, null, "blue babies");
-		writeMessage(isaac, null, "Someone join me.... I'm getting bored");
-		ChatUser john = userUpdate(1, "John");
-		writeMessage(isaac, john, "Dude what is up");
-		writeMessage(john, isaac, "Hey, I like your style bro");
 
 		//Chat text box
 		JScrollPane chatBoxScroll = new JScrollPane(
@@ -97,10 +90,41 @@ public class ChatTab extends JPanel{
 		chatBoxScroll.setViewportView(chatBox);
 		
 		//Action box
-		JPanel btns = new JPanel();
-		btns.setLayout(new FlowLayout(FlowLayout.LEFT, 5, 0));
-		btns.add(new JButton("Send Public"));
-		btns.add(new JButton("Send Private"));
+		JPanel btns = new JPanel(new CardLayout(5, 0));
+		JLabel lblEmpty = new JLabel("The chatroom is empty. Go find some friends.");
+		lblEmpty.setFont(new Font("SansSerif", Font.BOLD, 12));
+		btns.add(lblEmpty, EMPTY);
+		//Send a public message
+		JButton btnSendPublic = new JButton("Send Public");
+		btnSendPublic.setToolTipText("Broadcast message (Enter)");
+		btns.add(btnSendPublic, FILLED);
+		//Private message sending auto-hides based on the # of users
+		final JButton btnSendPrivate = new JButton("Send Private");
+		btnSendPrivate.setToolTipText("Send message (Ctrl+Enter)");
+		btns.add(btnSendPrivate, FILLED);
+		final JComboBox userList = new JComboBox();
+		userList.setModel(chatUsersLst);
+		btns.add(userList, FILLED);
+		chatUsersLst.addListDataListener(new ListDataListener(){
+			@Override
+			public void intervalAdded(ListDataEvent e) {
+				if (chatUsersLst.getSize() == 1){
+					userList.setVisible(true);
+					btnSendPrivate.setVisible(true);
+					System.out.println("YES, this happens");
+				}
+			}
+			@Override
+			public void intervalRemoved(ListDataEvent e) {
+				if (chatUsersLst.getSize() == 0){
+					userList.setVisible(false);
+					btnSendPrivate.setVisible(false);
+					System.out.println("YES, this happens");
+				}
+			}
+			@Override
+			public void contentsChanged(ListDataEvent e){}
+		});
 		
 		//Layout all the components in this tab
 		setLayout(new GridBagLayout());
@@ -122,20 +146,71 @@ public class ChatTab extends JPanel{
 	}
 	
 	//CHAT ACTIONS
-	private ChatUser userUpdate(int userid, String username){
+	/**
+	 * Updates a user in the chatroom
+	 * @param userid the ID of the user we want to update
+	 * @param username if null, it will remove the user; if the
+	 * user has already been added, it updates their alias; otherwise,
+	 * it adds them as a new user in the chatroom
+	 */
+	public void updateUser(int userid, String username){
 		ChatUser cu = chatUsers.get(userid);
 		//Create a new user
 		if (cu == null){
 			cu = new ChatUser(username);
 			chatUsers.put(userid, cu);
-			writeStatus("<b>"+cu.name+"</b> has joined the chatroom");
+			chatUsersLst.addElement(cu);
+			writeStatus("<b>"+cu.name+"</b> is online");
+		}
+		//Remove a user
+		else if (username == null){
+			writeStatus("<b>"+cu.name+"</b> is offline");
+			chatUsers.remove(userid);
+			chatUsersLst.removeElement(cu);
 		}
 		//Update existing username
 		else if (!cu.name.equals(username)){
 			writeStatus("<b>"+cu.name+"</b> is now known as <b>"+username+"</b>");
 			cu.name = username;
+			//Notify the user list
+			int index = chatUsersLst.getIndexOf(cu);
+			ListDataEvent updateEvt = new ListDataEvent(
+				chatUsersLst, ListDataEvent.CONTENTS_CHANGED, index, index
+			);
+			for (ListDataListener dl: chatUsersLst.getListDataListeners())
+				dl.contentsChanged(updateEvt);
 		}
-		return cu;
+	}
+	/**
+	 * Notifies the chat tab that a message has been received
+	 * @param userID who sent the message
+	 * @param recipientID who should receive the message (-1 if it was sent to everyone)
+	 * @param message the message
+	 */
+	public void receiveMessage(int userID, int recipientID, String message){
+		writeMessage(
+			chatUsers.get(userID),
+			recipientID == -1 ? null : chatUsers.get(recipientID),
+			message
+		);
+	}
+	/**
+	 * Register yourself as wanting sendMessage notifications
+	 * @param listener the sendMessage callback
+	 */
+	public void addSendListener(SendListener listener){
+		listeners.add(listener);
+	}
+	/**
+	 * Notify all listeners of a message should be sent
+	 * @param userID the sender's id
+	 * @param recipientID the recipient's id (-1 to send to everyone)
+	 * @param message the message to send
+	 */
+	private void sendMessage(int userID, int recipientID, String message){
+		receiveMessage(userID, recipientID, message);
+		for (SendListener l: listeners)
+			l.callback(userID, recipientID, message);
 	}
 	
 	//CHAT HTML MACROS
@@ -146,6 +221,10 @@ public class ChatTab extends JPanel{
 	 * @param message the message they sent
 	 */
 	private void writeMessage(ChatUser userFrom, ChatUser userTo, String message){
+		//We don't know who sent this message; they never sent an updateUser command
+		if (userFrom == null)
+			userFrom = new ChatUser("anonymous");
+		//This person was the last one to chat something
 		if (userFrom == lastUserFrom && userTo == lastUserTo)
 			writePlain(message+"<br/>");
 		else{
@@ -258,5 +337,40 @@ public class ChatTab extends JPanel{
 		}
 		String s = writer.toString();
 		return s;
+	}
+	
+	//CHAT USERS
+	private static class ChatUser{
+		//Random color generator
+		private static final Random rand = new Random();
+		private static final int minRGB = 30, maxRGB = 200;
+		//User attributes
+		public String color, name;
+		
+		/**
+		 * Create a new chat user
+		 * @param name the user's name
+		 */
+		public ChatUser(String name){
+			//Random username color
+			//RGB values between 100-250
+			int delta = maxRGB-minRGB;
+			color = String.format(
+				"#%02x%02x%02x",
+				rand.nextInt(delta)+minRGB,
+				rand.nextInt(delta)+minRGB,
+				rand.nextInt(delta)+minRGB
+			);
+			this.name = name;
+		}
+		@Override
+		public String toString(){
+			return name;
+		}
+	}
+	
+	//SEND NOTIFICATION HANDLERS
+	public static abstract class SendListener{
+		abstract void callback(int senderID, int recipientID, String message);
 	}
 }

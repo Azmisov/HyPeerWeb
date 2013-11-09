@@ -11,9 +11,10 @@ import validator.HyPeerWebInterface;
  * @param <T> The Node type for this HyPeerWeb instance
  * @author isaac
  */
-public class HyPeerWeb<T extends Node> implements HyPeerWebInterface {
-	private static Database db = null;
-	private static TreeMap<Integer, Node> nodes;
+public class HyPeerWebSegment<T extends Node> extends Node implements HyPeerWebInterface{
+	private Database db = null;
+	private TreeMap<Integer, Node> nodes;
+	private int totalNodes;
 	//Random number generator for getting random nodes
 	private static final Random rand = new Random();
 	private static SendVisitor randVisitor;
@@ -33,12 +34,13 @@ public class HyPeerWeb<T extends Node> implements HyPeerWebInterface {
 	 * @throws Exception if there was a database error
 	 * @author isaac
 	 */
-	public HyPeerWeb(String dbName, long seed) throws Exception{
+	public HyPeerWebSegment(String dbName, long seed) throws Exception{
+		this.
 		if (dbName != null){
 			db = Database.getInstance(dbName);
 			nodes = db.getAllNodes();
 		}
-		else nodes = new TreeMap<>();
+		else nodes = new TreeMap();
 		if (seed != -1)
 			rand.setSeed(seed);
 	}
