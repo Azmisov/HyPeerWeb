@@ -28,13 +28,12 @@ public class HyPeerWeb<T extends Node> implements HyPeerWebInterface {
 	private DrawingThread graph;
 	
 	/**
-	 * Private constructor for initializing the HyPeerWeb
+	 * Constructor for initializing the HyPeerWeb
 	 * @param useDatabase should we sync our HyPeerWeb to a database;
 	 *	Warning! Database access can be very slow
 	 * @param useGraph is graph drawing enabled {@link #drawGraph(hypeerweb.Node)}
 	 * @param seed the random seed number for getting random nodes; use -1
 	 *	to get a pseudo-random seed
-	 * @return a reference to the initialized HyPeerWeb singleton
 	 * @throws Exception if there was a database error
 	 * @author isaac
 	 */
