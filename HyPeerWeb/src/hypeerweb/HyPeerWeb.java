@@ -1,6 +1,6 @@
 package hypeerweb;
 
-import hypeerweb.graph.DrawingThread;
+import gui.DrawingThread;
 import hypeerweb.visitors.SendVisitor;
 import java.util.HashMap;
 import java.util.Random;

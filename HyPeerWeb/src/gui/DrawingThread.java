@@ -1,4 +1,4 @@
-package hypeerweb.graph;
+package gui;
 
 import hypeerweb.HyPeerWeb;
 import hypeerweb.Node;

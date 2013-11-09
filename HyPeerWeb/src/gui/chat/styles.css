@@ -1,0 +1,21 @@
+body{
+	font-size:11px;
+	font-family:Arial;
+	margin:8px;
+	margin-top:4px;
+}
+.title{
+	font-weight:bold;
+	font-size:13px;
+	border-bottom:2px solid black;
+	margin-bottom:4px;
+	padding-bottom:4px;
+}
+.user{
+	font-weight:bold;
+	padding-right:8px;
+}
+.status{
+	font-style: italic;
+	color: gainsboro;
+}
