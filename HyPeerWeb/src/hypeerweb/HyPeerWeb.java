@@ -8,12 +8,13 @@ import java.util.TreeMap;
 import validator.HyPeerWebInterface;
 
 /**
- * The Great HyPeerWeb Singleton
+ * The Great HyPeerWeb
+ * @param <T> The Node type for this HyPeerWeb instance
  * @author isaac
  */
 public class HyPeerWeb<T extends Node> implements HyPeerWebInterface {
 	private static Database db = null;
-	private static TreeMap<Integer, T> nodes;
+	private static TreeMap<Integer, Node> nodes;
 	//Random number generator for getting random nodes
 	private static final Random rand = new Random();
 	private static SendVisitor randVisitor;
@@ -83,7 +84,7 @@ public class HyPeerWeb<T extends Node> implements HyPeerWebInterface {
 			return removeSecondNode(n);
 		
 		//Find a disconnection point
-		T replace = getRandomNode().findDisconnectNode().disconnectNode(db);
+		Node replace = getRandomNode().findDisconnectNode().disconnectNode(db);
 		if (replace == null)
 			throw removeNodeErr;
 		//Remove node from list of nodes
@@ -104,7 +105,7 @@ public class HyPeerWeb<T extends Node> implements HyPeerWebInterface {
 	 * @throws Exception if it fails to modify the database
 	 */
 	private T removeSecondNode(T n) throws Exception{		
-		T last = n.getNeighbors()[0];
+		Node last = n.getNeighbors()[0];
 		//Save the remaining node's attributes
 		HashMap<String, Object> attrs = last.getAllAttributes();
 		removeAllNodes();
@@ -138,12 +139,12 @@ public class HyPeerWeb<T extends Node> implements HyPeerWebInterface {
 			return addSecondNode();
 		
 		//Otherwise, use the normal insertion algorithm
-		T child = getRandomNode().findInsertionNode().addChild(db);
+		Node child = getRandomNode().findInsertionNode().addChild(db);
 		if (child == null)
 			throw addNodeErr;
 		//Node successfully added!
 		nodes.put(child.getWebId(), child);
-		return child;
+		return (T) child;
 	}
 	/**
 	 * Special case to handle adding the first node
@@ -151,11 +152,11 @@ public class HyPeerWeb<T extends Node> implements HyPeerWebInterface {
 	 * @author isaac
 	 */
 	private T addFirstNode() throws Exception{
-		T first = new Node(0, 0);
+		Node first = new Node(0, 0);
 		if (db != null && !db.addNode(first))
 			throw addNodeErr;
 		nodes.put(0, first);
-		return first;
+		return (T) first;
 	}
 	/**
 	 * Special case to handle adding the second node
@@ -163,7 +164,7 @@ public class HyPeerWeb<T extends Node> implements HyPeerWebInterface {
 	 * @author isaac
 	 */
 	private T addSecondNode() throws Exception{
-		T sec = new Node(1, 1),
+		Node sec = new Node(1, 1),
 			first = nodes.firstEntry().getValue();
 		//Update the database first
 		if (db != null) {
@@ -187,7 +188,7 @@ public class HyPeerWeb<T extends Node> implements HyPeerWebInterface {
 			first.L.addNeighbor(sec);
 			sec.L.addNeighbor(first);
 			nodes.put(1, sec);
-			return sec;
+			return (T) sec;
 		}
 	}
 	
@@ -200,10 +201,10 @@ public class HyPeerWeb<T extends Node> implements HyPeerWebInterface {
 		//Always start at Node with WebID = 0
 		if (nodes.isEmpty())
 			return null;
-		T first = nodes.firstEntry().getValue();
+		Node first = nodes.firstEntry().getValue();
 		randVisitor = new SendVisitor(rand.nextInt(Integer.MAX_VALUE), true);
 		randVisitor.visit(first);
-		return randVisitor.getFinalNode();
+		return (T) randVisitor.getFinalNode();
 	}
 	
 	//GRAPHING
@@ -227,7 +228,7 @@ public class HyPeerWeb<T extends Node> implements HyPeerWebInterface {
 	//VALIDATION
 	@Override
 	public T[] getOrderedListOfNodes() {
-		return nodes.values().toArray(new T[nodes.size()]);
+		return (T[]) nodes.values().toArray(new Node[nodes.size()]);
 	}
 	/**
 	 * Retrieve a node with the specified webid
@@ -236,7 +237,7 @@ public class HyPeerWeb<T extends Node> implements HyPeerWebInterface {
 	 */
 	@Override
 	public T getNode(int webId){
-		return nodes.get(webId);
+		return (T) nodes.get(webId);
 	}
 	/**
 	 * Gets the first node in the HyPeerWeb
@@ -245,7 +246,7 @@ public class HyPeerWeb<T extends Node> implements HyPeerWebInterface {
 	public T getFirstNode(){
 		if (nodes.isEmpty())
 			return null;
-		return nodes.firstEntry().getValue();
+		return (T) nodes.firstEntry().getValue();
 	}
 	/**
 	 * Gets the last node in the HyPeerWeb
@@ -254,7 +255,7 @@ public class HyPeerWeb<T extends Node> implements HyPeerWebInterface {
 	public T getLastNode(){
 		if (nodes.isEmpty())
 			return null;
-		return nodes.lastEntry().getValue();
+		return (T) nodes.lastEntry().getValue();
 	}
 	/**
 	 * Get the size of the HyPeerWeb
@@ -273,7 +274,7 @@ public class HyPeerWeb<T extends Node> implements HyPeerWebInterface {
     @Override
     public String toString() {
         StringBuilder builder = new StringBuilder();
-        for (T n : nodes.values())
+        for (Node n : nodes.values())
             builder.append(n);
         return builder.toString();
     }
