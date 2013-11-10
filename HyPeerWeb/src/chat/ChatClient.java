@@ -1,5 +1,6 @@
 package chat;
 
+import com.alee.laf.WebLookAndFeel;
 import hypeerweb.HyPeerWebSegment;
 import java.awt.*;
 import java.awt.event.ActionEvent;
@@ -124,6 +125,7 @@ public class ChatClient extends JFrame{
 		
 		//Chat simulation
 		JButton testBtn = new JButton("Run Simulation");
+		testBtn.setPreferredSize(new Dimension(150, 25));
 		testBtn.addActionListener(new ActionListener(){
 			@Override
 			public void actionPerformed(ActionEvent e) {
@@ -221,11 +223,14 @@ public class ChatClient extends JFrame{
 	
 	public static void main(String args[]) {
 		//Load the look-and-feel
+		/*
 		try {
 			UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
 		} catch (ClassNotFoundException | InstantiationException | IllegalAccessException | UnsupportedLookAndFeelException ex) {
 			System.out.println("Could not load look-and-feel to start the GUI");
 		}
+		//*/
+		WebLookAndFeel.install();
 
 		//Start up the window
 		EventQueue.invokeLater(new Runnable() {
