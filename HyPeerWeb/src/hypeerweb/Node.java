@@ -210,11 +210,18 @@ public class Node implements NodeInterface{
 		//Trying to find a negative node is a waste of time
 		if (target < 0) return null;
 		//Try to find a link with a webid that is closer to the target
-		int base = this.scoreWebIdMatch(target);
+		//Keep track of highest scoring match; not as greedy, but less network
+		//communications should make up for the slowness
+		Node closest = null;
+		int base = this.scoreWebIdMatch(target), high = base, temp;
 		for (Node n: L.getAllLinks()){
-			if (n.scoreWebIdMatch(target) > base)
-				return n;
+			if ((temp = n.scoreWebIdMatch(target)) > high){
+				high = temp;
+				closest = n;
+			}
 		}
+		if (closest != null)
+			return closest;
 		//If none are closer, get a SNeighbor
 		if (!mustBeCloser){
 			for (Node sn: L.getSurrogateNeighborsSet()){
