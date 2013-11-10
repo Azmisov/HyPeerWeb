@@ -9,6 +9,8 @@ import java.awt.GridBagLayout;
 import java.awt.Insets;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.KeyEvent;
+import java.awt.event.KeyListener;
 import java.io.IOException;
 import java.io.StringWriter;
 import java.util.ArrayList;
@@ -36,7 +38,8 @@ public class ChatTab extends JPanel{
 	private final DefaultComboBoxModel<ChatUser> chatUsersLst = new DefaultComboBoxModel();
 	//The last user that chatted something
 	//If they send another message, we don't want to display their name twice
-	private ChatUser lastUserTo, lastUserFrom;
+	private ChatUser lastUserTo, lastUserFrom, currentUser;
+	private final JTextArea chatBox;
 	
 	//Notify listeners of new message commands
 	private final ArrayList<SendListener> listeners = new ArrayList();
@@ -95,31 +98,49 @@ public class ChatTab extends JPanel{
 		);
 		chatBoxScroll.setMinimumSize(new Dimension(1, 70));
 		chatBoxScroll.setPreferredSize(new Dimension(1, 70));
-		JTextArea chatBox = new JTextArea();
+		chatBox = new JTextArea();
 		chatBox.setBorder(padding);
 		chatBoxScroll.setViewportView(chatBox);
 		
 		//Action box
 		final CardLayout btnsLayout = new CardLayout();
 		final JPanel btns = new JPanel(btnsLayout);
+		
 		//Empty chatroom
 		JLabel lblEmpty = new JLabel("The chatroom is empty. Go find some friends.");
 		lblEmpty.setFont(new Font("SansSerif", Font.BOLD, 12));
 		btns.add(lblEmpty, EMPTY);
+		
 		//Filled chatroom
 		JPanel roomFilled = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 0));
 		btns.add(roomFilled, FILLED);
+		
 		//Send a public message
 		JButton btnSendPublic = new JButton("Send Public");
 		btnSendPublic.setToolTipText("Broadcast message (Enter)");
+		btnSendPublic.addActionListener(new ActionListener(){
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				sendMessage(false);
+			}
+		});
 		roomFilled.add(btnSendPublic);
+		
+		//Send a private message
 		final JButton btnSendPrivate = new JButton("Send Private");
 		btnSendPrivate.setToolTipText("Send message (Ctrl+Enter)");
+		btnSendPrivate.addActionListener(new ActionListener(){
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				sendMessage(true);
+			}
+		});
 		roomFilled.add(btnSendPrivate);
+		
+		//Handle changes between FILLED and EMPTY
 		final JComboBox userList = new JComboBox();
 		userList.setModel(chatUsersLst);
 		roomFilled.add(userList);
-		//Handle changes between FILLED and EMPTY
 		btnsLayout.show(btns, EMPTY);
 		chatUsersLst.addListDataListener(new ListDataListener(){
 			@Override
@@ -134,6 +155,21 @@ public class ChatTab extends JPanel{
 			}
 			@Override
 			public void contentsChanged(ListDataEvent e){}
+		});
+		
+		//Hotkeys for send buttons
+		chatBox.addKeyListener(new KeyListener(){
+			@Override
+			public void keyPressed(KeyEvent e) {
+				if (e.getKeyCode() == KeyEvent.VK_ENTER){
+					sendMessage(e.isControlDown());
+					e.consume();
+				}
+			}
+			@Override
+			public void keyTyped(KeyEvent e) {}
+			@Override
+			public void keyReleased(KeyEvent e) {}
 		});
 		
 		//Layout all the components in this tab
@@ -157,6 +193,15 @@ public class ChatTab extends JPanel{
 	
 	//CHAT ACTIONS
 	/**
+	 * Sets who is chatting from this GUI instance
+	 * This can only be called once; otherwise, you'll get unexpected behavior
+	 * @param userid the user's id number
+	 * @param username the user's name/alias
+	 */
+	public void setActiveUser(int userid, String username){
+		
+	}
+	/**
 	 * Updates a user in the chatroom
 	 * @param userid the ID of the user we want to update
 	 * @param username if null, it will remove the user; if the
@@ -169,7 +214,7 @@ public class ChatTab extends JPanel{
 			return;
 		//Create a new user
 		if (cu == null){
-			cu = new ChatUser(username);
+			cu = new ChatUser(userid, username);
 			chatUsers.put(userid, cu);
 			chatUsersLst.addElement(cu);
 			writeStatus("<b>"+cu.name+"</b> is online");
@@ -219,10 +264,21 @@ public class ChatTab extends JPanel{
 	 * @param recipientID the recipient's id (-1 to send to everyone)
 	 * @param message the message to send
 	 */
-	private void sendMessage(int userID, int recipientID, String message){
-		receiveMessage(userID, recipientID, message);
-		for (SendListener l: listeners)
-			l.callback(userID, recipientID, message);
+	private void sendMessage(boolean privateMessage){
+		String mess = chatBox.getText().trim();
+		//Cannot send a message if we haven't registered a user to this GUI
+		if (currentUser != null && mess.length() > 0){
+			int recipientID = -1;
+			//Only broadcast the message if there are users
+			if (chatUsersLst.getSize() > 0){
+				if (privateMessage)
+					recipientID = ((ChatUser) chatUsersLst.getSelectedItem()).id;
+				for (SendListener l: listeners)
+					l.callback(recipientID, mess);
+			}
+			receiveMessage(currentUser.id, recipientID, mess);
+		}
+		chatBox.setText(null);
 	}
 	
 	//CHAT HTML MACROS
@@ -235,7 +291,7 @@ public class ChatTab extends JPanel{
 	private void writeMessage(ChatUser userFrom, ChatUser userTo, String message){
 		//We don't know who sent this message; they never sent an updateUser command
 		if (userFrom == null)
-			userFrom = new ChatUser("anonymous");
+			userFrom = new ChatUser(-1, "anonymous");
 		//This person was the last one to chat something
 		if (userFrom == lastUserFrom && userTo == lastUserTo)
 			writePlain(message+"<br/>");
@@ -358,12 +414,13 @@ public class ChatTab extends JPanel{
 		private static final int minRGB = 30, maxRGB = 200;
 		//User attributes
 		public String color, name;
+		public int id;
 		
 		/**
 		 * Create a new chat user
 		 * @param name the user's name
 		 */
-		public ChatUser(String name){
+		public ChatUser(int id, String name){
 			//Random username color
 			//RGB values between 100-250
 			int delta = maxRGB-minRGB;
@@ -374,6 +431,7 @@ public class ChatTab extends JPanel{
 				rand.nextInt(delta)+minRGB
 			);
 			this.name = name;
+			this.id = id;
 		}
 		@Override
 		public String toString(){
@@ -383,6 +441,6 @@ public class ChatTab extends JPanel{
 	
 	//SEND NOTIFICATION HANDLERS
 	public static abstract class SendListener{
-		abstract void callback(int senderID, int recipientID, String message);
+		abstract void callback(int recipientID, String message);
 	}
 }

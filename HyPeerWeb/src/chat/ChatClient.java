@@ -10,7 +10,6 @@ import static java.lang.Thread.sleep;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.swing.*;
-import javax.swing.border.Border;
 import javax.swing.border.CompoundBorder;
 import javax.swing.border.EmptyBorder;
 
@@ -19,7 +18,6 @@ import javax.swing.border.EmptyBorder;
  * TODO:
  *	- listener on close to clean-up, delete InceptionSegment, etc.
  *  - add buttons for actions sidebar (e.g. addNode, disconnect, deleteNode, etc)
- *  - 
  *  - write code for GraphTab/ListTab
  * @author isaac
  */
@@ -211,7 +209,7 @@ public class ChatClient extends JFrame{
 			@Override
 			public void focusGained(FocusEvent e) {
 				if (txt.getText().equals(defVal))
-					txt.setText("");
+					txt.setText(null);
 			}
 			@Override
 			public void focusLost(FocusEvent e) {
