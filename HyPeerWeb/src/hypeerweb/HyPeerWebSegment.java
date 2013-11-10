@@ -319,10 +319,5 @@ public class HyPeerWebSegment<T extends Node> extends Node implements HyPeerWebI
 				}				
 			}
 		};
-		
-	}
-		
-		
-		
 	}
 }
