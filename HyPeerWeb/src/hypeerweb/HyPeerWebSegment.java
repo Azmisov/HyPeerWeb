@@ -1,7 +1,6 @@
 package hypeerweb;
 
 import hypeerweb.visitors.SendVisitor;
-import java.util.HashMap;
 import java.util.Random;
 import java.util.TreeMap;
 import validator.HyPeerWebInterface;
@@ -263,26 +262,30 @@ public class HyPeerWebSegment<T extends Node> extends Node implements HyPeerWebI
 	private enum HyPeerWebState{
 		//No nodes
 		HAS_NONE {
-			public HyPeerWebState addNode(){
+			@Override
+			public HyPeerWebState addNode(HyPeerWebSegment web){
 				//Use a proxy, if the request came from another segment
 				//broadcast state change to HAS_ONE
 				//handle special case
 				return HAS_ONE;
 			}
-			public HyPeerWebState removeNode(Node n){
+			@Override
+			public HyPeerWebState removeNode(HyPeerWebSegment web){
 				//Throw an error; this shouldn't happen
 				return HAS_NONE;
 			}
 		},
 		//Only one node
 		HAS_ONE {
-			public HyPeerWebState addNode(){
+			@Override
+			public HyPeerWebState addNode(HyPeerWebSegment web){
 				//Use a proxy, if the request came from another segment
 				//broadcast state change to HAS_MANY
 				//handle special case
 				return HAS_MANY;
 			}
-			public HyPeerWebState removeNode(){
+			@Override
+			public HyPeerWebState removeNode(HyPeerWebSegment web){
 				//broadcast state change to HAS_NONE
 				//handle special case
 				return HAS_NONE;
@@ -290,22 +293,24 @@ public class HyPeerWebSegment<T extends Node> extends Node implements HyPeerWebI
 		},
 		//More than one node
 		HAS_MANY {
-			public HyPeerWebState addNode(){
+			@Override
+			public HyPeerWebState addNode(HyPeerWebSegment web){
 				//Use a proxy, if the request came from another segment
 				return HAS_MANY;
 			}
-			public HyPeerWebState removeNode(TreeMap<Integer, Node> nodes){
+			@Override
+			public HyPeerWebState removeNode(HyPeerWebSegment web){
 				//If the HyPeerWeb has more than two nodes, remove normally
-				int size = nodes.size();
+				int size = web.nodes.size();
 				Node last, first = null;
 				if (size > 2 ||
 					//We can get rid of the rest of these checks if we end
 					//up storing proxy nodes in "nodes"
 					//Basically, we're trying to find a node with webID > 1 or height > 1
-					(last = nodes.lastEntry().getValue()).getWebId() > 1 ||
+					(last = (Node) web.nodes.lastEntry().getValue()).getWebId() > 1 ||
 					//The only nodes left are 0 and 1; check their heights to see if they have children
 					last.getHeight() > 1 ||
-					(size == 2 && nodes.firstEntry().getValue().getHeight() > 1) ||
+					(size == 2 && ((Node) web.nodes.firstEntry().getValue()).getHeight() > 1) ||
 					//The only other possibility is if we have one node, with a proxy child
 					(size == 1 && last.L.getHighestLink().getWebId() > 1))
 				{
@@ -319,5 +324,7 @@ public class HyPeerWebSegment<T extends Node> extends Node implements HyPeerWebI
 				}				
 			}
 		};
+		public abstract HyPeerWebState addNode(HyPeerWebSegment web);
+		public abstract HyPeerWebState removeNode(HyPeerWebSegment web);
 	}
 }

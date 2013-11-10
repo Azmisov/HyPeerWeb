@@ -145,7 +145,7 @@ public class HyPeerWebTest {
 				f2 = web.getRandomNode();
 			} while (f2 == f1);
 			SendVisitor x = new SendVisitor(f1.getWebId());
-			x.visit(f2, null);
+			x.visit(f2);
 			found = x.getFinalNode();
 			if (found == null){
 				System.out.println("f1 = " + f1);
@@ -168,7 +168,7 @@ public class HyPeerWebTest {
 			while (web.getNode(bad_id) != null)
 				bad_id *= 3;
 			SendVisitor x = new SendVisitor(bad_id);
-			x.visit(web.getFirstNode(), null);
+			x.visit(web.getFirstNode());
 			assertNull(x.getFinalNode());
 		}
 	}
@@ -177,7 +177,7 @@ public class HyPeerWebTest {
 	public void testBroadcast() throws Exception {
 		begin("TESTING BROADCAST");
 		ListNodesVisitor x = new ListNodesVisitor();
-		x.visit(web.getRandomNode(), null);
+		x.visit(web.getRandomNode());
 		if(x.getNodeList().size() < web.getSize()) {
 			for(Node n : web.getOrderedListOfNodes()) {
 				if(!x.getNodeList().contains(n)){
