@@ -1,11 +1,12 @@
 package hypeerweb.visitors;
 
+import hypeerweb.Attributes;
 import hypeerweb.Node;
 
 /**
  * Navigates from one node to another
  */
-public class SendVisitor implements VisitorInterface{
+public class SendVisitor extends AbstractVisitor{
 	/**
 	 * The webID that we are searching for
 	 */
@@ -47,7 +48,7 @@ public class SendVisitor implements VisitorInterface{
 	 * @param n the node to visit
 	 */
 	@Override
-	public void visit(Node n) {
+	public void visit(Node n, Attributes a) {
 		if (n.getWebId() == targetWebId){
 			finalNode = n;
 			performTargetOperation(n);
@@ -56,7 +57,7 @@ public class SendVisitor implements VisitorInterface{
 			performIntermediateOperation(n);
 			Node next = n.getCloserNode(targetWebId, approximateMatch);
 			if (next != null)
-				next.accept(this);
+				next.accept(this, a);
 			else if (approximateMatch){
 				finalNode = n;
 				performTargetOperation(n);

@@ -102,9 +102,9 @@ public class HyPeerWebSegment<T extends Node> extends Node implements HyPeerWebI
 	private T removeSecondNode(T n) throws Exception{		
 		Node last = n.getNeighbors()[0];
 		//Save the remaining node's attributes
-		HashMap<String, Object> attrs = last.getAllAttributes();
+		Attributes attrs = last.data;
 		removeAllNodes();
-		addFirstNode().setAllAttributes(attrs);
+		addFirstNode().data = attrs;
 		return n;
 	}
 	/**

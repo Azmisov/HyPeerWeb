@@ -21,7 +21,7 @@ public class ListNodesVisitor extends BroadcastVisitor{
 	}
 
 	@Override
-	protected void performOperation(Node n) {
+	public void performOperation(Node n) {
 		nodeList.add(n);
 	}
 }

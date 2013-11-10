@@ -1,6 +1,6 @@
 package hypeerweb;
 
-import hypeerweb.visitors.VisitorInterface;
+import hypeerweb.visitors.AbstractVisitor;
 import java.util.*;
 import validator.NodeInterface;
 
@@ -18,13 +18,12 @@ public class Node implements NodeInterface{
 	 * A reference to a node's connections
 	 */
 	public Links L;
+	public Attributes data = new Attributes();
 	//State machines
 	private static final int recurseLevel = 2; //2 = neighbor's neighbors
 	private FoldStateInterface foldState = new FoldStateStable(); 
 	//Hash code prime
 	private static long prime = Long.parseLong("2654435761");
-	//Used to test send and broadcast methods
-	private HashMap<String, Object> attributes = new HashMap<>();
 	
 	//CONSTRUCTORS
 	/**
@@ -235,10 +234,10 @@ public class Node implements NodeInterface{
 		return Integer.bitCount(~(webID ^ idSearch));
 	}
 	/**
-	 * Get all nodes to broadcast to in a broadcast operation
-	 * @return a list of nodes to broadcast to
+	 * Get all child nodes of HyPeerWeb spanning tree
+	 * @return a list of children nodes
 	 */
-	public ArrayList<Node> getBroadcastNodes(){
+	public ArrayList<Node> getTreeChildren(){
 		HashSet<Integer>
 				generatedNeighbors = new HashSet(),
 				generatedInverseSurrogates = new HashSet();
@@ -265,6 +264,28 @@ public class Node implements NodeInterface{
 				found.add(node);
 		}
 		return found;
+	}
+	/**
+	 * Get parent node of HyPeerWeb spanning tree
+	 * @return null if there is no parent, 
+	 */
+	public Node getTreeParent(){
+		if (webID == 0) return null;
+		//This algorithm is just the reverse of getTreeChildren()
+		//First check for a neighbor with the correct ID
+		int neighborID = webID & ~Integer.lowestOneBit(webID);
+		for (Node n: L.getNeighborsSet()){
+			if (n.getWebId() == neighborID)
+				return n;
+		}
+		//Otherwise, there must be a surrogate tree parent
+		for (Node sn: L.getSurrogateNeighborsSet()){
+			if (sn.getWebId() == (neighborID | ((1 << (sn.getHeight() - 1)) << 1)))
+				return sn;
+		}
+		//This should never happen in a valid HyPeerWeb
+		assert(false);
+		return null;
 	}
 	
 	//FIND VALID NODES
@@ -726,9 +747,10 @@ public class Node implements NodeInterface{
 	/**
 	 * Accept a visitor for traversal
 	 * @param v a HyPeerWeb visitor
+	 * @param a parameters to send along
 	 */
-	public void accept(VisitorInterface v){
-		v.visit(this);
+	public void accept(AbstractVisitor v, Attributes a){
+		v.visit(this, a);
 	}
 	
 	//CLASS OVERRIDES
@@ -787,37 +809,5 @@ public class Node implements NodeInterface{
 				builder.append(n.getWebId()).append("(").append(n.getHeight()).append("), ");
 		}
 		return builder.toString();
-	}
-	
-	//NODE ATTRIBUTES
-	/**
-	 * Set a node data attribute
-	 * @param name the name of the attribute (key)
-	 * @param value the data to hold under this name
-	 */
-	public void setAttribute(String name, Object value){
-		attributes.put(name, value);
-	}
-	/**
-	 * Retrieve data stored under a particular name
-	 * @param name the name the data was stored under
-	 * @return the data object, or null, if it doesn't exist
-	 */
-	public Object getAttribute(String name){
-		return attributes.get(name);
-	}
-	/**
-	 * Sets all the node's data
-	 * @param attrs a key-value name pair HashMap
-	 */
-	public void setAllAttributes(HashMap<String, Object> attrs){
-		attributes = attrs;
-	}
-	/**
-	 * Retrieves all the node's data
-	 * @return node data as a key-value name pair HashMap
-	 */
-	public HashMap<String, Object> getAllAttributes(){
-		return attributes;
 	}
 }
