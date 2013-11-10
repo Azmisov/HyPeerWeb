@@ -2,6 +2,8 @@ package chat;
 
 import hypeerweb.HyPeerWebSegment;
 import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import static java.lang.Thread.sleep;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -30,6 +32,9 @@ public class ChatClient extends JFrame{
 	//Main pane (graph, list, chat) padding
 	private final int pad = 8;
 	private final EmptyBorder padding = new EmptyBorder(pad, pad, pad, pad);
+	
+	//GUI components
+	private ChatTab chat;
 		
 	public ChatClient(){
 		initGUI();
@@ -85,6 +90,16 @@ public class ChatClient extends JFrame{
 		c.gridy++;
 		c.insets.top = 0;
 		actionBar.add(txtPort, c);
+		c.gridy++;
+		c.insets.top = 20;
+		JButton testBtn = new JButton("Run Simulation");
+		testBtn.addActionListener(new ActionListener(){
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				testChatRoom();
+			}
+		});
+		actionBar.add(testBtn, c);
 		
 		hSplit.add(actionBar, BorderLayout.EAST);
 		
@@ -92,7 +107,8 @@ public class ChatClient extends JFrame{
 		GraphTab x = new GraphTab();
 		JTabbedPane tabs = new JTabbedPane();
 		hSplit.add(tabs, BorderLayout.CENTER);
-		tabs.addTab("Chat", new ChatTab(padding, title));
+		chat = new ChatTab(padding, title);
+		tabs.addTab("Chat", chat);
 		tabs.addTab("Node Graph", x);
 		tabs.addTab("Node List", new ListTab());
 		try {
@@ -123,36 +139,40 @@ public class ChatClient extends JFrame{
 	//</editor-fold>
 	
 	//ACTIONS
-	private void testChatRoom(){
-		EventQueue.invokeLater(new Runnable() {
-			@Override
-			public void run() {
-				try {
-					sleep(500);
-					ChatTab.ChatUser isaac = userUpdate(0, "user91023");
-					sleep(200);
-					writeMessage(isaac, null, "Hello world");
-					sleep(200);
-					userUpdate(0, "isaac");
-					sleep(200);
-					writeMessage(isaac, null, "blue babies");
-					sleep(200);
-					writeMessage(isaac, null, "Someone join me.... I'm getting bored");
-					sleep(200);
-					ChatTab.ChatUser john = userUpdate(1, "John");
-					sleep(200);
-					writeMessage(isaac, john, "Dude what is up");
-					sleep(200);
-					writeMessage(john, isaac, "Hey, I like your style bro");
-					sleep(200);
-					userUpdate(0, null);
-					sleep(200);
-					userUpdate(1, null);
-				} catch (InterruptedException ex) {
-					Logger.getLogger(ChatTab.class.getName()).log(Level.SEVERE, null, ex);
-				}
+	public void testChatRoom(){
+		(new Thread(new ChatSimulation())).start();
+	}
+	
+	private class ChatSimulation implements Runnable{
+		@Override
+		public void run() {
+			int delay = 3000;
+			try {
+				chat.writeStatus("Beginning chat simulation");
+				chat.updateUser(0, "user91023");
+				sleep(delay);
+				chat.receiveMessage(0, -1, "Hello world");
+				sleep(delay);
+				chat.updateUser(0, "isaac");
+				sleep(delay);
+				chat.receiveMessage(0, -1, "blue babies");
+				sleep(delay);
+				chat.receiveMessage(0, -1, "Someone join me.... I'm getting bored");
+				sleep(delay);
+				chat.updateUser(1, "John");
+				sleep(delay);
+				chat.receiveMessage(0, 1, "Dude what is up");
+				sleep(delay);
+				chat.receiveMessage(1, 0, "Hey, I like your style bro");
+				sleep(delay);
+				chat.updateUser(0, null);
+				sleep(delay);
+				chat.updateUser(1, null);
+				chat.writeStatus("Chat simulation finished");
+			} catch (InterruptedException ex) {
+				Logger.getLogger(ChatTab.class.getName()).log(Level.SEVERE, null, ex);
 			}
-		});
+		}
 	}
 	
 }

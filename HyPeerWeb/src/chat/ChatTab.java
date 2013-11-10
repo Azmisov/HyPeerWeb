@@ -2,6 +2,7 @@ package chat;
 
 import java.awt.CardLayout;
 import java.awt.Dimension;
+import java.awt.FlowLayout;
 import java.awt.Font;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
@@ -90,37 +91,37 @@ public class ChatTab extends JPanel{
 		chatBoxScroll.setViewportView(chatBox);
 		
 		//Action box
-		JPanel btns = new JPanel(new CardLayout(5, 0));
+		final CardLayout btnsLayout = new CardLayout();
+		final JPanel btns = new JPanel(btnsLayout);
+		//Empty chatroom
 		JLabel lblEmpty = new JLabel("The chatroom is empty. Go find some friends.");
 		lblEmpty.setFont(new Font("SansSerif", Font.BOLD, 12));
 		btns.add(lblEmpty, EMPTY);
+		//Filled chatroom
+		JPanel roomFilled = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 0));
+		btns.add(roomFilled, FILLED);
 		//Send a public message
 		JButton btnSendPublic = new JButton("Send Public");
 		btnSendPublic.setToolTipText("Broadcast message (Enter)");
-		btns.add(btnSendPublic, FILLED);
-		//Private message sending auto-hides based on the # of users
+		roomFilled.add(btnSendPublic);
 		final JButton btnSendPrivate = new JButton("Send Private");
 		btnSendPrivate.setToolTipText("Send message (Ctrl+Enter)");
-		btns.add(btnSendPrivate, FILLED);
+		roomFilled.add(btnSendPrivate);
 		final JComboBox userList = new JComboBox();
 		userList.setModel(chatUsersLst);
-		btns.add(userList, FILLED);
+		roomFilled.add(userList);
+		//Handle changes between FILLED and EMPTY
+		btnsLayout.show(btns, EMPTY);
 		chatUsersLst.addListDataListener(new ListDataListener(){
 			@Override
 			public void intervalAdded(ListDataEvent e) {
-				if (chatUsersLst.getSize() == 1){
-					userList.setVisible(true);
-					btnSendPrivate.setVisible(true);
-					System.out.println("YES, this happens");
-				}
+				if (chatUsersLst.getSize() == 1)
+					btnsLayout.show(btns, FILLED);
 			}
 			@Override
 			public void intervalRemoved(ListDataEvent e) {
-				if (chatUsersLst.getSize() == 0){
-					userList.setVisible(false);
-					btnSendPrivate.setVisible(false);
-					System.out.println("YES, this happens");
-				}
+				if (chatUsersLst.getSize() == 0)
+					btnsLayout.show(btns, EMPTY);
 			}
 			@Override
 			public void contentsChanged(ListDataEvent e){}
@@ -249,7 +250,7 @@ public class ChatTab extends JPanel{
 	 * Write generic status information
 	 * @param message status message
 	 */
-	private void writeStatus(String message){
+	public void writeStatus(String message){
 		writeHTML(Tag.FONT, "status", message+"<br/>", null, null);
 		lastUserFrom = null;
 	}
