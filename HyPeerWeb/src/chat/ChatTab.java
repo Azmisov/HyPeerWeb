@@ -19,6 +19,7 @@ import javax.swing.border.Border;
 import javax.swing.event.ListDataEvent;
 import javax.swing.event.ListDataListener;
 import javax.swing.text.BadLocationException;
+import javax.swing.text.DefaultCaret;
 import javax.swing.text.Element;
 import javax.swing.text.html.HTML.Tag;
 import javax.swing.text.html.HTMLDocument;
@@ -41,6 +42,7 @@ public class ChatTab extends JPanel{
 	private final ArrayList<SendListener> listeners = new ArrayList();
 	
 	//Editing the chat log display
+	private final JScrollBar scrollBar;
 	private final HTMLDocument document;
 	private final HTMLEditorKit editor;
 	private final Element cursor;
@@ -55,9 +57,14 @@ public class ChatTab extends JPanel{
 			JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED,
 			JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED
 		);
+		scrollBar = chatLogScroll.getVerticalScrollBar();
 		JTextPane chatLog = new JTextPane();
 		chatLog.setEditable(false);
 		chatLogScroll.setViewportView(chatLog);
+		
+		//Autoscroll to bottom
+		DefaultCaret caret = (DefaultCaret) chatLog.getCaret();
+		caret.setUpdatePolicy(DefaultCaret.ALWAYS_UPDATE);
 		
 		//The chat log uses an HTML renderer to display its stuff
 		//Formatting is stored in styles.css and templates.html
@@ -79,13 +86,17 @@ public class ChatTab extends JPanel{
 		//to drop out of the "welcome message" p-tag
 		needBreak = true;
 		writeTag(Tag.P);
+		//Little break so last message isn't at the very bottom
+		needBreak = true;
+		writeTag(Tag.P);
 
 		//Chat text box
 		JScrollPane chatBoxScroll = new JScrollPane(
 			JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED,
 			JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED
 		);
-		chatBoxScroll.setPreferredSize(new Dimension(1, 60));
+		chatBoxScroll.setMinimumSize(new Dimension(1, 70));
+		chatBoxScroll.setPreferredSize(new Dimension(1, 70));
 		JTextArea chatBox = new JTextArea();
 		chatBox.setBorder(padding);
 		chatBoxScroll.setViewportView(chatBox);
@@ -156,6 +167,8 @@ public class ChatTab extends JPanel{
 	 */
 	public void updateUser(int userid, String username){
 		ChatUser cu = chatUsers.get(userid);
+		if (cu == null && username == null)
+			return;
 		//Create a new user
 		if (cu == null){
 			cu = new ChatUser(username);
@@ -284,8 +297,8 @@ public class ChatTab extends JPanel{
 			if (document.getLength() == 0)
 				document.insertAfterStart(cursor, data);
 			else{
-				//System.out.println(document.getLength());
-				editor.insertHTML(document, document.getLength(), data, needBreak ? 1 : 0, 0, tag);
+				int offset = needBreak ? 0 : 1;
+				editor.insertHTML(document, document.getLength()-offset, data, needBreak ? 1 : 0, 0, tag);
 				needBreak = false;
 			}
 		} catch (BadLocationException | IOException ex) {

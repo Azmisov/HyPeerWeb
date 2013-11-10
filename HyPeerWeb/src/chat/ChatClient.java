@@ -8,6 +8,7 @@ import static java.lang.Thread.sleep;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.swing.*;
+import javax.swing.border.Border;
 import javax.swing.border.CompoundBorder;
 import javax.swing.border.EmptyBorder;
 
@@ -55,53 +56,7 @@ public class ChatClient extends JFrame{
 		add(hSplit);
 		
 		//Right half will be an actions bar
-		JPanel actionBar = new JPanel();
-		actionBar.setBorder(padding);
-		actionBar.setLayout(new GridBagLayout());
-		GridBagConstraints c = new GridBagConstraints();
-		c.ipadx = 3;		c.ipady = 3;
-		c.gridwidth = 2;	c.gridheight = 1;
-		c.gridx = 0;		c.gridy = 0;
-		c.fill = GridBagConstraints.BOTH;
-		c.insets = new Insets(0, 0, 4, 0);
-		JButton btnCreate = new JButton("Create Network");
-		actionBar.add(btnCreate, c);
-		c.gridy++;
-		c.gridwidth = 1;
-		c.insets.right = 4;
-		actionBar.add(new JButton("Join"), c);
-		c.gridx = 1;
-		c.insets.right = 0;
-		actionBar.add(new JButton("Watch"), c);
-		//Network connection settings
-		JTextField txtIP = new JTextField("IP Address");
-		JTextField txtPort = new JTextField("Port #");
-		CompoundBorder txtPad = new CompoundBorder(
-			txtIP.getBorder(),
-			(new EmptyBorder(2, 2, 2, 2))
-		);
-		txtIP.setBorder(txtPad);
-		txtPort.setBorder(txtPad);
-		c.gridwidth = 2;
-		c.gridy++;
-		c.gridx = 0;
-		c.insets.top = 2;
-		actionBar.add(txtIP, c);
-		c.gridy++;
-		c.insets.top = 0;
-		actionBar.add(txtPort, c);
-		c.gridy++;
-		c.insets.top = 20;
-		JButton testBtn = new JButton("Run Simulation");
-		testBtn.addActionListener(new ActionListener(){
-			@Override
-			public void actionPerformed(ActionEvent e) {
-				testChatRoom();
-			}
-		});
-		actionBar.add(testBtn, c);
-		
-		hSplit.add(actionBar, BorderLayout.EAST);
+		hSplit.add(initActionBar(), BorderLayout.EAST);
 		
 		//Left half will be a tabbed pane for graphing/chatting		
 		GraphTab x = new GraphTab();
@@ -119,6 +74,75 @@ public class ChatClient extends JFrame{
 		} catch (Exception ex) {
 			System.out.println("Cannot hypeerweb stuff");
 		}
+	}
+	public JPanel initActionBar(){
+		JPanel bar = new JPanel();
+		GroupLayout stack = new GroupLayout(bar);
+		JPanel box = initNetworkBox();		
+		bar.setLayout(stack);
+		stack.setHorizontalGroup(
+            stack.createParallelGroup()
+				.addComponent(box)
+        );
+        stack.setVerticalGroup(
+            stack.createParallelGroup(GroupLayout.Alignment.CENTER)
+				.addGroup(stack.createSequentialGroup()
+	                .addComponent(box)
+					.addContainerGap(1000, Short.MAX_VALUE))
+        );
+		return bar;
+	}
+	public JPanel initNetworkBox(){
+		//Initialize layout
+		JPanel box = new JPanel();
+		box.setBorder(padding);
+		box.setLayout(new GridBagLayout());
+		GridBagConstraints c = new GridBagConstraints();
+		c.ipadx = 3;		c.ipady = 3;
+		c.gridwidth = 2;	c.gridheight = 1;
+		c.gridx = 0;		c.gridy = 0;
+		c.fill = GridBagConstraints.HORIZONTAL;
+		c.insets = new Insets(0, 0, 4, 0);
+		//Create a network
+		JButton btnCreate = new JButton("Create Network");
+		box.add(btnCreate, c);
+		c.gridy++;
+		c.gridwidth = 1;
+		c.insets.right = 4;
+		//Connect to a network
+		box.add(new JButton("Join"), c);
+		c.gridx = 1;
+		c.insets.right = 0;
+		box.add(new JButton("Watch"), c);
+		//Network connection configuration
+		JTextField txtIP = new JTextField("IP Address");
+		JTextField txtPort = new JTextField("Port #");
+		CompoundBorder txtPad = new CompoundBorder(
+			txtIP.getBorder(),
+			(new EmptyBorder(2, 2, 2, 2))
+		);
+		txtIP.setBorder(txtPad);
+		txtPort.setBorder(txtPad);
+		c.gridwidth = 2;
+		c.gridy++;
+		c.gridx = 0;
+		c.insets.top = 2;
+		box.add(txtIP, c);
+		c.gridy++;
+		c.insets.top = 0;
+		box.add(txtPort, c);
+		c.gridy++;
+		c.insets.top = 20;
+		//Chat simulation
+		JButton testBtn = new JButton("Run Simulation");
+		testBtn.addActionListener(new ActionListener(){
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				testChatRoom();
+			}
+		});
+		box.add(testBtn, c);
+		return box;
 	}
 	public static void main(String args[]) {
 		//Load the look-and-feel
