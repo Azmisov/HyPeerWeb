@@ -4,6 +4,8 @@ import hypeerweb.HyPeerWebSegment;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.FocusEvent;
+import java.awt.event.FocusListener;
 import static java.lang.Thread.sleep;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -39,6 +41,7 @@ public class ChatClient extends JFrame{
 		
 	public ChatClient(){
 		initGUI();
+		//Bind to a hypeerweb segment here...
 	}
 	
 	// <editor-fold defaultstate="collapsed" desc="GUI INITIALIZATION">
@@ -77,23 +80,60 @@ public class ChatClient extends JFrame{
 	}
 	public JPanel initActionBar(){
 		JPanel bar = new JPanel();
+		JPanel box = initNetworkBox();
+		JPanel box2 = initConnectionBox();
+		
+		// <editor-fold defaultstate="collapsed" desc="Layout components in a stack">
 		GroupLayout stack = new GroupLayout(bar);
-		JPanel box = initNetworkBox();		
 		bar.setLayout(stack);
 		stack.setHorizontalGroup(
             stack.createParallelGroup()
 				.addComponent(box)
+				.addComponent(box2)
         );
         stack.setVerticalGroup(
             stack.createParallelGroup(GroupLayout.Alignment.CENTER)
 				.addGroup(stack.createSequentialGroup()
+					.addContainerGap(20, 20)
 	                .addComponent(box)
+					.addComponent(box2)
 					.addContainerGap(1000, Short.MAX_VALUE))
         );
+		// </editor-fold>
+		
 		return bar;
 	}
 	public JPanel initNetworkBox(){
-		//Initialize layout
+		//Create a network
+		JButton btnCreate = new JButton("Create Network");
+		
+		//Connect to a network
+		JButton btnJoin = new JButton("Join");
+		JButton btnWatch = new JButton("Watch");
+		
+		//Network connection configuration
+		final String t1 = "IP Address", t2 = "Port #";
+		final JTextField txtIP = new JTextField(t1);
+		final JTextField txtPort = new JTextField(t2);
+		smartTextField(t1, txtIP);
+		smartTextField(t2, txtPort);
+		CompoundBorder txtPad = new CompoundBorder(
+			txtIP.getBorder(),
+			(new EmptyBorder(2, 2, 2, 2))
+		);
+		txtIP.setBorder(txtPad);
+		txtPort.setBorder(txtPad);
+		
+		//Chat simulation
+		JButton testBtn = new JButton("Run Simulation");
+		testBtn.addActionListener(new ActionListener(){
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				testChatRoom();
+			}
+		});
+		
+		// <editor-fold defaultstate="collapsed" desc="Layout components in grid">
 		JPanel box = new JPanel();
 		box.setBorder(padding);
 		box.setLayout(new GridBagLayout());
@@ -103,26 +143,14 @@ public class ChatClient extends JFrame{
 		c.gridx = 0;		c.gridy = 0;
 		c.fill = GridBagConstraints.HORIZONTAL;
 		c.insets = new Insets(0, 0, 4, 0);
-		//Create a network
-		JButton btnCreate = new JButton("Create Network");
 		box.add(btnCreate, c);
 		c.gridy++;
 		c.gridwidth = 1;
 		c.insets.right = 4;
-		//Connect to a network
-		box.add(new JButton("Join"), c);
+		box.add(btnJoin, c);
 		c.gridx = 1;
 		c.insets.right = 0;
-		box.add(new JButton("Watch"), c);
-		//Network connection configuration
-		JTextField txtIP = new JTextField("IP Address");
-		JTextField txtPort = new JTextField("Port #");
-		CompoundBorder txtPad = new CompoundBorder(
-			txtIP.getBorder(),
-			(new EmptyBorder(2, 2, 2, 2))
-		);
-		txtIP.setBorder(txtPad);
-		txtPort.setBorder(txtPad);
+		box.add(btnWatch, c);
 		c.gridwidth = 2;
 		c.gridy++;
 		c.gridx = 0;
@@ -133,17 +161,66 @@ public class ChatClient extends JFrame{
 		box.add(txtPort, c);
 		c.gridy++;
 		c.insets.top = 20;
-		//Chat simulation
-		JButton testBtn = new JButton("Run Simulation");
-		testBtn.addActionListener(new ActionListener(){
-			@Override
-			public void actionPerformed(ActionEvent e) {
-				testChatRoom();
-			}
-		});
 		box.add(testBtn, c);
+		// </editor-fold>
+		
 		return box;
 	}
+	public JPanel initConnectionBox(){		
+		//Segment name
+		Font bold = new Font("SansSerif", Font.BOLD, 12);
+		JLabel lblSeg = new JLabel("Subnet Name:");
+		lblSeg.setFont(bold);
+		JTextField txtSeg = new JTextField();
+		
+		//Username
+		JLabel lblName = new JLabel("Chat Alias:");
+		lblName.setFont(bold);
+		JTextField txtName = new JTextField();
+		
+		//Disconnect button
+		JButton btn = new JButton("Disconnect");
+		btn.setPreferredSize(new Dimension(150, 25));
+		
+		// <editor-fold defaultstate="collapsed" desc="Layout components in grid">
+		JPanel box = new JPanel();
+		box.setBorder(padding);
+		box.setLayout(new GridBagLayout());
+		GridBagConstraints c = new GridBagConstraints();
+		c.ipadx = 3;		c.ipady = 3;
+		c.gridwidth = 2;	c.gridheight = 1;
+		c.gridx = 0;		c.gridy = 0;
+		c.fill = GridBagConstraints.HORIZONTAL;
+		c.insets = new Insets(0, 0, 2, 0);
+		box.add(lblSeg, c);
+		c.gridy++;
+		box.add(txtSeg, c);
+		c.gridy++;
+		box.add(lblName, c);
+		c.gridy++;
+		c.insets.bottom = 4;
+		box.add(txtName, c);
+		c.gridy++;
+		box.add(btn, c);
+		// </editor-fold>
+		
+		return box;
+	}
+	private void smartTextField(final String defVal, final JTextField txt){
+		txt.addFocusListener(new FocusListener(){
+			@Override
+			public void focusGained(FocusEvent e) {
+				if (txt.getText().equals(defVal))
+					txt.setText("");
+			}
+			@Override
+			public void focusLost(FocusEvent e) {
+				if (txt.getText().isEmpty())
+					txt.setText(defVal);
+			}
+		});
+	}
+	
 	public static void main(String args[]) {
 		//Load the look-and-feel
 		try {

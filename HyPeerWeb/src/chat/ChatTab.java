@@ -42,7 +42,6 @@ public class ChatTab extends JPanel{
 	private final ArrayList<SendListener> listeners = new ArrayList();
 	
 	//Editing the chat log display
-	private final JScrollBar scrollBar;
 	private final HTMLDocument document;
 	private final HTMLEditorKit editor;
 	private final Element cursor;
@@ -57,7 +56,6 @@ public class ChatTab extends JPanel{
 			JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED,
 			JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED
 		);
-		scrollBar = chatLogScroll.getVerticalScrollBar();
 		JTextPane chatLog = new JTextPane();
 		chatLog.setEditable(false);
 		chatLogScroll.setViewportView(chatLog);
