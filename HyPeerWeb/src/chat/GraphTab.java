@@ -4,6 +4,7 @@ import hypeerweb.Links;
 import hypeerweb.Node;
 import java.awt.AlphaComposite;
 import java.awt.BasicStroke;
+import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
@@ -19,19 +20,113 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
 import java.util.TreeSet;
+import javax.swing.JButton;
+import javax.swing.JLabel;
 import javax.swing.JPanel;
+import javax.swing.JToolBar;
+import javax.swing.JComboBox;
 
 /**
  * Draws a directed graph of a HyPeerWeb node
  * @author isaac
  */
-public class GraphTab extends JPanel{
-	
+public class GraphTab extends JPanel{	
 	public GraphTab(){
-		//Graphing tab is split into a 
+		setLayout(new BorderLayout(0, 0));
+		
+		//Graphing tab is split into a toolbar and graph
+		JToolBar bar = new JToolBar(JToolBar.HORIZONTAL);
+		bar.setFloatable(false);
+		
+		/**
+		 * Stuff needed:
+		 * Hide, Unhide All, Help, Viewing Mode, Go up a level
+		 */
+		bar.add(new JLabel("Mode: "));
+		JComboBox<GraphMode> modes = new JComboBox(GraphMode.values());
+		bar.add(modes);
+		bar.add(new JButton("Hide Selected"));
+		bar.add(new JButton("Unhide All"));
+		bar.add(new JButton("Navigate Up"));		
+		JButton btnHelp = new JButton("Help");
+		btnHelp.setAlignmentX(RIGHT_ALIGNMENT);
+		bar.add(btnHelp);
+		
+		//Layout components
+		add(bar, BorderLayout.NORTH);
 	}
 	
-	private class Graph extends JPanel{
+	private enum GraphMode{
+		GRAPH ("Graph"),
+		Tree ("Spanning Tree"),
+		PETRIE ("Petrie Polygon");
+		private String name;
+		GraphMode(String name){
+			this.name = name;
+		}
+		@Override
+		public String toString(){
+			return name;
+		}
+	}
+	private interface GraphInterface{
+		public ArrayList<DrawData> draw(Node n, int levels);
+	}
+	private class DrawLink implements Comparable{
+		public Node origin;
+		public Node friend;
+		public Links.Type type;
+
+		public DrawLink(Node origin, Node friend, Links.Type type){
+			this.origin = origin;
+			this.friend = friend;
+			this.type = type;
+		}
+
+		@Override
+		public boolean equals(Object n){
+			if (n == null || getClass() != n.getClass())
+				return false;
+			DrawLink l = (DrawLink) n;
+			return type == l.type &&
+					((origin == l.origin && friend == l.friend) ||
+					 (friend == l.origin && origin == l.friend));
+		}
+		@Override
+		public int hashCode() {
+			int hash = 7;
+			hash = 29 * hash + Objects.hashCode(this.origin);
+			hash = 29 * hash + Objects.hashCode(this.friend);
+			hash = 29 * hash + (this.type != null ? this.type.hashCode() : 0);
+			return hash;
+		}
+		@Override
+		public int compareTo(Object o) {
+			if (o == null || getClass() != o.getClass())
+				return 1;
+			DrawLink l = (DrawLink) o;
+			if (l.type == type)
+				return this.equals(l) ? 0 : 1;
+			return l.type.compareTo(type);
+		}
+	}
+	private class DrawData{
+		ArrayList<Node> children;
+		Node parent;		//Parent node (if level != 0)
+		double skew;		//Rotation skew angle
+		int level;			//Level that this was drawn at
+		Point2D coord;		//Coordinates on screen
+
+		public DrawData(Node parent, ArrayList<Node> children, double skew, int level, Point2D coord){
+			this.parent = parent;
+			this.children = children;
+			this.skew = skew;
+			this.level = level;
+			this.coord = coord;
+		}
+	}
+	
+	private class DefaultGraph implements GraphInterface{
 		//Graph stuff
 		private String title;					//Graph title
 		//Node stuff
@@ -43,7 +138,7 @@ public class GraphTab extends JPanel{
 			margin = 0,							//Minimum margin between nodes (within allowed window space)
 			selMargin = 5;						//Mimimum margin before a node is close enough to mouse for selection
 		private int mx, my,	winSize;			//Mouse coordinates and window size
-		private final TreeSet<Link> links;		//Set of links for the graph
+		private final TreeSet<DrawLink> links;		//Set of links for the graph
 		//Link types
 		private final Links.Type[] Ntypes = {
 			Links.Type.NEIGHBOR,
@@ -65,7 +160,7 @@ public class GraphTab extends JPanel{
 		private Map.Entry<Node, DrawData> active, selected;
 		private boolean redraw = false;
 
-		public Graph(){
+		public DefaultGraph(){
 			hide = new HashSet<>();
 			data = new HashMap<>();
 			links = new TreeSet<>();
@@ -183,7 +278,7 @@ public class GraphTab extends JPanel{
 		}
 
 		//DRAWING
-		public void draw(Node n, int levels){
+		public ArrayList<DrawData> draw(Node n, int levels){
 			this.n = n;
 			this.levels = levels;
 			nParent = n.getParent();
@@ -204,6 +299,7 @@ public class GraphTab extends JPanel{
 			active = null;
 			buffer = null;
 			repaint();
+			return null;
 		}
 		private void redraw(boolean force){
 			if (force){
@@ -215,9 +311,8 @@ public class GraphTab extends JPanel{
 			redraw = !force;
 			repaint();
 		}
-		@Override
 		protected void paintComponent(Graphics g) {
-			super.paintComponent(g);
+			//super.paintComponent(g); UNCOMMENT THIS
 			Graphics2D g2 = (Graphics2D) g;
 			//Redrawing
 			if (buffer != null && !redraw){
@@ -303,7 +398,7 @@ public class GraphTab extends JPanel{
 					for (Node link: Nlinks[i]){
 						if (!data.containsKey(link))
 							friends.add(link);
-						links.add(new Link(n, link, Ntypes[i]));
+						links.add(new DrawLink(n, link, Ntypes[i]));
 					}
 				}
 				parentData.children = friends;
@@ -374,8 +469,8 @@ public class GraphTab extends JPanel{
 		private void paintLinks(Graphics2D g){
 			DrawData d1, d2;
 			Links.Type curType = null;
-			ArrayList<Link> badLinks = new ArrayList<>();
-			for (Link l: links){
+			ArrayList<DrawLink> badLinks = new ArrayList<>();
+			for (DrawLink l: links){
 				d1 = data.get(l.friend);
 				d2 = data.get(l.origin);
 				//Make sure references exist in the graph
@@ -415,58 +510,6 @@ public class GraphTab extends JPanel{
 				coord = new Point2D.Double();
 			data.put(n, new DrawData(parent, children, skew, level, coord));
 		}
-		private class Link implements Comparable{
-			public Node origin;
-			public Node friend;
-			public Links.Type type;
 
-			public Link(Node origin, Node friend, Links.Type type){
-				this.origin = origin;
-				this.friend = friend;
-				this.type = type;
-			}
-
-			@Override
-			public boolean equals(Object n){
-				if (n == null || getClass() != n.getClass())
-					return false;
-				Link l = (Link) n;
-				return type == l.type &&
-						((origin == l.origin && friend == l.friend) ||
-						 (friend == l.origin && origin == l.friend));
-			}
-			@Override
-			public int hashCode() {
-				int hash = 7;
-				hash = 29 * hash + Objects.hashCode(this.origin);
-				hash = 29 * hash + Objects.hashCode(this.friend);
-				hash = 29 * hash + (this.type != null ? this.type.hashCode() : 0);
-				return hash;
-			}
-			@Override
-			public int compareTo(Object o) {
-				if (o == null || getClass() != o.getClass())
-					return 1;
-				Link l = (Link) o;
-				if (l.type == type)
-					return this.equals(l) ? 0 : 1;
-				return l.type.compareTo(type);
-			}
-		}
-		private class DrawData{
-			ArrayList<Node> children;
-			Node parent;		//Parent node (if level != 0)
-			double skew;		//Rotation skew angle
-			int level;			//Level that this was drawn at
-			Point2D coord;		//Coordinates on screen
-
-			public DrawData(Node parent, ArrayList<Node> children, double skew, int level, Point2D coord){
-				this.parent = parent;
-				this.children = children;
-				this.skew = skew;
-				this.level = level;
-				this.coord = coord;
-			}
-		}
 	}
 }
