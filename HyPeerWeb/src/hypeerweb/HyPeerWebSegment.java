@@ -280,9 +280,9 @@ public class HyPeerWebSegment<T extends Node> extends Node implements HyPeerWebI
 				return first;
 			}
 			@Override
-			public Node removeNode(HyPeerWebSegment web){
+			public Node removeNode(HyPeerWebSegment web) throws Exception{
 				//Throw an error; this shouldn't happen
-				return HAS_NONE;
+				throw web.removeNodeErr;
 			}
 		},
 		//Only one node
@@ -368,7 +368,7 @@ public class HyPeerWebSegment<T extends Node> extends Node implements HyPeerWebI
 			}
 		};
 		public abstract Node addNode(HyPeerWebSegment web) throws Exception;
-		public abstract Node removeNode(HyPeerWebSegment web);
+		public abstract Node removeNode(HyPeerWebSegment web) throws Exception;
 	}
 	
 	public class SetStateVisitor extends BroadcastVisitor{
