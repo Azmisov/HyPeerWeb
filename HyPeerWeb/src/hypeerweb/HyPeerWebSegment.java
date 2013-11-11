@@ -280,7 +280,7 @@ public class HyPeerWebSegment<T extends Node> extends Node implements HyPeerWebI
 				return first;
 			}
 			@Override
-			public Node removeNode(HyPeerWebSegment web) throws Exception{
+			public Node removeNode(HyPeerWebSegment web, Node n) throws Exception{
 				//Throw an error; this shouldn't happen
 				throw web.removeNodeErr;
 			}
@@ -321,11 +321,14 @@ public class HyPeerWebSegment<T extends Node> extends Node implements HyPeerWebI
 				}
 			}
 			@Override
-			public Node removeNode(HyPeerWebSegment web){
+			public Node removeNode(HyPeerWebSegment web, Node n) throws Exception{
 				//broadcast state change to HAS_NONE
 				//handle special case
+				if (web.db != null && !web.db.clear())
+					throw web.clearErr;
+				web.nodes = new TreeMap<>();
 				web.changeState(HAS_NONE);
-				return HAS_NONE;
+				return null;
 			}
 		},
 		//More than one node
@@ -341,7 +344,7 @@ public class HyPeerWebSegment<T extends Node> extends Node implements HyPeerWebI
 				return child;
 			}
 			@Override
-			public Node removeNode(HyPeerWebSegment web){
+			public Node removeNode(HyPeerWebSegment web, Node n) throws Exception{
 				//If the HyPeerWeb has more than two nodes, remove normally
 				int size = web.nodes.size();
 				Node last, first = null;
@@ -362,13 +365,18 @@ public class HyPeerWebSegment<T extends Node> extends Node implements HyPeerWebI
 				else{
 					//handle special case
 					//broadcast state change to HAS_ONE
+					last = n.getNeighbors()[0];
+					//Save the remaining node's attributes
+					Attributes attrs = last.data;
+					web.removeAllNodes();
+					web.addFirstNode().data = attrs;
 					web.changeState(HAS_ONE);
-					return HAS_ONE;
+					return n;
 				}				
 			}
 		};
 		public abstract Node addNode(HyPeerWebSegment web) throws Exception;
-		public abstract Node removeNode(HyPeerWebSegment web) throws Exception;
+		public abstract Node removeNode(HyPeerWebSegment web, Node n) throws Exception;
 	}
 	
 	public class SetStateVisitor extends BroadcastVisitor{
