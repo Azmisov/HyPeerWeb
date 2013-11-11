@@ -57,20 +57,34 @@ public class GraphTab extends JPanel{
 	}
 	
 	private enum GraphMode{
-		GRAPH ("Graph"),
-		Tree ("Spanning Tree"),
-		PETRIE ("Petrie Polygon");
+		DEFAULT ("Default"){
+			@Override
+			public ArrayList<DrawData> draw(Node n, int levels){
+				return null;
+			}
+		},
+		TREE ("Spanning Tree"){
+			@Override
+			public ArrayList<DrawData> draw(Node n, int levels){
+				return null;
+			}
+		},
+		PETRIE ("Petrie Polygon"){
+			@Override
+			public ArrayList<DrawData> draw(Node n, int levels){
+				return null;
+			}
+		};
+		
 		private String name;
 		GraphMode(String name){
 			this.name = name;
 		}
+		public abstract ArrayList<DrawData> draw(Node n, int levels);
 		@Override
 		public String toString(){
 			return name;
 		}
-	}
-	private interface GraphInterface{
-		public ArrayList<DrawData> draw(Node n, int levels);
 	}
 	private class DrawLink implements Comparable{
 		public Node origin;
@@ -126,7 +140,7 @@ public class GraphTab extends JPanel{
 		}
 	}
 	
-	private class DefaultGraph implements GraphInterface{
+	private class Graph extends JPanel{
 		//Graph stuff
 		private String title;					//Graph title
 		//Node stuff
@@ -160,7 +174,7 @@ public class GraphTab extends JPanel{
 		private Map.Entry<Node, DrawData> active, selected;
 		private boolean redraw = false;
 
-		public DefaultGraph(){
+		public Graph(){
 			hide = new HashSet<>();
 			data = new HashMap<>();
 			links = new TreeSet<>();
