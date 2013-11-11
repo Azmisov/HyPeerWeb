@@ -1,6 +1,7 @@
 package hypeerweb;
 
 import hypeerweb.visitors.SendVisitor;
+import hypeerweb.visitors.BroadcastVisitor;
 import java.util.Random;
 import java.util.TreeMap;
 import validator.HyPeerWebInterface;
@@ -327,4 +328,22 @@ public class HyPeerWebSegment<T extends Node> extends Node implements HyPeerWebI
 		public abstract HyPeerWebState addNode(HyPeerWebSegment web);
 		public abstract HyPeerWebState removeNode(HyPeerWebSegment web);
 	}
+	
+	public class SetStateVisitor extends BroadcastVisitor{
+	HyPeerWebSegment.HyPeerWebState newState;
+	
+	public SetStateVisitor(HyPeerWebSegment.HyPeerWebState s)
+	{
+		newState = s;
+	}
+	
+	/**
+	 * Perform a broadcast operation
+	 * @param n the node that has been broadcasted to
+	 */
+	@Override
+	public void performOperation(Node n){
+		((HyPeerWebSegment) n).changeState(newState);
+	}
+}
 }
