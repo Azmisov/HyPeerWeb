@@ -1,5 +1,7 @@
 package chat;
 
+import chat.ChatServer.ChatUser;
+import chat.ChatServer.SendListener;
 import java.awt.CardLayout;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
@@ -15,7 +17,6 @@ import java.io.IOException;
 import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Random;
 import javax.swing.*;
 import javax.swing.border.Border;
 import javax.swing.event.ListDataEvent;
@@ -405,42 +406,5 @@ public class ChatTab extends JPanel{
 		}
 		String s = writer.toString();
 		return s;
-	}
-	
-	//CHAT USERS
-	private static class ChatUser{
-		//Random color generator
-		private static final Random rand = new Random();
-		private static final int minRGB = 30, maxRGB = 200;
-		//User attributes
-		public String color, name;
-		public int id;
-		
-		/**
-		 * Create a new chat user
-		 * @param name the user's name
-		 */
-		public ChatUser(int id, String name){
-			//Random username color
-			//RGB values between 100-250
-			int delta = maxRGB-minRGB;
-			color = String.format(
-				"#%02x%02x%02x",
-				rand.nextInt(delta)+minRGB,
-				rand.nextInt(delta)+minRGB,
-				rand.nextInt(delta)+minRGB
-			);
-			this.name = name;
-			this.id = id;
-		}
-		@Override
-		public String toString(){
-			return name;
-		}
-	}
-	
-	//SEND NOTIFICATION HANDLERS
-	public static abstract class SendListener{
-		abstract void callback(int recipientID, String message);
 	}
 }
