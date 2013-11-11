@@ -259,18 +259,27 @@ public class HyPeerWebSegment<T extends Node> extends Node implements HyPeerWebI
     }
 	// </editor-fold>
 	
+	private void changeState(HyPeerWebState state){
+		this.state = state;
+	}
+	
 	private enum HyPeerWebState{
 		//No nodes
 		HAS_NONE {
 			@Override
-			public HyPeerWebState addNode(HyPeerWebSegment web){
+			public Node addNode(HyPeerWebSegment web) throws Exception{
 				//Use a proxy, if the request came from another segment
 				//broadcast state change to HAS_ONE
 				//handle special case
-				return HAS_ONE;
+				Node first = new Node(0, 0);
+				if (web.db != null && !web.db.addNode(first))
+					throw web.addNodeErr;
+				web.nodes.put(0, first);
+				web.changeState(HAS_ONE);
+				return first;
 			}
 			@Override
-			public HyPeerWebState removeNode(HyPeerWebSegment web){
+			public Node removeNode(HyPeerWebSegment web){
 				//Throw an error; this shouldn't happen
 				return HAS_NONE;
 			}
@@ -278,28 +287,60 @@ public class HyPeerWebSegment<T extends Node> extends Node implements HyPeerWebI
 		//Only one node
 		HAS_ONE {
 			@Override
-			public HyPeerWebState addNode(HyPeerWebSegment web){
+			public Node addNode(HyPeerWebSegment web) throws Exception{
 				//Use a proxy, if the request came from another segment
 				//broadcast state change to HAS_MANY
 				//handle special case
-				return HAS_MANY;
+				Node sec = new Node(1, 1),
+					first = (Node) web.nodes.firstEntry().getValue();
+				//Update the database first
+				if (web.db != null) {
+					web.db.beginCommit();
+					web.db.addNode(sec);
+					web.db.setHeight(0, 1);
+					//reflexive folds
+					web.db.setFold(0, 1);
+					web.db.setFold(1, 0);
+					//reflexive neighbors
+					web.db.addNeighbor(0, 1);
+					web.db.addNeighbor(1, 0);
+					if (!web.db.endCommit())
+						throw web.addNodeErr;
+				}
+				//Update java struct
+				{
+					first.setHeight(1);
+					first.L.setFold(sec);
+					sec.L.setFold(first);
+					first.L.addNeighbor(sec);
+					sec.L.addNeighbor(first);
+					web.nodes.put(1, sec);
+					web.changeState(HAS_MANY);
+					return sec;
+				}
 			}
 			@Override
-			public HyPeerWebState removeNode(HyPeerWebSegment web){
+			public Node removeNode(HyPeerWebSegment web){
 				//broadcast state change to HAS_NONE
 				//handle special case
+				web.changeState(HAS_NONE);
 				return HAS_NONE;
 			}
 		},
 		//More than one node
 		HAS_MANY {
 			@Override
-			public HyPeerWebState addNode(HyPeerWebSegment web){
+			public Node addNode(HyPeerWebSegment web) throws Exception{
 				//Use a proxy, if the request came from another segment
-				return HAS_MANY;
+				Node child = web.getRandomNode().findInsertionNode().addChild(web.db);
+				if (child == null)
+					throw web.addNodeErr;
+				//Node successfully added!
+				web.nodes.put(child.getWebId(), child);
+				return child;
 			}
 			@Override
-			public HyPeerWebState removeNode(HyPeerWebSegment web){
+			public Node removeNode(HyPeerWebSegment web){
 				//If the HyPeerWeb has more than two nodes, remove normally
 				int size = web.nodes.size();
 				Node last, first = null;
@@ -320,11 +361,12 @@ public class HyPeerWebSegment<T extends Node> extends Node implements HyPeerWebI
 				else{
 					//handle special case
 					//broadcast state change to HAS_ONE
+					web.changeState(HAS_ONE);
 					return HAS_ONE;
 				}				
 			}
 		};
-		public abstract HyPeerWebState addNode(HyPeerWebSegment web);
-		public abstract HyPeerWebState removeNode(HyPeerWebSegment web);
+		public abstract Node addNode(HyPeerWebSegment web) throws Exception;
+		public abstract Node removeNode(HyPeerWebSegment web);
 	}
 }
