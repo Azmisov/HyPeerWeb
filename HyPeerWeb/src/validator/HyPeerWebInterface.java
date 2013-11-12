@@ -14,7 +14,7 @@ public interface HyPeerWebInterface {
      * @post result.length = |HyPeerWeb| AND every node in the HyPeerWeb is in the result AND the result is ordered by WebId where the first node is node 0.
      *       If the HyPeerWeb is empty it returns an empty array of length 0.
      */
-    NodeInterface[] getOrderedListOfNodes();
+    NodeInterface[] getAllSegmentNodes();
     
     /**
      * Returns the node in the HyPeerWeb with result.getWebId() = webId.  If no such node exists return null.

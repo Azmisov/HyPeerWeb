@@ -19,12 +19,13 @@ import validator.Validator;
 public class HyPeerWebTest {
 	//Testing variables
 	private static final int
-		MAX_SIZE = 8,					//Maximum HyPeerWeb size for tests
+		MAX_SIZE = 600,				//Maximum HyPeerWeb size for tests
 		TEST_EVERY = 1,					//How often to validate the HyPeerWeb for add/delete
 		SEND_TESTS = 2000,				//How many times to test send operation
+		BROADCAST_TESTS = 120,			//How many times to test broadcast operation
 		RAND_SEED = -1;					//Seed for getting random nodes (use -1 for a random seed)
 	private static final String
-		DB_NAME = null;	//Enables database syncing
+		DB_NAME = null;					//Enables database syncing
 	private static HyPeerWeb<Node> web;
 	private static String curTest;
 	
@@ -176,20 +177,24 @@ public class HyPeerWebTest {
 	@Test
 	public void testBroadcast() throws Exception {
 		begin("TESTING BROADCAST");
-		ListNodesVisitor x = new ListNodesVisitor();
-		x.visit(web.getRandomNode());
-		if(x.getNodeList().size() < web.getSize()) {
-			for(Node n : web.getOrderedListOfNodes()) {
-				if(!x.getNodeList().contains(n)){
-					System.out.println("Missing: " + n);
+		for (int i=0; i<BROADCAST_TESTS; i++){
+			Node origin = web.getRandomNode();
+			//System.out.println("Starting with:"+origin);
+			ListNodesVisitor x = new ListNodesVisitor();
+			x.visit(origin);
+			if(x.getNodeList().size() < web.getSize()) {
+				for(Node n : web.getAllSegmentNodes()) {
+					if(!x.getNodeList().contains(n)){
+						System.out.println("Missing: " + n);
+					}
 				}
 			}
+			assertTrue(x.getNodeList().size() == web.getSize());
+			for(Node n : x.getNodeList()) {
+				assertTrue(web.getNode(n.getWebId()) != null);
+			}
+			Set<Node> set = new HashSet<>(x.getNodeList());
+			assertTrue(set.size() == x.getNodeList().size());
 		}
-		assertTrue(x.getNodeList().size() == web.getSize());
-		for(Node n : x.getNodeList()) {
-			assertTrue(web.getNode(n.getWebId()) != null);
-		}
-		Set<Node> set = new HashSet<>(x.getNodeList());
-		assertTrue(set.size() == x.getNodeList().size());
 	}
 }

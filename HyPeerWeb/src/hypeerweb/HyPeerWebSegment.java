@@ -23,7 +23,8 @@ public class HyPeerWebSegment<T extends Node> extends Node implements HyPeerWebI
 			addNodeErr = new Exception("Failed to add a new node"),
 			removeNodeErr = new Exception("Failed to remove a node"),
 			clearErr = new Exception("Failed to clear the HyPeerWeb"),
-			replaceErr = new Exception("Failed to replace a node. Warning! Your HyPeerWeb is corrupted.");
+			replaceErr = new Exception("Failed to replace a node. Warning! Your HyPeerWeb is corrupted."),
+			corruptErr = new Exception("The HyPeerWeb is corrupt! Cannot proceed.");
 	
 	/**
 	 * Constructor for initializing the HyPeerWeb with default Node values
@@ -91,8 +92,9 @@ public class HyPeerWebSegment<T extends Node> extends Node implements HyPeerWebI
 			@Override
 			public void performOperation(Node n) {
 				HyPeerWebSegment seg = (HyPeerWebSegment) n;
+				//If we can't remove all nodes, HyPeerWeb is corrupt
 				if (seg.db != null && !seg.db.clear())
-					throw clearErr;
+					changeState(HyPeerWebState.CORRUPT);
 				seg.nodes = new TreeMap<>();
 			}
 		}).visit(this);
@@ -106,7 +108,12 @@ public class HyPeerWebSegment<T extends Node> extends Node implements HyPeerWebI
 	public T addNode() throws Exception{
 		return (T) state.addNode(this);
 	}
-		
+	
+	/**
+	 * Holds the state of the entire HyPeerWeb, not just
+	 * this individual segment. Handles special cases for
+	 * add and remove node, as well as a corrupt HyPeerWeb.
+	 */
 	private enum HyPeerWebState{
 		//No nodes
 		HAS_NONE {
@@ -218,20 +225,39 @@ public class HyPeerWebSegment<T extends Node> extends Node implements HyPeerWebI
 				}
 				//If the broadcastStateChangeentire HyPeerWeb has only two nodes
 				else{
+					//TODO, I think there is a better way to do this
+					throw new Exception("Not implemented");
+					/*
 					//handle special case
 					//broadcast state change to HAS_ONE
 					last = n.getNeighbors()[0];
 					//Save the remaining node's attributes
 					Attributes attrs = last.data;
 					web.removeAllNodes();
-					web.addFirstNode().data = attrs;
+					HAS_NONE.addNode(web).data = attrs;
 					web.changeState(HAS_ONE);
+					*/
 				}				
+			}
+		},
+		//Network is corrupt; a segment failed to perform an operation
+		CORRUPT {
+			@Override
+			public Node addNode(HyPeerWebSegment web) throws Exception {
+				throw corruptErr;
+			}
+			@Override
+			public void removeNode(HyPeerWebSegment web, Node n) throws Exception {
+				throw corruptErr;
 			}
 		};
 		public abstract Node addNode(HyPeerWebSegment web) throws Exception;
 		public abstract void removeNode(HyPeerWebSegment web, Node n) throws Exception;
 	}
+	/**
+	 * Change the state of the HyPeerWeb
+	 * @param state the new state
+	 */
 	private void changeState(final HyPeerWebState state){
 		(new BroadcastVisitor(){
 			@Override
@@ -241,23 +267,75 @@ public class HyPeerWebSegment<T extends Node> extends Node implements HyPeerWebI
 		}).visit(this);
 	}
 	
-	// <editor-fold defaultstate="collapsed" desc="GETTERS">
+	// <editor-fold defaultstate="collapsed" desc="SEGMENT GETTERS">
+	@Override
+	public T[] getAllSegmentNodes() {
+		return (T[]) nodes.values().toArray(new Node[nodes.size()]);
+	}
+	/**
+	 * Gets the first node in the HyPeerWeb
+	 * @return node with webID = 0
+	 */
+	public T getFirstSegmentNode(){
+		if (nodes.isEmpty())
+			return null;
+		return (T) nodes.firstEntry().getValue();
+	}
+	/**
+	 * Gets the last node in the HyPeerWeb
+	 * @return 
+	 */
+	public T getLastSegmentNode(){
+		if (nodes.isEmpty())
+			return null;
+		return (T) nodes.lastEntry().getValue();
+	}
+	/**
+	 * Get the size of the HyPeerWeb
+	 * @return the number of nodes in the web
+	 */
+	public int getSegmentSize(){
+		return nodes.size();
+	}
+	/**
+	 * Is the HyPeerWeb empty?
+	 * @return true if it is empty
+	 */
+	public boolean isSegmentEmpty(){
+		return state == HyPeerWebState.HAS_NONE;
+	}
+    @Override
+    public String toString() {
+        StringBuilder builder = new StringBuilder();
+        for (Node n : nodes.values())
+            builder.append(n);
+        return builder.toString();
+    }
+	// </editor-fold>
+	
+	// <editor-fold defaultstate="collapsed" desc="HYPEERWEB GETTERS">
 	/**
 	 * Retrieves a random node in the HyPeerWeb
 	 * @return a random node; null, if there are no nodes
-	 * @author John, Josh
 	 */
 	public T getRandomNode(){
 		//Always start at Node with WebID = 0
-		if (nodes.isEmpty())
+		if (state == HyPeerWebState.HAS_NONE)
 			return null;
+		else if (nodes.isEmpty()){
+			//TODO, find a segment that isn't empty and run getRandomNode from there
+		}
 		Node first = nodes.firstEntry().getValue();
 		randVisitor = new SendVisitor(rand.nextInt(Integer.MAX_VALUE), true);
 		randVisitor.visit(first);
+		//TODO, this won't work with a distributed system
 		return (T) randVisitor.getFinalNode();
 	}
-	@Override
-	public T[] getOrderedListOfNodes() {
+	/**
+	 * Get a list of all the nodes in the HyPeerWeb
+	 * @return an array of nodes
+	 */
+	public T[] getAllNodes() {
 		return (T[]) nodes.values().toArray(new Node[nodes.size()]);
 	}
 	/**
@@ -267,46 +345,23 @@ public class HyPeerWebSegment<T extends Node> extends Node implements HyPeerWebI
 	 */
 	@Override
 	public T getNode(int webId){
+		//TODO, use sendvisitor to get actual node
 		return (T) nodes.get(webId);
-	}
-	/**
-	 * Gets the first node in the HyPeerWeb
-	 * @return node with webID = 0
-	 */
-	public T getFirstNode(){
-		if (nodes.isEmpty())
-			return null;
-		return (T) nodes.firstEntry().getValue();
-	}
-	/**
-	 * Gets the last node in the HyPeerWeb
-	 * @return 
-	 */
-	public T getLastNode(){
-		if (nodes.isEmpty())
-			return null;
-		return (T) nodes.lastEntry().getValue();
 	}
 	/**
 	 * Get the size of the HyPeerWeb
 	 * @return the number of nodes in the web
 	 */
 	public int getSize(){
-		return nodes.size();
+		//TODO
+		return -1;
 	}
 	/**
 	 * Is the HyPeerWeb empty?
 	 * @return true if it is empty
 	 */
 	public boolean isEmpty(){
-		return nodes.isEmpty();
+		return state == HyPeerWebState.HAS_NONE;
 	}
-    @Override
-    public String toString() {
-        StringBuilder builder = new StringBuilder();
-        for (Node n : nodes.values())
-            builder.append(n);
-        return builder.toString();
-    }
 	// </editor-fold>
 }

@@ -269,7 +269,7 @@ public class Node implements NodeInterface{
 		}
 		//Otherwise, there must be a surrogate tree parent
 		for (Node sn: L.getSurrogateNeighborsSet()){
-			if (sn.getWebId() == (neighborID | ((1 << (sn.getHeight() - 1)) << 1)))
+			if (sn.getWebId() == (neighborID & ~((1 << (sn.getHeight() - 1)) << 1)))
 				return sn;
 		}
 		//This should never happen in a valid HyPeerWeb
@@ -638,15 +638,6 @@ public class Node implements NodeInterface{
 	
 	//SETTERS
 	/**
-	 * Sets the node's webid
-	 * @param id the new webid
-	 */
-	protected void setWebID(int id){
-		//We don't need to broadcast a key change here, since this is only
-		//called when there is one node left
-		this.webID = id;
-	}
-	/**
 	 * Sets the Height of the Node and updates all pointers
 	 * @param h The new height
 	 */
@@ -657,8 +648,6 @@ public class Node implements NodeInterface{
 		//Now add back in with the new key
 		L.broadcastUpdate(null, this);
 	}
-		
-	//FOLD STATE PATTERN
 	/**
 	 * Switches the Fold State pattern state
 	 * @param stable whether or not to switch to the stable state
@@ -666,6 +655,8 @@ public class Node implements NodeInterface{
 	private void setFoldState(boolean stable){
 		foldState = stable ? new Node.FoldStateStable() : new Node.FoldStateUnstable();
 	}
+	
+	//FOLD STATE PATTERN
 	/**
 	 * Gets this node's fold state
 	 * @return a FoldState
@@ -771,6 +762,14 @@ public class Node implements NodeInterface{
 		Node f;
 		//Folds
 		//builder.append("\n\tFold State: ").append(foldState instanceof FoldStateStable ? "Stable" : "Unstable");
+		/*
+		ArrayList<Node> childs = getTreeChildren();
+		builder.append("\n\tTree Children: ");
+		for (Node c: childs)
+			builder.append(c.getWebId()).append(", ");
+		Node par = getTreeParent();
+		builder.append("\n\tTree Parent: ").append(par == null ? null : par.getWebId());
+		//*/
 		if ((f = L.getFold()) != null)
 			builder.append("\n\tFold: ").append(f.getWebId()).
 					append("(").append(f.getHeight()).append(")");

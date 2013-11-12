@@ -42,7 +42,7 @@ public class Validator {
      */
     public Validator(HyPeerWebInterface hypeerWeb) {
         this.hypeerWeb = hypeerWeb;
-        this.nodes = hypeerWeb.getOrderedListOfNodes();
+        this.nodes = hypeerWeb.getAllSegmentNodes();
     }
     
 //Queries

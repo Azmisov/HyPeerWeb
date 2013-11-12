@@ -15,7 +15,8 @@ public abstract class AbstractVisitor{
 		visit(n, null);
 	}
 	/**
-	 * Visit a particular node
+	 * Visit a particular node; use of this method is implementation
+	 * dependent; you may need to use the default constructor
 	 * @param n the node to visit
 	 * @param a parameters to pass along with each visit
 	 */
