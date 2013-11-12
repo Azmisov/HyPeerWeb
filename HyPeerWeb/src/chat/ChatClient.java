@@ -1,7 +1,7 @@
 package chat;
 
 import com.alee.laf.WebLookAndFeel;
-import hypeerweb.HyPeerWeb;
+import hypeerweb.HyPeerWebSegment;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -69,7 +69,7 @@ public class ChatClient extends JFrame{
 		tabs.addTab("Node Graph", x);
 		tabs.addTab("Node List", new ListTab());
 		try {
-			HyPeerWeb web = new HyPeerWeb(null, -1);
+			HyPeerWebSegment web = new HyPeerWebSegment(null, -1);
 			for (int i=0; i<100; i++)
 				web.addNode();
 			//x.draw(web.getFirstNode(), height);
