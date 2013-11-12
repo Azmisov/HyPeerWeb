@@ -247,21 +247,6 @@ public final class Database {
 		return endCommit();
 	}
 	/**
-	 * Add a node to the database
-	 *
-	 * @param webid the node's WebID
-	 * @param height the node's height
-	 * @param fold the WebID of the node's fold
-	 * @param sfold the WebID of the node's surrogate fold
-	 * @param isfold the WebID of the node's inverse surrogate fold
-	 * @return true if the node was successfully added
-	 * @author brian
-	 */
-	protected boolean addNode(int webid, int height, Node fold, Node sfold, Node isfold) {
-		return addNode(new Node(webid, height, fold, sfold, isfold,
-					null, null, null));
-	}
-	/**
 	 * Removes a node from the database
 	 *
 	 * @param webid the WebID of the node to remove

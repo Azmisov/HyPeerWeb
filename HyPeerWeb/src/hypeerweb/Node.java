@@ -37,24 +37,6 @@ public class Node implements NodeInterface{
 		this.height = height;
 		L = new Links();
 	}
-	/**
-	 * Create a Node with all of its data
-	 *
-	 * @param id The WebID of the Node
-	 * @param h The Height of the Node
-	 * @param f The Fold of the Node
-	 * @param sf The Surrogate Fold of the Node
-	 * @param isf The Inverse Surrogate Fold of the Node
-	 * @param n An ArrayList containing the Neighbors of the Node
-	 * @param sn An ArrayList containing the Surrogate Neighbors of the Node
-	 * @param isn An ArrayList containing the Inverse Surrogate Neighbors of the Node
-	 */
-	public Node(int id, int h, Node f, Node sf, Node isf, ArrayList<Node> n, ArrayList<Node> sn, ArrayList<Node> isn){
-		assert(id >= 0 && h >= 0);
-		webID = id;
-		height = h;
-		L =  new Links(f, sf, isf, n, sn, isn);		
-	}
 
 	//ADD OR REMOVE NODES
 	/**
