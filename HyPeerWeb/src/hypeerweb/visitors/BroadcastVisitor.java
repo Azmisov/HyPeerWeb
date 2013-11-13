@@ -28,7 +28,8 @@ public class BroadcastVisitor extends AbstractVisitor{
 	 * @param a data to pass along
 	 */
 	@Override
-	public void visit(Node n, Attributes a){
+	public void visit(Node n, Object o){
+		Attributes a = (Attributes) o;
 		performOperation(n);
 		//Broadcast to children
 		Integer blacklist = (Integer) (a != null ? a.getAttribute(childOrigin) : null);

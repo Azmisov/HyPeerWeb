@@ -1,6 +1,5 @@
 package hypeerweb.visitors;
 
-import hypeerweb.Attributes;
 import hypeerweb.Node;
 
 /**
@@ -20,5 +19,5 @@ public abstract class AbstractVisitor{
 	 * @param n the node to visit
 	 * @param a parameters to pass along with each visit
 	 */
-	public abstract void visit(Node n, Attributes a);
+	public abstract void visit(Node n, Object a);
 }

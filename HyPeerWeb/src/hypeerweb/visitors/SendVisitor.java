@@ -48,7 +48,8 @@ public class SendVisitor extends AbstractVisitor{
 	 * @param n the node to visit
 	 */
 	@Override
-	public void visit(Node n, Attributes a) {
+	public void visit(Node n, Object o) {
+		Attributes a = (Attributes) o;
 		if (n.getWebId() == targetWebId){
 			finalNode = n;
 			performTargetOperation(n);

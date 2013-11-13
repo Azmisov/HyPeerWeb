@@ -2,9 +2,8 @@ package hypeerweb;
 
 import hypeerweb.visitors.SendVisitor;
 import hypeerweb.visitors.BroadcastVisitor;
+import hypeerweb.visitors.SyncListener;
 import hypeerweb.visitors.SyncVisitor;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 import java.util.Random;
 import java.util.TreeMap;
 import validator.HyPeerWebInterface;
@@ -346,7 +345,7 @@ public class HyPeerWebSegment<T extends Node> extends Node implements HyPeerWebI
 	 * Get a list of all the nodes in the HyPeerWeb
 	 * @return an array of nodes
 	 */
-	public void getAllNodes(ActionListener listener) {
+	public void getAllNodes(SyncListener listener) {
 		SyncVisitor visitor = new SyncVisitor(listener);
 	}
 	
@@ -364,11 +363,8 @@ public class HyPeerWebSegment<T extends Node> extends Node implements HyPeerWebI
 	 * Get the size of the HyPeerWeb
 	 * @return the number of nodes in the web
 	 */
-	public int getSize(){
-		//TODO
-		int size = 0;
-		CountVisitor counter = new CountVisitor();
-		return size;
+	public void getSize(SyncListener listener){
+		CountVisitor counter = new CountVisitor(listener);		
 	}
 	/**
 	 * Is the HyPeerWeb empty?
@@ -378,10 +374,17 @@ public class HyPeerWebSegment<T extends Node> extends Node implements HyPeerWebI
 		return state == HyPeerWebState.HAS_NONE;
 	}
 	
-	private class CountVisitor extends BroadcastVisitor{
+	private class CountVisitor extends SyncVisitor{
+		public CountVisitor(SyncListener listener){
+			super(listener);
+		}
 		@Override
-		public void performOperation(Node n){
-			
+		public void visit(Node n) {
+			visit(n, 0);
+		}
+		@Override
+		public Object performOperation(Node n, Object a) {
+			return (int) a + ((HyPeerWebSegment) n).getSegmentSize();
 		}
 	}
 	// </editor-fold>
