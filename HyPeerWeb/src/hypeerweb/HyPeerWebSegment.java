@@ -2,6 +2,9 @@ package hypeerweb;
 
 import hypeerweb.visitors.SendVisitor;
 import hypeerweb.visitors.BroadcastVisitor;
+import hypeerweb.visitors.SyncVisitor;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.util.Random;
 import java.util.TreeMap;
 import validator.HyPeerWebInterface;
@@ -108,7 +111,15 @@ public class HyPeerWebSegment<T extends Node> extends Node implements HyPeerWebI
 	public T addNode() throws Exception{
 		return (T) state.addNode(this);
 	}
-	
+	/**
+	 * 
+	 * @param node
+	 * @return 
+	 */
+	public T deleteNode(Node node){
+		//todo something here
+		return (T) node;
+	}
 	/**
 	 * Holds the state of the entire HyPeerWeb, not just
 	 * this individual segment. Handles special cases for
@@ -269,8 +280,8 @@ public class HyPeerWebSegment<T extends Node> extends Node implements HyPeerWebI
 	
 	// <editor-fold defaultstate="collapsed" desc="SEGMENT GETTERS">
 	@Override
-	public T[] getAllSegmentNodes() {
-		return (T[]) nodes.values().toArray(new Node[nodes.size()]);
+	public TreeMap<Integer, Node> getAllSegmentNodes() {
+		return nodes;
 	}
 	/**
 	 * Gets the first node in the HyPeerWeb
@@ -335,9 +346,10 @@ public class HyPeerWebSegment<T extends Node> extends Node implements HyPeerWebI
 	 * Get a list of all the nodes in the HyPeerWeb
 	 * @return an array of nodes
 	 */
-	public T[] getAllNodes() {
-		return (T[]) nodes.values().toArray(new Node[nodes.size()]);
+	public void getAllNodes(ActionListener listener) {
+		SyncVisitor visitor = new SyncVisitor(listener);
 	}
+	
 	/**
 	 * Retrieve a node with the specified webid
 	 * @return the node with the specified webid; otherwise null

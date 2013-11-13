@@ -1,9 +1,16 @@
 package hypeerweb;
 
+import communicator.GlobalObjectId;
+import communicator.LocalObjectId;
+import communicator.PortNumber;
 import hypeerweb.visitors.AbstractVisitor;
 import java.io.ObjectStreamException;
 import java.io.Serializable;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.util.*;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import validator.NodeInterface;
 
 /**
@@ -28,6 +35,7 @@ public class Node implements NodeInterface, Serializable {
 	private FoldStateInterface foldState = new FoldStateStable(); 
 	//Hash code prime
 	private static long prime = Long.parseLong("2654435761");
+	private LocalObjectId localObjectId;
 	
 	//CONSTRUCTORS
 	/**
@@ -40,6 +48,7 @@ public class Node implements NodeInterface, Serializable {
 		this.webID = id;
 		this.height = height;
 		L = new Links();
+		localObjectId = new LocalObjectId(id);
 	}
 
 	//ADD OR REMOVE NODES
@@ -804,12 +813,21 @@ public class Node implements NodeInterface, Serializable {
 	}
 	
 	public Object writeReplace() throws ObjectStreamException {
-		// Not sure what to do here
+		
+		try {
+			return new NodeProxy(new GlobalObjectId(InetAddress.getLocalHost().getHostAddress(), PortNumber.DEFAULT_PORT_NUMBER, localObjectId));
+		} catch (UnknownHostException ex) {
+			Logger.getLogger(Node.class.getName()).log(Level.SEVERE, null, ex);
+		}
+		
 		return null;
 	}
 	
 	public Object readResolve() throws ObjectStreamException {
-		// Not sure what to do here
-		return null;
+		return this;
+	}
+	
+	public LocalObjectId getLocalObjectId(){
+		return localObjectId;
 	}
 }
