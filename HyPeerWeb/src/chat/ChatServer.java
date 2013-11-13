@@ -18,17 +18,22 @@ public class ChatServer{
 	private ArrayList<NetworkNameListener> networkNameListeners = new ArrayList();
 	
 	/**
-	 * 
+	 * Adds a node to the HyPeerWeb and tells the nodeListeners about it.
 	 */
-	public void addNode(){
-		
+	public void addNode() throws Exception{
+		Node node = segment.addNode();
+		for(NodeListener listener : nodeListeners)
+			listener.callback(node, true);
 	}
 	
 	/**
-	 * 
+	 * Deletes a node from the HyPeerWeb and tells the nodeListeners about it.
+	 * @param node the node to delete
 	 */
-	public void deleteNode(){
-		
+	public void deleteNode(Node node){
+		node = segment.deleteNode(node);
+		for(NodeListener listener : nodeListeners)
+			listener.callback(node, false);
 	}
 	
 	/**
@@ -38,6 +43,7 @@ public class ChatServer{
 	public ArrayList<Node> getAllNodes(){
 		ArrayList<Node> nodes = new ArrayList();
 		
+			
 		return nodes;
 	}
 	
@@ -161,7 +167,7 @@ public class ChatServer{
 	}
 	
 	public abstract class NodeListener{
-		abstract void callback();
+		abstract void callback(Node affectedNode, boolean adding);
 	}
 	
 	public abstract class NetworkNameListener{
