@@ -2,6 +2,9 @@ package hypeerweb;
 
 import hypeerweb.visitors.SendVisitor;
 import hypeerweb.visitors.BroadcastVisitor;
+import hypeerweb.visitors.SyncVisitor;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.util.Random;
 import java.util.TreeMap;
 import validator.HyPeerWebInterface;
@@ -343,8 +346,8 @@ public class HyPeerWebSegment<T extends Node> extends Node implements HyPeerWebI
 	 * Get a list of all the nodes in the HyPeerWeb
 	 * @return an array of nodes
 	 */
-	public TreeMap<Integer, Node> getAllNodes() {
-		//todo
+	public void getAllNodes(ActionListener listener) {
+		SyncVisitor visitor = new SyncVisitor(listener);
 	}
 	
 	/**
