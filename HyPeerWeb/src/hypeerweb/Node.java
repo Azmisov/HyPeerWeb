@@ -1,6 +1,8 @@
 package hypeerweb;
 
 import hypeerweb.visitors.AbstractVisitor;
+import java.io.ObjectStreamException;
+import java.io.Serializable;
 import java.util.*;
 import validator.NodeInterface;
 
@@ -11,7 +13,9 @@ import validator.NodeInterface;
  *  - make sure we can use == or .equals when we get to proxies
  * @author Guy
  */
-public class Node implements NodeInterface{
+
+public class Node implements NodeInterface, Serializable {
+	private static final long serialVersionUID = 314159265L;
 	//Node Attributes
 	private int webID, height;
 	/**
@@ -797,5 +801,15 @@ public class Node implements NodeInterface{
 				builder.append(n.getWebId()).append("(").append(n.getHeight()).append("), ");
 		}
 		return builder.toString();
+	}
+	
+	public Object writeReplace() throws ObjectStreamException {
+		// Not sure what to do here
+		return null;
+	}
+	
+	public Object readResolve() throws ObjectStreamException {
+		// Not sure what to do here
+		return null;
 	}
 }
