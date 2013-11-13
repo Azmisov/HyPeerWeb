@@ -81,6 +81,7 @@ public class ChatClient extends JFrame{
 		JPanel bar = new JPanel();
 		JPanel box = initNetworkBox();
 		JPanel box2 = initConnectionBox();
+		JPanel box3 = initNodeBox();
 		
 		// <editor-fold defaultstate="collapsed" desc="Layout components in a stack">
 		GroupLayout stack = new GroupLayout(bar);
@@ -89,6 +90,7 @@ public class ChatClient extends JFrame{
             stack.createParallelGroup()
 				.addComponent(box)
 				.addComponent(box2)
+				.addComponent(box3)
         );
         stack.setVerticalGroup(
             stack.createParallelGroup(GroupLayout.Alignment.CENTER)
@@ -96,6 +98,7 @@ public class ChatClient extends JFrame{
 					.addContainerGap(20, 20)
 	                .addComponent(box)
 					.addComponent(box2)
+					.addComponent(box3)
 					.addContainerGap(1000, Short.MAX_VALUE))
         );
 		// </editor-fold>
@@ -202,6 +205,49 @@ public class ChatClient extends JFrame{
 		box.add(txtName, c);
 		c.gridy++;
 		box.add(btn, c);
+		// </editor-fold>
+		
+		return box;
+	}
+	public JPanel initNodeBox(){
+		//Initialize elements
+		JButton addNode = new JButton("Add");
+		JButton deleteNode = new JButton("Delete");
+		JSpinner addCount = new JSpinner();
+		JSpinner NodeSelect = new JSpinner();
+		JTable connectList = new JTable(8,2);
+		final JLabel L = new JLabel("Node");
+		
+		
+		// <editor-fold defaultstate="collapsed" desc="Layout components in grid">
+		JPanel box = new JPanel();
+		box.setBorder(padding);
+		box.setLayout(new GridBagLayout());
+		GridBagConstraints c = new GridBagConstraints();
+		c.ipadx = 3;		c.ipady = 3;
+		c.gridwidth = 1;	c.gridheight = 1;
+		c.gridx = 0;		c.gridy = 0;
+		c.fill = GridBagConstraints.HORIZONTAL;
+		box.add(L, c);
+		c.gridx++;
+		c.gridwidth = 1;
+		box.add(NodeSelect, c);
+		c.gridwidth = 2;
+		c.gridx = 0;
+		c.weightx = 1;
+		c.weighty = 1;
+		c.gridy++;
+		box.add(connectList, c);
+		c.weightx = 0;
+		c.weighty = 0;
+		c.gridy++;
+		c.gridx = 0;
+		box.add(deleteNode, c);
+		c.gridy++;
+		c.gridwidth = 1;
+		box.add(addNode, c);
+		c.gridx++;
+		box.add(addCount, c);
 		// </editor-fold>
 		
 		return box;
