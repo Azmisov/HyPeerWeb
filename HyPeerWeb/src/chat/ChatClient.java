@@ -2,6 +2,7 @@ package chat;
 
 import com.alee.laf.WebLookAndFeel;
 import hypeerweb.HyPeerWebSegment;
+import hypeerweb.HyPeerWeb;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -37,6 +38,7 @@ public class ChatClient extends JFrame{
 	
 	//GUI components
 	private ChatTab chat;
+	private HyPeerWeb web;
 		
 	public ChatClient(){
 		initGUI();
@@ -69,7 +71,7 @@ public class ChatClient extends JFrame{
 		tabs.addTab("Node Graph", x);
 		tabs.addTab("Node List", new ListTab());
 		try {
-			HyPeerWebSegment web = new HyPeerWebSegment(null, -1);
+			web = HyPeerWeb.getInstance();
 			for (int i=0; i<100; i++)
 				web.addNode();
 			//x.draw(web.getFirstNode(), height);
@@ -214,9 +216,34 @@ public class ChatClient extends JFrame{
 		JButton addNode = new JButton("Add");
 		JButton deleteNode = new JButton("Delete");
 		JSpinner addCount = new JSpinner();
-		JSpinner NodeSelect = new JSpinner();
+		final JSpinner NodeSelect = new JSpinner();
 		JTable connectList = new JTable(8,2);
 		final JLabel L = new JLabel("Node");
+		
+		addNode.addActionListener(new ActionListener(){
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				try{
+					web.addNode();
+				}
+				catch (Exception ex)
+				{
+					System.err.println("Error in adding Node");
+				}
+			}
+		});
+		deleteNode.addActionListener(new ActionListener(){
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				try{
+					web.removeNode((int)NodeSelect.getValue());
+				}
+				catch (Exception ex)
+				{
+					System.err.println("Error in removing Node");
+				}
+			}
+		});
 		
 		
 		// <editor-fold defaultstate="collapsed" desc="Layout components in grid">
