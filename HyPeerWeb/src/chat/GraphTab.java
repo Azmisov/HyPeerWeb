@@ -30,7 +30,9 @@ import javax.swing.JComboBox;
  * Draws a directed graph of a HyPeerWeb node
  * @author isaac
  */
-public class GraphTab extends JPanel{	
+public class GraphTab extends JPanel{
+	private static int maxSizeX = 500, maxSizeY = 500;
+	
 	public GraphTab(){
 		setLayout(new BorderLayout(0, 0));
 		
@@ -52,15 +54,100 @@ public class GraphTab extends JPanel{
 		btnHelp.setAlignmentX(RIGHT_ALIGNMENT);
 		bar.add(btnHelp);
 		
+		//Bottom is the actual graph
+		Graph g = new Graph();
+		
 		//Layout components
 		add(bar, BorderLayout.NORTH);
+		add(g, BorderLayout.CENTER);
 	}
 	
 	private enum GraphMode{
 		DEFAULT ("Default"){
+			private static final int margin = 0;	//Minimum margin between nodes (within allowed window space)
+			
 			@Override
 			public ArrayList<DrawData> draw(Node n, int levels){
-				return null;
+				ArrayList<DrawData> nodes = new ArrayList();
+				
+				//Get diameters of circles
+				int radius = (int) (maxSizeX/2-levels*margin);
+				Point2D origin = new Point2D.Double(maxSizeX/2, maxSizeY/2);
+				
+				//Graph begins in the center of screen
+				nodes.add(new DrawData(n, null, null, -1, 0, origin));
+				//Loop through each connection level and draw circles
+				ArrayList<Node> parents = new ArrayList<>();
+				ArrayList<Node> friends;
+				parents.add(n);
+				for (int level = 0; level < levels; level++){
+					radius /= 2;
+					friends = new ArrayList<>();
+					for (Node parent: parents)
+						friends.addAll(drawCircle(parent, radius+margin, level));
+					if (friends.isEmpty()) break;
+					parents = friends;
+				}
+				
+				return nodes;
+			}
+			
+			/**
+			 * Paints a circle of nodes
+			 * @param n the parent node to draw around
+			 * @param radius the radius of the circle
+			 * @param level what is the depth of this graph circle? Use -1 when redrawing
+			 * @return a list of nodes added children nodes (of n, the parent)
+			 */
+			private ArrayList<Node> drawCircle(Node n, int radius, int level){
+				DrawData parentData = data.get(n);
+				Point2D origin = parentData.coord;
+				//Get a list of nodes that haven't been drawn already
+				ArrayList<Node> friends;
+				if (level != -1){
+					friends = new ArrayList<>();
+					Node[][] Nlinks = {
+						n.getNeighbors(),
+						n.getSurrogateNeighbors(),
+						n.getInverseSurrogateNeighbors()
+					};
+					for (int i=0; i<Ntypes.length; i++){
+						for (Node link: Nlinks[i]){
+							if (!data.containsKey(link))
+								friends.add(link);
+							links.add(new DrawLink(n, link, Ntypes[i]));
+						}
+					}
+					parentData.children = friends;
+				}
+				else friends = parentData.children;
+				//Remove hidden friends
+				ArrayList<Node> temp = new ArrayList<>();
+				for (Node z: friends){
+					if (!hide.contains(z))
+						temp.add(z);
+				}
+				friends = temp;
+				//Draw these friends in a circle
+				if (parentData.skew == -1)
+					parentData.skew = Math.random()*2*Math.PI/friends.size();
+				double theta = 2*Math.PI/(double) (friends.size() == 2 ? 3 : friends.size()),
+						angle = parentData.skew;
+				Point2D coord = new Point2D.Double();
+				for (Node friend: friends){
+					if (level != -1)
+						addNodeData(friend, n, null, -1, level, null);
+					coord.setLocation(
+						radius*Math.cos(angle),
+						radius*Math.sin(angle)
+					);
+					data.get(n).coord.setLocation(
+						(int) (origin.getX()+coord.getX()),
+						(int) (origin.getY()+coord.getY())
+					);
+					angle += theta;
+				}
+				return friends;
 			}
 		},
 		TREE ("Spanning Tree"){
@@ -124,19 +211,26 @@ public class GraphTab extends JPanel{
 			return l.type.compareTo(type);
 		}
 	}
-	private class DrawData{
+	private static class DrawData{
+		static int nodeSize = 10; //Node size, in pixels
 		ArrayList<Node> children;
-		Node parent;		//Parent node (if level != 0)
+		Node n, parent;		//Active & Parent node's (if level != 0)
 		double skew;		//Rotation skew angle
 		int level;			//Level that this was drawn at
 		Point2D coord;		//Coordinates on screen
 
-		public DrawData(Node parent, ArrayList<Node> children, double skew, int level, Point2D coord){
+		public DrawData(Node n, Node parent, ArrayList<Node> children, double skew, int level, Point2D coord){
+			this.n = n;
 			this.parent = parent;
 			this.children = children;
 			this.skew = skew;
 			this.level = level;
 			this.coord = coord;
+		}
+		public void draw(Graphics2D g2){
+			double x = coord.getX(), y = coord.getY();
+			g2.fillOval((int) (x-nodeSize/2.0), (int) (y-nodeSize/2.0), nodeSize, nodeSize);
+			g2.drawString(n.getWebId()+" ("+n.getHeight()+")", (int) x+5, (int) y-5);
 		}
 	}
 	
@@ -148,8 +242,6 @@ public class GraphTab extends JPanel{
 		private Node n;							//Node we are going to draw
 		private Node nParent;					//The node's parent
 		private final int
-			nodeSize = 10,						//Node size, in pixels
-			margin = 0,							//Minimum margin between nodes (within allowed window space)
 			selMargin = 5;						//Mimimum margin before a node is close enough to mouse for selection
 		private int mx, my,	winSize;			//Mouse coordinates and window size
 		private final TreeSet<DrawLink> links;		//Set of links for the graph
@@ -213,7 +305,7 @@ public class GraphTab extends JPanel{
 		}
 		public void dragMouse(int x, int y){
 			//Rotate, if a node is selected
-			DrawData ddChild, ddParent;
+			DrawNode ddChild, ddParent;
 			if (selected != null && (ddChild = selected.getValue()).parent != null){
 				ddParent = data.get(ddChild.parent);
 				double px = ddParent.coord.getX(),
@@ -325,6 +417,7 @@ public class GraphTab extends JPanel{
 			redraw = !force;
 			repaint();
 		}
+		@Override
 		protected void paintComponent(Graphics g) {
 			//super.paintComponent(g); UNCOMMENT THIS
 			Graphics2D g2 = (Graphics2D) g;
@@ -396,7 +489,7 @@ public class GraphTab extends JPanel{
 		 * @param level what is the depth of this graph circle? Use -1 when redrawing
 		 * @return a list of nodes added children nodes (of n, the parent)
 		 */
-		private ArrayList<Node> paintCircle(Graphics2D g, Node n, int radius, int level){
+		private ArrayList<Node> paintCircle(Node n, int radius, int level){
 			DrawData parentData = data.get(n);
 			Point2D origin = parentData.coord;
 			//Get a list of nodes that haven't been drawn already
@@ -438,7 +531,7 @@ public class GraphTab extends JPanel{
 					radius*Math.cos(angle),
 					radius*Math.sin(angle)
 				);
-				paintNode(g, friend,
+				data.get(n).coord.setLocation(
 					(int) (origin.getX()+coord.getX()),
 					(int) (origin.getY()+coord.getY())
 				);
@@ -453,19 +546,15 @@ public class GraphTab extends JPanel{
 		 * @param x x-coord location
 		 * @param y y-coord location
 		 */
-		private void paintNode(Graphics2D g, Node n, int x, int y){
-			data.get(n).coord.setLocation(x, y);
-			drawNode(g, n, x, y);
+		private void paintNode(Graphics2D g, DrawData n){
+			draw(g, n, x, y);
 		}
 		private void repaintNode(Graphics2D g, Node n){
 			Point2D p = data.get(n).coord;
 			drawNode(g, n, (int) p.getX(), (int) p.getY());
 		}
 		private void drawNode(Graphics2D g, Node n, int x, int y){
-			if (!hide.contains(n)){
-				g.fillOval(x-nodeSize/2, y-nodeSize/2, nodeSize, nodeSize);
-				g.drawString(n.getWebId()+" ("+n.getHeight()+")", x+5, y-5);
-			}
+			
 		}
 		private void drawSelected(Graphics2D g2){
 			if (selected != null){
@@ -481,7 +570,7 @@ public class GraphTab extends JPanel{
 		 * @param g graphics context
 		 */
 		private void paintLinks(Graphics2D g){
-			DrawData d1, d2;
+			DrawNode d1, d2;
 			Links.Type curType = null;
 			ArrayList<DrawLink> badLinks = new ArrayList<>();
 			for (DrawLink l: links){
