@@ -2,11 +2,14 @@ package hypeerweb;
 
 import communicator.*;
 import java.io.ObjectStreamException;
-import java.io.Serializable;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import validator.NodeInterface;
 
 public class NodeProxy
-    extends Node implements Serializable
+    extends Node
 {
     private GlobalObjectId globalObjectId;
 
@@ -15,6 +18,7 @@ public class NodeProxy
         this.globalObjectId = globalObjectId;
     }
 
+	@Override
     public boolean equals(java.lang.Object p0){
         String[] parameterTypeNames = new String[1];
         parameterTypeNames[0] = "java.lang.Object";
@@ -25,6 +29,7 @@ public class NodeProxy
         return (Boolean)result;
     }
 
+	@Override
     public int hashCode(){
         String[] parameterTypeNames = new String[0];
         Object[] actualParameters = new Object[0];
@@ -33,6 +38,7 @@ public class NodeProxy
         return (Integer)result;
     }
 
+	@Override
     public java.lang.String toString(){
         String[] parameterTypeNames = new String[0];
         Object[] actualParameters = new Object[0];
@@ -41,6 +47,7 @@ public class NodeProxy
         return (java.lang.String)result;
     }
 
+	@Override
     public int compareTo(NodeInterface p0){
         String[] parameterTypeNames = new String[1];
         parameterTypeNames[0] = "interface validator.NodeInterface";
@@ -51,6 +58,7 @@ public class NodeProxy
         return (Integer)result;
     }
 
+	@Override
     public Node getParent(){
         String[] parameterTypeNames = new String[0];
         Object[] actualParameters = new Object[0];
@@ -59,6 +67,7 @@ public class NodeProxy
         return (hypeerweb.Node)result;
     }
 
+	@Override
     public void accept(hypeerweb.visitors.AbstractVisitor p0, hypeerweb.Attributes p1){
         String[] parameterTypeNames = new String[2];
         parameterTypeNames[0] = "hypeerweb.visitors.AbstractVisitor";
@@ -70,6 +79,7 @@ public class NodeProxy
         PeerCommunicator.getSingleton().sendASynchronous(globalObjectId, command);
     }
 
+	@Override
     public hypeerweb.Node[] getNeighbors(){
         String[] parameterTypeNames = new String[0];
         Object[] actualParameters = new Object[0];
@@ -78,6 +88,7 @@ public class NodeProxy
         return (hypeerweb.Node[])result;
     }
 
+	@Override
     public int getWebId(){
         String[] parameterTypeNames = new String[0];
         Object[] actualParameters = new Object[0];
@@ -86,6 +97,7 @@ public class NodeProxy
         return (Integer)result;
     }
 
+	@Override
     public hypeerweb.Node getFold(){
         String[] parameterTypeNames = new String[0];
         Object[] actualParameters = new Object[0];
@@ -94,6 +106,7 @@ public class NodeProxy
         return (hypeerweb.Node)result;
     }
 
+	@Override
     public hypeerweb.Links getLinks(){
         String[] parameterTypeNames = new String[0];
         Object[] actualParameters = new Object[0];
@@ -102,6 +115,7 @@ public class NodeProxy
         return (hypeerweb.Links)result;
     }
 
+	@Override
     public int getHeight(){
         String[] parameterTypeNames = new String[0];
         Object[] actualParameters = new Object[0];
@@ -110,6 +124,7 @@ public class NodeProxy
         return (Integer)result;
     }
 
+	@Override
     public java.util.ArrayList getTreeChildren(){
         String[] parameterTypeNames = new String[0];
         Object[] actualParameters = new Object[0];
@@ -118,6 +133,7 @@ public class NodeProxy
         return (java.util.ArrayList)result;
     }
 
+	@Override
     public int scoreWebIdMatch(int p0){
         String[] parameterTypeNames = new String[1];
         parameterTypeNames[0] = "int";
@@ -128,6 +144,7 @@ public class NodeProxy
         return (Integer)result;
     }
 
+	@Override
     public hypeerweb.Node getTreeParent(){
         String[] parameterTypeNames = new String[0];
         Object[] actualParameters = new Object[0];
@@ -136,6 +153,7 @@ public class NodeProxy
         return (hypeerweb.Node)result;
     }
 
+	@Override
     public hypeerweb.Node[] getSurrogateNeighbors(){
         String[] parameterTypeNames = new String[0];
         Object[] actualParameters = new Object[0];
@@ -144,6 +162,7 @@ public class NodeProxy
         return (hypeerweb.Node[])result;
     }
 
+	@Override
     public hypeerweb.Node getCloserNode(int p0, boolean p1){
         String[] parameterTypeNames = new String[2];
         parameterTypeNames[0] = "int";
@@ -156,6 +175,7 @@ public class NodeProxy
         return (hypeerweb.Node)result;
     }
 
+	@Override
     public hypeerweb.Node[] getInverseSurrogateNeighbors(){
         String[] parameterTypeNames = new String[0];
         Object[] actualParameters = new Object[0];
@@ -164,6 +184,7 @@ public class NodeProxy
         return (hypeerweb.Node[])result;
     }
 
+	@Override
     public hypeerweb.Node getSurrogateFold(){
         String[] parameterTypeNames = new String[0];
         Object[] actualParameters = new Object[0];
@@ -172,6 +193,7 @@ public class NodeProxy
         return (hypeerweb.Node)result;
     }
 
+	@Override
     public hypeerweb.Node getInverseSurrogateFold(){
         String[] parameterTypeNames = new String[0];
         Object[] actualParameters = new Object[0];
@@ -187,6 +209,15 @@ public class NodeProxy
 	
 	@Override
 	public Object readResolve() throws ObjectStreamException {
+			
+		try {
+			if(globalObjectId.getMachineAddr().equals(InetAddress.getLocalHost().getHostAddress()))
+				// return the actual Node somehow?
+				return null;
+		} catch (UnknownHostException ex) {
+			Logger.getLogger(NodeProxy.class.getName()).log(Level.SEVERE, null, ex);
+		}
+		
 		return this;
 	}
 }
