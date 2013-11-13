@@ -344,8 +344,9 @@ public class HyPeerWebSegment<T extends Node> extends Node implements HyPeerWebI
 	 * @return an array of nodes
 	 */
 	public TreeMap<Integer, Node> getAllNodes() {
-		return nodes;
+		//todo
 	}
+	
 	/**
 	 * Retrieve a node with the specified webid
 	 * @return the node with the specified webid; otherwise null
