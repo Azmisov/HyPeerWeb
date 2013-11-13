@@ -354,7 +354,9 @@ public class HyPeerWebSegment<T extends Node> extends Node implements HyPeerWebI
 	 */
 	public int getSize(){
 		//TODO
-		return -1;
+		int size = 0;
+		CountVisitor counter = new CountVisitor();
+		return size;
 	}
 	/**
 	 * Is the HyPeerWeb empty?
@@ -362,6 +364,13 @@ public class HyPeerWebSegment<T extends Node> extends Node implements HyPeerWebI
 	 */
 	public boolean isEmpty(){
 		return state == HyPeerWebState.HAS_NONE;
+	}
+	
+	private class CountVisitor extends BroadcastVisitor{
+		@Override
+		public void performOperation(Node n){
+			
+		}
 	}
 	// </editor-fold>
 }

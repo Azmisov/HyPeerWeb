@@ -1,6 +1,6 @@
 package chat;
 
-import hypeerweb.HyPeerWeb;
+import hypeerweb.HyPeerWebSegment;
 import hypeerweb.Links;
 import hypeerweb.Node;
 import java.awt.AlphaComposite;
@@ -49,7 +49,7 @@ import javax.swing.event.ChangeListener;
  * @author isaac
  */
 public class HyPeerWebGraph extends JFrame{
-	private HyPeerWeb web;
+	private HyPeerWebSegment web;
 	private GraphTab draw;
 	private static int winSize = 700;
 	private int levels = 2;
@@ -62,7 +62,7 @@ public class HyPeerWebGraph extends JFrame{
 	 * @param web an instance of the HyPeerWeb segment
 	 * @throws Exception if the window fails to initialize
 	 */
-	public HyPeerWebGraph(final HyPeerWeb web) throws Exception{
+	public HyPeerWebGraph(final HyPeerWebSegment web) throws Exception{
 		this.web = web;
 		//Initialize window
 		setTitle("HyPeerWeb Directed Graph");
