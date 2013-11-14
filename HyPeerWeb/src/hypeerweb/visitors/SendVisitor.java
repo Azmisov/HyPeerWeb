@@ -69,4 +69,11 @@ public class SendVisitor extends AbstractVisitor{
 	 * @param node the node we are visiting
 	 */
 	public void performIntermediateOperation(Node node){}
+	/**
+	 * 
+	 * @return probably not null
+	 */
+	public Node getFinalNode(){
+		return null;
+	}
 }
