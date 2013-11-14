@@ -2,6 +2,7 @@ package chat;
 
 import hypeerweb.HyPeerWebSegment;
 import hypeerweb.Node;
+import hypeerweb.visitors.SendVisitor;
 import java.util.ArrayList;
 import java.util.Random;
 
@@ -16,6 +17,10 @@ public class ChatServer{
 	private ArrayList<UserListener> userListeners = new ArrayList();
 	private ArrayList<NodeListener> nodeListeners = new ArrayList();
 	private ArrayList<NetworkNameListener> networkNameListeners = new ArrayList();
+	
+	public ChatServer(String dbName) throws Exception{
+		segment = new HyPeerWebSegment(dbName, -1, this);
+	}
 	
 	/**
 	 * Adds a node to the HyPeerWeb and tells the nodeListeners about it.
@@ -97,12 +102,21 @@ public class ChatServer{
 	}
 	
 	/**
-	 * 
-	 * @param user
-	 * @param message 
+	 * Sends a message to another ChatUser
+	 * @param user the destination
+	 * @param message the message
 	 */
 	public void sendMessage(ChatUser user, String message){
-		
+		SendVisitor visitor = new SendVisitor(user.getWebId());
+		visitor.visit(segment);
+	}
+	/**
+	 * Method called by sendVisitor to display message destined for this user
+	 * @param message the message to display
+	 */
+	public void receiveMessage(String message){
+		for(SendListener listener : sendListeners)
+			listener.callback(user.getWebId(), message);
 	}
 	
 	/**
@@ -163,6 +177,9 @@ public class ChatServer{
 		@Override
 		public String toString(){
 			return name;
+		}
+		public int getWebId(){
+			return id;
 		}
 	}
 	
