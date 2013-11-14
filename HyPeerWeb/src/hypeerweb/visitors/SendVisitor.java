@@ -1,21 +1,15 @@
 package hypeerweb.visitors;
 
-import hypeerweb.Attributes;
 import hypeerweb.Node;
 
 /**
  * Navigates from one node to another
  */
 public class SendVisitor extends AbstractVisitor{
-	/**
-	 * The webID that we are searching for
-	 */
-	protected int targetWebId;
-	/**
-	 * Should we find an exact match for the targetWebID?
-	 */
-	protected boolean approximateMatch;
-	private Node finalNode;
+	//Attributes we will store in the visitor data
+	private static final String
+		target = "TARGET",
+		approx = "APPROX";
 	
 	/**
 	 * Navigate to the node with webID = 0, with
@@ -39,49 +33,40 @@ public class SendVisitor extends AbstractVisitor{
 	 * get all the way to the node (e.g. use this to get random nodes)
 	 */
 	public SendVisitor(int targetWebId, boolean approximateMatch){
-		this.targetWebId = targetWebId;
-		this.approximateMatch = approximateMatch;
+		data.setAttribute(target, targetWebId);
+		data.setAttribute(approx, approximateMatch);
 	}
 
 	/**
 	 * Visit a node
 	 * @param n the node to visit
+	 * @param o data to pass along
 	 */
 	@Override
-	public void visit(Node n, Object o) {
-		Attributes a = (Attributes) o;
-		if (n.getWebId() == targetWebId){
-			finalNode = n;
+	public final void visit(Node n) {
+		int targetID = (int) data.getAttribute(target);
+		boolean approxMatch = (boolean) data.getAttribute(approx);
+		
+		if (n.getWebId() == targetID)
 			performTargetOperation(n);
-		}
 		else{
 			performIntermediateOperation(n);
-			Node next = n.getCloserNode(targetWebId, approximateMatch);
+			Node next = n.getCloserNode(targetID, approxMatch);
 			if (next != null)
-				next.accept(this, a);
-			else if (approximateMatch){
-				finalNode = n;
+				next.accept(this);
+			else if (approxMatch)
 				performTargetOperation(n);
-			}
 		}
-	}
-	
-	/**
-	 * Gets the last node that was visited
-	 * @return the last node visited; null, if the last node was not found
-	 */
-	public Node getFinalNode(){
-		return finalNode;
 	}
 	
 	/**
 	 * Perform an operation on the target node (the one we were searching for)
 	 * @param node the node we are visiting
 	 */
-	protected void performTargetOperation(Node node){}
+	public void performTargetOperation(Node node){}
 	/**
 	 * Perform an operation on an intermediate node
 	 * @param node the node we are visiting
 	 */
-	protected void performIntermediateOperation(Node node){}
+	public void performIntermediateOperation(Node node){}
 }

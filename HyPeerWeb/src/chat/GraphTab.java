@@ -31,7 +31,7 @@ import javax.swing.JComboBox;
  * @author isaac
  */
 public class GraphTab extends JPanel{
-	private static int maxSizeX = 500, maxSizeY = 500;
+	private static final int maxSizeX = 500, maxSizeY = 500;
 	
 	public GraphTab(){
 		setLayout(new BorderLayout(0, 0));

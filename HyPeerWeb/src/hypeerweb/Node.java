@@ -351,7 +351,7 @@ public class Node implements NodeInterface, Serializable {
 	/**
 	 * Criteria for a valid insertion point node
 	 */
-	private static Criteria insertCriteria = new Criteria(){
+	private static final Criteria insertCriteria = new Criteria(){
 		@Override
 		public Node check(Node origin, Node friend){
 			//Insertion point is always the lowest point within recurseLevel connections
@@ -374,7 +374,7 @@ public class Node implements NodeInterface, Serializable {
 	/**
 	 * Criteria for a valid disconnect node
 	 */
-	private static Criteria disconnectCriteria = new Criteria(){
+	private static final Criteria disconnectCriteria = new Criteria(){
 		@Override
 		public Node check(Node origin, Node friend){
 			/* Check all nodes out to "recurseLevel" for higher nodes
@@ -740,10 +740,9 @@ public class Node implements NodeInterface, Serializable {
 	/**
 	 * Accept a visitor for traversal
 	 * @param v a HyPeerWeb visitor
-	 * @param a parameters to send along
 	 */
-	public void accept(AbstractVisitor v, Attributes a){
-		v.visit(this, a);
+	public void accept(AbstractVisitor v){
+		v.visit(this);
 	}
 	
 	//CLASS OVERRIDES
