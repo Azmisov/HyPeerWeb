@@ -42,9 +42,16 @@ public class ChatServer{
 	 */
 	public ArrayList<Node> getAllNodes(){
 		ArrayList<Node> nodes = new ArrayList();
-		
+		//use broadcast to make a list of all nodes.
 			
 		return nodes;
+	}
+	/**
+	 * Gets the name of the ChatUser
+	 * @return the name
+	 */
+	public ChatUser getUser(){
+		return user;
 	}
 	
 	/**
@@ -53,7 +60,7 @@ public class ChatServer{
 	 */
 	public ArrayList<ChatUser> getAllUsers(){
 		ArrayList<ChatUser>users = new ArrayList();
-		
+		//use broadcast to get all users
 		return users;
 	}
 	
@@ -91,9 +98,10 @@ public class ChatServer{
 	
 	/**
 	 * 
+	 * @param user
 	 * @param message 
 	 */
-	public void sendMessage(String message){
+	public void sendMessage(ChatUser user, String message){
 		
 	}
 	

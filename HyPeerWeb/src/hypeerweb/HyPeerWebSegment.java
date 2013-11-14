@@ -4,6 +4,7 @@ import hypeerweb.visitors.SendVisitor;
 import hypeerweb.visitors.BroadcastVisitor;
 import hypeerweb.visitors.SyncListener;
 import hypeerweb.visitors.SyncVisitor;
+import java.util.Arrays;
 import java.util.Random;
 import java.util.TreeMap;
 import validator.HyPeerWebInterface;
@@ -279,7 +280,10 @@ public class HyPeerWebSegment<T extends Node> extends Node implements HyPeerWebI
 	
 	// <editor-fold defaultstate="collapsed" desc="SEGMENT GETTERS">
 	@Override
-	public TreeMap<Integer, Node> getAllSegmentNodes() {
+	public Node[] getAllSegmentNodes() {
+		return (Node[]) nodes.values().toArray();
+	}
+	public TreeMap<Integer, Node> getTreeMapOfAllSegmentNodes(){
 		return nodes;
 	}
 	/**
