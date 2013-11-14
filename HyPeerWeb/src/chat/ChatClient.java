@@ -3,17 +3,24 @@ package chat;
 import com.alee.laf.WebLookAndFeel;
 import hypeerweb.HyPeerWebSegment;
 import hypeerweb.HyPeerWeb;
+import hypeerweb.Node;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.FocusEvent;
 import java.awt.event.FocusListener;
 import static java.lang.Thread.sleep;
+import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.swing.*;
+import javax.swing.GroupLayout.ParallelGroup;
+import javax.swing.GroupLayout.SequentialGroup;
 import javax.swing.border.CompoundBorder;
 import javax.swing.border.EmptyBorder;
+import javax.swing.border.LineBorder;
+import javax.swing.table.AbstractTableModel;
 
 /**
  * The Graphical User Interface for the Chat Client
@@ -25,24 +32,44 @@ import javax.swing.border.EmptyBorder;
  */
 public class ChatClient extends JFrame{
 	//Window title
-	private final String title = "HyPeerWeb Chat v0.1a";
+	private static final String title = "HyPeerWeb Chat v0.1a";
 	//Window dimensions
-	private final int width = 750, height = 700;
+	private static final int width = 750, height = 700;
 	//Upper vertical split percentage
-	private final double vsplitWeight = 0.8;
+	private static final double vsplitWeight = 0.8;
 	//Action bar's pixel width
-	private final int actionBarWidth = 150;
+	private static final int actionBarWidth = 150;
 	//Main pane (graph, list, chat) padding
-	private final int pad = 8;
-	private final EmptyBorder padding = new EmptyBorder(pad, pad, pad, pad);
+	private static final int pad = 8;
+	private static final EmptyBorder padding = new EmptyBorder(pad, pad, pad, pad);
+	private static final Font bold = new Font("SansSerif", Font.BOLD, 12);
+	
+	//Data items
+	protected NodeList nodeList;	//List of all nodes in HyPeerWeb
+	private HyPeerWeb web;			//Reference to ChatServer (TODO here)
+	private Node selected;			//The selected node
 	
 	//GUI components
-	private ChatTab chat;
-	private HyPeerWeb web;
+	private final ChatTab chat = new ChatTab(padding, title);
+	private final GraphTab graph = new GraphTab(this);
+	private final JSpinner nodeSelect = new JSpinner();
+	private final NodeInfo nodeInfo = new NodeInfo();
+	private final JTable connectList = new JTable(nodeInfo);
 		
 	public ChatClient(){
-		initGUI();
 		//Bind to a hypeerweb segment here...
+		try {
+			web = HyPeerWeb.initialize(false, false, -1);
+			nodeList = new NodeList(null);
+			//*
+			for (int i=0; i<20; i++)
+				web.addNode();
+			//*/
+			//x.draw(web.getFirstNode(), height);
+		} catch (Exception ex) {
+			System.out.println("Cannot bind to a HyPeerWeb");
+		}
+		initGUI();
 	}
 	
 	// <editor-fold defaultstate="collapsed" desc="GUI INITIALIZATION">
@@ -62,47 +89,39 @@ public class ChatClient extends JFrame{
 		//Right half will be an actions bar
 		hSplit.add(initActionBar(), BorderLayout.EAST);
 		
-		//Left half will be a tabbed pane for graphing/chatting		
-		GraphTab x = new GraphTab();
+		//Left half will be a tabbed pane for graphing/chatting
 		JTabbedPane tabs = new JTabbedPane();
 		hSplit.add(tabs, BorderLayout.CENTER);
-		chat = new ChatTab(padding, title);
 		tabs.addTab("Chat", chat);
-		tabs.addTab("Node Graph", x);
+		tabs.addTab("Node Graph", graph);
 		tabs.addTab("Node List", new ListTab());
-		try {
-			web = HyPeerWeb.getInstance();
-			for (int i=0; i<100; i++)
-				web.addNode();
-			//x.draw(web.getFirstNode(), height);
-		} catch (Exception ex) {
-			System.out.println("Cannot hypeerweb stuff");
-		}
 	}
 	public JPanel initActionBar(){
 		JPanel bar = new JPanel();
-		JPanel box = initNetworkBox();
-		JPanel box2 = initConnectionBox();
-		JPanel box3 = initNodeBox();
+		ArrayList<JPanel> boxes = new ArrayList(){{
+			add(initNetworkBox());
+			add(initConnectionBox());
+			add(initNodeBox());
+		}};
 		
 		// <editor-fold defaultstate="collapsed" desc="Layout components in a stack">
+		CompoundBorder boxBorder = new CompoundBorder(
+			padding, BorderFactory.createMatteBorder(0, 0, 2, 0, Color.DARK_GRAY)
+		);
 		GroupLayout stack = new GroupLayout(bar);
 		bar.setLayout(stack);
-		stack.setHorizontalGroup(
-            stack.createParallelGroup()
-				.addComponent(box)
-				.addComponent(box2)
-				.addComponent(box3)
-        );
-        stack.setVerticalGroup(
-            stack.createParallelGroup(GroupLayout.Alignment.CENTER)
-				.addGroup(stack.createSequentialGroup()
-					.addContainerGap(20, 20)
-	                .addComponent(box)
-					.addComponent(box2)
-					.addComponent(box3)
-					.addContainerGap(1000, Short.MAX_VALUE))
-        );
+		ParallelGroup hgroup = stack.createParallelGroup();
+		SequentialGroup vgroup = stack.createSequentialGroup();
+		Iterator<JPanel> it = boxes.iterator();
+		while (it.hasNext()){
+			JPanel box = it.next();
+			box.setBorder(it.hasNext() ? boxBorder : padding);
+			hgroup.addComponent(box);
+			vgroup.addComponent(box);
+		}
+		vgroup.addContainerGap(1000, Short.MAX_VALUE);
+		stack.setHorizontalGroup(hgroup);
+        stack.setVerticalGroup(stack.createParallelGroup(GroupLayout.Alignment.CENTER).addGroup(vgroup));
 		// </editor-fold>
 		
 		return bar;
@@ -140,12 +159,12 @@ public class ChatClient extends JFrame{
 		
 		// <editor-fold defaultstate="collapsed" desc="Layout components in grid">
 		JPanel box = new JPanel();
-		box.setBorder(padding);
 		box.setLayout(new GridBagLayout());
 		GridBagConstraints c = new GridBagConstraints();
 		c.ipadx = 3;		c.ipady = 3;
 		c.gridwidth = 2;	c.gridheight = 1;
 		c.gridx = 0;		c.gridy = 0;
+		c.weightx = .5;		c.weightx = .5;
 		c.fill = GridBagConstraints.HORIZONTAL;
 		c.insets = new Insets(0, 0, 4, 0);
 		box.add(btnCreate, c);
@@ -173,7 +192,6 @@ public class ChatClient extends JFrame{
 	}
 	public JPanel initConnectionBox(){		
 		//Segment name
-		Font bold = new Font("SansSerif", Font.BOLD, 12);
 		JLabel lblSeg = new JLabel("Subnet Name:");
 		lblSeg.setFont(bold);
 		JTextField txtSeg = new JTextField();
@@ -189,7 +207,6 @@ public class ChatClient extends JFrame{
 		
 		// <editor-fold defaultstate="collapsed" desc="Layout components in grid">
 		JPanel box = new JPanel();
-		box.setBorder(padding);
 		box.setLayout(new GridBagLayout());
 		GridBagConstraints c = new GridBagConstraints();
 		c.ipadx = 3;		c.ipady = 3;
@@ -216,18 +233,20 @@ public class ChatClient extends JFrame{
 		JButton addNode = new JButton("Add");
 		JButton deleteNode = new JButton("Delete");
 		JSpinner addCount = new JSpinner();
-		final JSpinner NodeSelect = new JSpinner();
-		JTable connectList = new JTable(8,2);
-		final JLabel L = new JLabel("Node");
+		connectList.setFocusable(false);
+		connectList.setRowSelectionAllowed(false);
+		final JLabel L = new JLabel("Selected:");
+		L.setFont(bold);
 		
 		addNode.addActionListener(new ActionListener(){
 			@Override
 			public void actionPerformed(ActionEvent e) {
 				try{
-					web.addNode();
+					Node n = web.addNode();
+					graph.draw(web.getFirstNode());
 				}
-				catch (Exception ex)
-				{
+				catch (Exception ex){
+					System.out.println(ex.getMessage());
 					System.err.println("Error in adding Node");
 				}
 			}
@@ -236,10 +255,14 @@ public class ChatClient extends JFrame{
 			@Override
 			public void actionPerformed(ActionEvent e) {
 				try{
-					web.removeNode((int)NodeSelect.getValue());
+					Node remove = web.removeNode((int) nodeSelect.getValue());
+					graph.draw(web.getFirstNode());
+					if (remove == selected){
+						selected = web.getNode(remove.getWebId());
+						nodeInfo.updateInfo(selected);
+					}
 				}
-				catch (Exception ex)
-				{
+				catch (Exception ex){
 					System.err.println("Error in removing Node");
 				}
 			}
@@ -248,7 +271,6 @@ public class ChatClient extends JFrame{
 		
 		// <editor-fold defaultstate="collapsed" desc="Layout components in grid">
 		JPanel box = new JPanel();
-		box.setBorder(padding);
 		box.setLayout(new GridBagLayout());
 		GridBagConstraints c = new GridBagConstraints();
 		c.ipadx = 3;		c.ipady = 3;
@@ -258,13 +280,14 @@ public class ChatClient extends JFrame{
 		box.add(L, c);
 		c.gridx++;
 		c.gridwidth = 1;
-		box.add(NodeSelect, c);
+		box.add(nodeSelect, c);
 		c.gridwidth = 2;
 		c.gridx = 0;
 		c.weightx = 1;
-		c.weighty = 1;
 		c.gridy++;
+		c.insets = new Insets(6, 0, 6, 0);
 		box.add(connectList, c);
+		c.insets.set(0, 0, 0, 0);
 		c.weightx = 0;
 		c.weighty = 0;
 		c.gridy++;
@@ -272,8 +295,10 @@ public class ChatClient extends JFrame{
 		box.add(deleteNode, c);
 		c.gridy++;
 		c.gridwidth = 1;
+		c.weightx = .3;
 		box.add(addNode, c);
 		c.gridx++;
+		c.weightx = .7;
 		box.add(addCount, c);
 		// </editor-fold>
 		
@@ -316,6 +341,11 @@ public class ChatClient extends JFrame{
 	//</editor-fold>
 	
 	//ACTIONS
+	public void setSelectedNode(Node n){
+		selected = n;
+		nodeSelect.setValue(n.getWebId());
+		nodeInfo.updateInfo(n);
+	}
 	public void testChatRoom(){
 		(new Thread(new ChatSimulation())).start();
 	}
@@ -352,4 +382,57 @@ public class ChatClient extends JFrame{
 		}
 	}
 	
+	private class NodeInfo extends AbstractTableModel{
+		ArrayList<String[]> data = new ArrayList();
+		public void updateInfo(Node n){
+			data.clear();
+			if (n != null){
+				Node temp;
+				if ((temp = n.getFold()) != null)
+					addInfo("F:",temp);
+				if ((temp = n.getSurrogateFold()) != null)
+					addInfo("SF:",temp);
+				if ((temp = n.getInverseSurrogateFold()) != null)
+					addInfo("ISF:",temp);
+				Node[] temp2;
+				if ((temp2 = n.getNeighbors()).length > 0)
+					addInfo("N:",temp2);
+				if ((temp2 = n.getSurrogateNeighbors()).length > 0)
+					addInfo("SN:",temp2);
+				if ((temp2 = n.getInverseSurrogateNeighbors()).length > 0)
+					addInfo("ISN:",temp2);
+			}
+			fireTableStructureChanged();
+			connectList.getColumnModel().getColumn(0).setPreferredWidth(12);
+		}
+		private void addInfo(String name, Node n){
+			data.add(new String[]{boldify(name), String.valueOf(n.getWebId())});
+		}
+		private void addInfo(String name, Node[] n){
+			StringBuilder sb = new StringBuilder();
+			for (int i=0; i<n.length; i++){
+				sb.append(n[i].getWebId());
+				if (i+1 != n.length)
+					sb.append(",");
+			}
+			data.add(new String[]{boldify(name), sb.toString()});
+		}
+		private String boldify(String name){
+			return "<html><b>"+name;
+		}
+		@Override
+		public int getRowCount() {
+			return data.isEmpty() ? 1 : data.size();
+		}
+		@Override
+		public int getColumnCount() {
+			return data.isEmpty() ? 1 : 2;
+		}
+		@Override
+		public Object getValueAt(int rowIndex, int columnIndex) {
+			if (data.isEmpty())
+				return boldify("No node selected");
+			return data.get(rowIndex)[columnIndex];
+		}
+	}
 }
