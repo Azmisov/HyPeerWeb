@@ -1,42 +1,37 @@
 package chat;
 
-import hypeerweb.Links;
 import hypeerweb.Node;
 import java.awt.*;
-import java.awt.RenderingHints.Key;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.awt.event.ComponentEvent;
-import java.awt.event.ComponentListener;
-import java.awt.event.FocusEvent;
-import java.awt.event.FocusListener;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.awt.event.MouseMotionListener;
+import java.awt.geom.AffineTransform;
 import java.awt.geom.Point2D;
 import java.awt.image.BufferedImage;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Map;
 import java.util.Objects;
 import java.util.TreeSet;
-import javax.swing.JButton;
-import javax.swing.JCheckBox;
-import javax.swing.JLabel;
-import javax.swing.JPanel;
-import javax.swing.JToolBar;
-import javax.swing.JComboBox;
+import javax.swing.*;
 
 /**
  * Draws a directed graph of a HyPeerWeb node
+ * TODO:
+ *	- hide should remove selection
+ *	- spanning tree fanning
+ *  - default graph evenly distribute non-children
+ *  - rotation
+ *  - graph-mode options toolbar
  * @author isaac
  */
 public class GraphTab extends JPanel{
 	private final ChatClient container;
 	private Node activeNode;	//the selected node; may not be in graph
 	//Drawing stuff
-	private static final int maxSizeX = 500, maxSizeY = 700;
+	private static final int maxSizeX = 550, maxSizeY = 600;
 	private boolean DIRTY_BUFFER = false;	//do we need to redraw?
 	private boolean useBinary = false;	
 	//Graphing stuff
@@ -64,7 +59,7 @@ public class GraphTab extends JPanel{
 				int newMode = modes.getSelectedIndex();
 				if (previousMode != newMode){
 					previousMode = newMode;
-					graph.draw(graph.n);
+					graph.draw();
 				}
 			}
 		});
@@ -79,8 +74,27 @@ public class GraphTab extends JPanel{
 		});
 		bar.add(chckBinary);
 		JPanel rightAlign = new JPanel(new FlowLayout(FlowLayout.RIGHT, 5, 0));
-		rightAlign.add(new JButton("Hide Selected"));
-		rightAlign.add(new JButton("Unhide All"));
+		JButton hideBtn = new JButton("Hide");
+		hideBtn.addActionListener(new ActionListener(){
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				if (graph.selected != null){
+					graph.active = graph.selected;
+					graph.hideNode();
+				}
+			}
+		});
+		hideBtn.setToolTipText("Right click");
+		rightAlign.add(hideBtn);
+		JButton unhideBtn = new JButton("Unhide All");
+		unhideBtn.addActionListener(new ActionListener(){
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				graph.unhideNodes();
+			}
+		});
+		unhideBtn.setToolTipText("Middle click");
+		rightAlign.add(unhideBtn);
 		bar.add(rightAlign);
 		
 		//Bottom is the actual graph
@@ -113,7 +127,7 @@ public class GraphTab extends JPanel{
 	}
 	
 	private enum GraphMode{
-		DEFAULT ("Default"){
+		DEFAULT ("Default", RotateMode.TRANSLATE){
 			//Minimum margin between nodes (within allowed window space)
 			private static final int margin = 3;
 			private int levels = 3;
@@ -187,7 +201,7 @@ public class GraphTab extends JPanel{
 				}
 			}
 		},
-		TREE ("Spanning Tree"){
+		TREE ("Spanning Tree", RotateMode.ROTATE){
 			private int levels = 4, radiusDelta;
 			private Point2D origin;
 			
@@ -212,7 +226,7 @@ public class GraphTab extends JPanel{
 				int idx = Integer.highestOneBit(p.n.getWebId());
 				ArrayList<Node> childs = p.n.getTreeChildren();
 				for (Node c: childs){
-					boolean isSurr = Integer.highestOneBit(c.getWebId()) == idx;
+					boolean isSurr = Integer.highestOneBit(c.getWebId()) < idx;
 					links.add(new DrawLink(p.n, c, isSurr ? DrawLink.Type.DOTTED : DrawLink.Type.SOLID));
 				}
 				if (!childs.isEmpty()){
@@ -238,10 +252,14 @@ public class GraphTab extends JPanel{
 		
 		public static HashMap<Node, DrawData> nodes;
 		public static TreeSet<DrawLink> links;
+		public static enum RotateMode {TRANSLATE, ROTATE}
 		
 		private final String name;
-		GraphMode(String name){
+		private final RotateMode rotateMode;
+		
+		GraphMode(String name, RotateMode rotateMode){
 			this.name = name;
+			this.rotateMode = rotateMode;
 		}
 		public abstract void draw(Node n);
 		@Override
@@ -290,9 +308,8 @@ public class GraphTab extends JPanel{
 			if (n == null || getClass() != n.getClass())
 				return false;
 			DrawLink l = (DrawLink) n;
-			return type == l.type &&
-					((origin == l.origin && friend == l.friend) ||
-					 (friend == l.origin && origin == l.friend));
+			return ((origin == l.origin && friend == l.friend) ||
+					(friend == l.origin && origin == l.friend));
 		}
 		@Override
 		public int hashCode() {
@@ -310,8 +327,8 @@ public class GraphTab extends JPanel{
 			if (this.equals(l))
 				return 0;
 			if (l.type == type)
-				return Integer.compare(l.color.getRGB(), color.getRGB());
-			return l.type.compareTo(type);
+				return l.color.getRGB() > color.getRGB() ? 1 : -1;
+			return l.type.compareTo(type) > 0 ? 1 : -1;
 		}
 	}
 	private static class DrawData{
@@ -334,22 +351,23 @@ public class GraphTab extends JPanel{
 		public void draw(Graphics2D g2, boolean useBinary){
 			double x = coord.getX(), y = coord.getY();
 			g2.fillOval((int) (x-nodeSize/2.0), (int) (y-nodeSize/2.0), nodeSize, nodeSize);
-			String id;
-			if (useBinary)
-				id = Integer.toBinaryString(n.getWebId());
-			else id = String.valueOf(n.getWebId());
-			g2.drawString(id+" ("+n.getHeight()+")", (int) x+5, (int) y-5);
+			String name = useBinary ? Integer.toBinaryString(n.getWebId()) : String.valueOf(n.getWebId());
+			g2.drawString(name+" ("+n.getHeight()+")", (int) x+5, (int) y-5);
 		}
 	}
 	
+	/**
+	 * Handles rendering of GraphMode data
+	 * Also handles all user interaction with the graph
+	 */
 	private class Graph extends JPanel{
 		//Graph title
 		private String title;					//Graph title
 		//Node stuff
 		private Node n;							//Node we are going to draw
-		private final int selMargin = 15;		//Mimimum margin before a node is close enough to mouse for selection
 		private int mx, my;						//Current mouse coordinates
-		private final HashSet<Node> hide;		//Hidden subtrees
+		private final int selMargin = 15;		//Mimimum margin before a node is close enough to mouse for selection
+		private final HashSet<DrawData> hide;	//Hidden subtrees
 		GraphMode mode;							//Holds all data for the graph
 		//Drawing modes
 		private final AlphaComposite compMode = AlphaComposite.getInstance(AlphaComposite.DST_OVER);
@@ -359,8 +377,7 @@ public class GraphTab extends JPanel{
 			strokeDotted = new BasicStroke(2, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND, 10, dash1, 10);			
 		//Drawing buffer
 		private BufferedImage buffer;
-		private Map.Entry<Node, DrawData> active, selected;
-		private boolean redraw = false;
+		private DrawData active, selected;
 
 		public Graph(){
 			//Initialize data structures
@@ -369,7 +386,17 @@ public class GraphTab extends JPanel{
 			addMouseListener(new MouseListener(){
 				@Override
 				public void mousePressed(MouseEvent e) {
-					mouseClick(e.getButton());
+					switch (e.getButton()){
+						case MouseEvent.BUTTON1:
+							selectNode();
+							break;
+						case MouseEvent.BUTTON2:
+							unhideNodes();
+							break;
+						case MouseEvent.BUTTON3:
+							hideNode();
+							break;
+					}
 				}
 				@Override
 				public void mouseClicked(MouseEvent e) {}
@@ -383,7 +410,36 @@ public class GraphTab extends JPanel{
 			addMouseMotionListener(new MouseMotionListener(){
 				@Override
 				public void mouseDragged(MouseEvent e) {
-					dragMouse(e.getX(), e.getY());
+					int x = e.getX(), y = e.getY();
+					//Rotate, if a node is selected
+					DrawData par;
+					if (selected != null && (par = selected.parent) != null){
+						double px = par.coord.getX(), py = par.coord.getY(),
+								theta = Math.atan2(y-py, x-px)-Math.atan2(my-py, mx-px);
+						//Rotate all the immediate children
+						AffineTransform tr = new AffineTransform();
+						tr.rotate(theta, px, py);
+						for (DrawData c: par.children){
+							//Rotate all descendants
+							if (mode.rotateMode == GraphMode.RotateMode.ROTATE)
+								transform(c, tr);
+							//Rotate child, shift descendents
+							else{
+								Point2D rot = new Point2D.Double();
+								tr.transform(c.coord, rot);
+								AffineTransform tt = new AffineTransform();
+								tt.translate(
+									rot.getX()-c.coord.getX(),
+									rot.getY()-c.coord.getY()
+								);
+								//Shift immediate children's descendants
+								transform(c, tt);
+							}
+						}
+						redraw(true);
+					}
+					mx = x;
+					my = y;
 				}
 				@Override
 				public void mouseMoved(MouseEvent e) {
@@ -394,47 +450,18 @@ public class GraphTab extends JPanel{
 			});
 		}
 
-		//MOUSE
-		public void dragMouse(int x, int y){
-			//Rotate, if a node is selected
-			DrawData ddChild, ddParent;
-			if (selected != null && (ddChild = selected.getValue()).parent != null){
-				ddParent = ddChild.parent;
-				double px = ddParent.coord.getX(),
-						py = ddParent.coord.getY();
-				ddParent.skew += Math.atan2(y-py, x-px)-Math.atan2(my-py, mx-px);
-				redraw(false);
-			}
-			mx = x;
-			my = y;
-		}
-		public void mouseClick(int button){
-			switch (button){
-				case MouseEvent.BUTTON1:
-					selectNode();
-					break;
-				case MouseEvent.BUTTON2:
-					unhideNodes();
-					break;
-				case MouseEvent.BUTTON3:
-					selectNode();
-					hideNode();
-					break;
-			}
-		}
-
 		//ACTIONS
 		public void viewSelected(){
 			if (selected != null)
-				draw(selected.getKey());
+				draw(selected.n);
 		}
 		public void highlightNode(){
 			if (mode == null || GraphMode.nodes == null)
 				return;
 			//Highlight a node for selection
 			Point2D temp;
-			for (Map.Entry<Node, DrawData> datum: GraphMode.nodes.entrySet()){
-				if (datum.getValue().coord.distance(mx, my) <= selMargin){
+			for (DrawData datum: GraphMode.nodes.values()){
+				if (!hide.contains(datum) && datum.coord.distance(mx, my) <= selMargin){
 					if (active != datum){
 						active = datum;
 						redraw(false);
@@ -450,23 +477,51 @@ public class GraphTab extends JPanel{
 		public void selectNode(){
 			if (active != null){
 				selected = active;
-				container.setSelectedNode(selected.getKey());
+				container.setSelectedNode(selected.n);
 				redraw(false);
 			}
 		}
 		public void hideNode(){
-			if (selected == null)
+			if (active == null)
 				return;
-			hide.add(selected.getKey());
-			selected = null;
-			redraw(false);
+			//Hide all nodes descending from this one
+			hide.add(active);
+			ArrayList<DrawData> childs = active.children;
+			while (childs != null && !childs.isEmpty()){
+				hide.addAll(childs);
+				ArrayList<DrawData> temp = new ArrayList<>();
+				for (DrawData z: childs){
+					if (z.children != null)
+						temp.addAll(z.children);
+				}
+				childs = temp;
+			}
+			active = null;
+			redraw(true);			
 		}
 		public void unhideNodes(){
 			hide.clear();
-			redraw(false);
+			redraw(true);
+		}
+		private void transform(DrawData d, AffineTransform t){
+			t.transform(d.coord, d.coord);
+			if (d.children != null){
+				for (DrawData c: d.children)
+					transform(c, t);
+			}
 		}
 
-		//DRAWING		
+		//DRAWING
+		/**
+		 * Performs a full refresh on the previous node
+		 */
+		public void draw(){
+			if (n != null) draw(n);
+		}
+		/**
+		 * Performs a full refresh on the specified node
+		 * @param n 
+		 */
 		public void draw(Node n){
 			if (this.n != n){
 				this.n = n;
@@ -482,79 +537,23 @@ public class GraphTab extends JPanel{
 			mode.draw(n);
 			//See if the selected node is in the new graph
 			if (selected != null){
-				DrawData d = GraphMode.nodes.get(selected.getKey());
-				if (d != null)
-					selected.setValue(d);
-				else{
-					selected = null;
+				DrawData d = GraphMode.nodes.get(selected.n);
+				selected = d;
+				if (d == null)
 					container.setSelectedNode(null);
-				}
 			}
 			active = null;
 			buffer = null;
-			repaint();
+			redraw(false);
 		}
-		private void redraw(boolean force){
-			if (force)
+		/**
+		 * Uses pre-calculated draw-data to redraw the graph
+		 * @param clearBuffer should we clear the screen's buffer
+		 */
+		private void redraw(boolean clearBuffer){
+			if (clearBuffer)
 				buffer = null;
-			redraw = !force;
 			repaint();
-		}
-		@Override
-		protected void paintComponent(Graphics g){
-			super.paintComponent(g);
-			Graphics2D g2 = (Graphics2D) g;
-			//Redrawing
-			if (buffer != null && !redraw){
-				g2.drawImage(buffer, null, 0, 0);
-				//Selected nodes
-				if (active != null){
-					DrawData temp = active.getValue();
-					g2.setColor(Color.CYAN);
-					temp.draw(g2, useBinary);
-					//Children of selection
-					if (temp.children != null){
-						g2.setColor(Color.YELLOW);
-						for (DrawData child: temp.children)
-							child.draw(g2, useBinary);
-					}
-					//Parent of selection
-					if (temp.parent != null){
-						g2.setColor(Color.GREEN);
-						temp.parent.draw(g2, useBinary);
-					}
-				}
-				//Set cursor
-				container.setCursor(active != null ?
-					Cursor.getPredefinedCursor(Cursor.CROSSHAIR_CURSOR) :
-					Cursor.getPredefinedCursor(Cursor.DEFAULT_CURSOR)
-				);
-				drawSelected(g2);
-				return;
-			}
-			//Draw a node
-			if (n != null){
-				buffer = new BufferedImage(maxSizeX, maxSizeY, BufferedImage.TYPE_INT_ARGB);
-				Graphics2D gbi = buffer.createGraphics();
-				gbi.setRenderingHints(new HashMap<RenderingHints.Key, Object>(){{
-					put(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_SPEED);
-					put(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
-				}});
-
-				//Graph title
-				gbi.setColor(Color.BLACK);
-				gbi.drawString(title, 20, 20);
-
-				//Paint all links and nodes, recursively
-				paintLinks(gbi);
-				gbi.setColor(Color.BLACK);
-				drawNode(gbi, GraphMode.nodes.get(n));
-				
-				//Draw buffer to screen
-				g2.drawImage(buffer, null, 0, 0);
-				drawSelected(g2);
-			}
-			redraw = false;
 		}
 		/**
 		 * Draws a node in the graph, recursively
@@ -565,7 +564,7 @@ public class GraphTab extends JPanel{
 			d.draw(g, useBinary);
 			if (d.children != null){
 				for (DrawData c: d.children){
-					if (!hide.contains(c.n))
+					if (!hide.contains(c))
 						drawNode(g, c);
 				}
 			}
@@ -576,15 +575,13 @@ public class GraphTab extends JPanel{
 		 */
 		private void drawSelected(Graphics2D g2){
 			if (selected != null){
-				DrawData sel = selected.getValue();
 				g2.setColor(Color.BLUE);
 				g2.setStroke(strokeSolid);
 				int d = DrawData.nodeSize*4,
 					r = d/2;
-				g2.drawOval((int) sel.coord.getX()-r, (int) sel.coord.getY()-r, d, d);
+				g2.drawOval((int) selected.coord.getX()-r, (int) selected.coord.getY()-r, d, d);
 			}
 		}
-		
 		/**
 		 * Draws all links between the nodes in the graph
 		 * @param g graphics context
@@ -597,7 +594,7 @@ public class GraphTab extends JPanel{
 				d1 = GraphMode.nodes.get(l.friend);
 				d2 = GraphMode.nodes.get(l.origin);
 				//Make sure references exist in the graph
-				if (hide.contains(l.friend) || hide.contains(l.origin))
+				if (hide.contains(d1) || hide.contains(d2))
 					continue;
 				//Switch drawing mode
 				//TreeSet is ordered by type/color, so we'll only switch modes once in a while
@@ -619,6 +616,55 @@ public class GraphTab extends JPanel{
 				//Draw a line
 				g.drawLine((int) d1.coord.getX(), (int) d1.coord.getY(), (int) d2.coord.getX(), (int) d2.coord.getY());
 			}
+		}
+		@Override
+		protected void paintComponent(Graphics g){
+			super.paintComponent(g);
+			Graphics2D g2 = (Graphics2D) g;
+			//Draw a node
+			if (buffer == null && n != null){
+				buffer = new BufferedImage(maxSizeX, maxSizeY, BufferedImage.TYPE_INT_ARGB);
+				Graphics2D gbi = buffer.createGraphics();
+				gbi.setRenderingHints(new HashMap<RenderingHints.Key, Object>(){{
+					put(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_SPEED);
+					put(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
+				}});
+
+				//Graph title
+				gbi.setColor(Color.BLACK);
+				gbi.drawString(title, 20, 20);
+
+				//Paint all links and nodes, recursively
+				paintLinks(gbi);
+				gbi.setColor(Color.BLACK);
+				drawNode(gbi, GraphMode.nodes.get(n));
+			}
+			//Draw buffer to screen
+			g2.drawImage(buffer, null, 0, 0);
+			//Selected nodes
+			if (active != null){
+				g2.setColor(Color.CYAN);
+				active.draw(g2, useBinary);
+				//Children of selection
+				if (active.children != null){
+					g2.setColor(Color.YELLOW);
+					for (DrawData child: active.children){
+						if (!hide.contains(child))
+							child.draw(g2, useBinary);
+					}
+				}
+				//Parent of selection
+				if (active.parent != null){
+					g2.setColor(Color.GREEN);
+					active.parent.draw(g2, useBinary);
+				}
+			}
+			//Set cursor
+			container.setCursor(active != null ?
+				Cursor.getPredefinedCursor(Cursor.CROSSHAIR_CURSOR) :
+				Cursor.getPredefinedCursor(Cursor.DEFAULT_CURSOR)
+			);
+			drawSelected(g2);
 		}
 	}
 }
