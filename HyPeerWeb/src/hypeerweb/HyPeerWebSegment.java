@@ -1,9 +1,11 @@
 package hypeerweb;
 
+import chat.ChatServer;
 import hypeerweb.visitors.SendVisitor;
 import hypeerweb.visitors.BroadcastVisitor;
 import hypeerweb.visitors.SyncListener;
 import hypeerweb.visitors.SyncVisitor;
+import java.util.Arrays;
 import java.util.Random;
 import java.util.TreeMap;
 import validator.HyPeerWebInterface;
@@ -15,6 +17,7 @@ import validator.HyPeerWebInterface;
  */
 public class HyPeerWebSegment<T extends Node> extends Node implements HyPeerWebInterface{
 	private Database db = null;
+	private ChatServer chatServer;
 	private TreeMap<Integer, Node> nodes;
 	private HyPeerWebState state;
 	//Random number generator for getting random nodes
@@ -34,11 +37,12 @@ public class HyPeerWebSegment<T extends Node> extends Node implements HyPeerWebI
 	 *	Warning! Database access can be very slow (e.g. "HyPeerWeb.sqlite")
 	 * @param seed the random seed number for getting random nodes; use -1
 	 *	to get a pseudo-random seed
+	 * @param cs the ChatServer that this segment belongs to
 	 * @throws Exception if there was a database error
 	 * @author isaac
 	 */
-	public HyPeerWebSegment(String dbName, long seed) throws Exception{
-		this(dbName, seed, 0, 0);
+	public HyPeerWebSegment(String dbName, long seed, ChatServer cs) throws Exception{
+		this(dbName, seed, 0, 0, cs);
 	}
 	/**
 	 * Constructor for initializing the HyPeerWeb with defined Node values
@@ -48,10 +52,11 @@ public class HyPeerWebSegment<T extends Node> extends Node implements HyPeerWebI
 	 *	to get a pseudo-random seed
 	 * @param webID the node webID, if it has one
 	 * @param height the node height, if it has one
+	 * @param cs the ChatServer that this segment belongs to
 	 * @throws Exception if there was a database error
 	 * @author isaac
 	 */
-	public HyPeerWebSegment(String dbName, long seed, int webID, int height) throws Exception{
+	public HyPeerWebSegment(String dbName, long seed, int webID, int height, ChatServer cs) throws Exception{
 		super(0, 0);
 		if (dbName != null){
 			db = Database.getInstance(dbName);
@@ -60,6 +65,7 @@ public class HyPeerWebSegment<T extends Node> extends Node implements HyPeerWebI
 		else nodes = new TreeMap();
 		if (seed != -1)
 			rand.setSeed(seed);
+		chatServer = cs;
 	}
 	
 	/**
@@ -279,7 +285,10 @@ public class HyPeerWebSegment<T extends Node> extends Node implements HyPeerWebI
 	
 	// <editor-fold defaultstate="collapsed" desc="SEGMENT GETTERS">
 	@Override
-	public TreeMap<Integer, Node> getAllSegmentNodes() {
+	public Node[] getAllSegmentNodes() {
+		return (Node[]) nodes.values().toArray();
+	}
+	public TreeMap<Integer, Node> getTreeMapOfAllSegmentNodes(){
 		return nodes;
 	}
 	/**
@@ -321,6 +330,13 @@ public class HyPeerWebSegment<T extends Node> extends Node implements HyPeerWebI
             builder.append(n);
         return builder.toString();
     }
+	/**
+	 * gets the ChatServer that this node is a part of
+	 * @return 
+	 */
+	public ChatServer getChatServer(){
+		return chatServer;
+	}
 	// </editor-fold>
 	
 	// <editor-fold defaultstate="collapsed" desc="HYPEERWEB GETTERS">

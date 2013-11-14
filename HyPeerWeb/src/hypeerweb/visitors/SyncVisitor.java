@@ -15,7 +15,7 @@ public class SyncVisitor extends AbstractVisitor{
 	}
 
 	@Override
-	public void visit(Node n) {
+	public void visit(Node n, Object a) {
 		
 		//Broadcast to children
 		Integer blacklist = (Integer) (a != null ? a.getAttribute(childOrigin) : null);

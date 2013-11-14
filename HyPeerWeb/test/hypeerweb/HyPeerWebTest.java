@@ -26,11 +26,14 @@ public class HyPeerWebTest {
 		RAND_SEED = -1;					//Seed for getting random nodes (use -1 for a random seed)
 	private static final String
 		DB_NAME = null;					//Enables database syncing
-	private static HyPeerWeb<Node> web;
+	private static HyPeerWeb web;
 	private static String curTest;
+	private static boolean
+		useDatabase = false,
+		useGraph = true;
 	
 	public HyPeerWebTest() throws Exception{
-		web = new HyPeerWeb(DB_NAME, RAND_SEED);
+		web = web.initialize(useDatabase, useGraph, RAND_SEED);
 	}
 	
 	/**

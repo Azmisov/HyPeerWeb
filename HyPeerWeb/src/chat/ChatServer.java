@@ -2,6 +2,7 @@ package chat;
 
 import hypeerweb.HyPeerWebSegment;
 import hypeerweb.Node;
+import hypeerweb.visitors.SendVisitor;
 import java.util.ArrayList;
 import java.util.Random;
 
@@ -11,11 +12,15 @@ import java.util.Random;
 public class ChatServer{
 	private HyPeerWebSegment<HyPeerWebSegment<Node>> segment;
 	private ChatUser user;
-	private String networkName = "";
+	//private String networkName = "";
 	private ArrayList<SendListener> sendListeners = new ArrayList();
 	private ArrayList<UserListener> userListeners = new ArrayList();
 	private ArrayList<NodeListener> nodeListeners = new ArrayList();
 	private ArrayList<NetworkNameListener> networkNameListeners = new ArrayList();
+	
+	public ChatServer(String dbName) throws Exception{
+		segment = new HyPeerWebSegment(dbName, -1, this);
+	}
 	
 	/**
 	 * Adds a node to the HyPeerWeb and tells the nodeListeners about it.
@@ -42,9 +47,16 @@ public class ChatServer{
 	 */
 	public ArrayList<Node> getAllNodes(){
 		ArrayList<Node> nodes = new ArrayList();
-		
+		//use broadcast to make a list of all nodes.
 			
 		return nodes;
+	}
+	/**
+	 * Gets the name of the ChatUser
+	 * @return the name
+	 */
+	public ChatUser getUser(){
+		return user;
 	}
 	
 	/**
@@ -53,7 +65,7 @@ public class ChatServer{
 	 */
 	public ArrayList<ChatUser> getAllUsers(){
 		ArrayList<ChatUser>users = new ArrayList();
-		
+		//use broadcast to get all users
 		return users;
 	}
 	
@@ -90,18 +102,32 @@ public class ChatServer{
 	}
 	
 	/**
-	 * 
-	 * @param message 
+	 * Sends a message to another ChatUser
+	 * @param user the destination
+	 * @param message the message
 	 */
-	public void sendMessage(String message){
-		
+	public void sendMessage(ChatUser user, String message){
+		SendVisitor visitor = new SendVisitor(user.getWebId());
+		visitor.visit(segment);
+	}
+	/**
+	 * Method called by sendVisitor to display message destined for this user
+	 * @param message the message to display
+	 */
+	public void receiveMessage(String message){
+		for(SendListener listener : sendListeners)
+			listener.callback(user.getWebId(), message);
 	}
 	
 	/**
 	 * 
 	 */
 	public void disconnect(){
-		
+		//this one looks tough
+		//I think this is the part where Dr. Woodfield said that if one segment
+		//wanted to quit, all of the segments would have to quit.  Now I can 
+		//see why.  Sending all of the nodes on this segment to live somewhere
+		//else would be difficult.
 	}
 	
 	/**
@@ -155,6 +181,9 @@ public class ChatServer{
 		@Override
 		public String toString(){
 			return name;
+		}
+		public int getWebId(){
+			return id;
 		}
 	}
 	

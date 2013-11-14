@@ -4,6 +4,7 @@ import communicator.GlobalObjectId;
 import communicator.LocalObjectId;
 import communicator.PortNumber;
 import hypeerweb.visitors.AbstractVisitor;
+import hypeerweb.visitors.SyncVisitor;
 import java.io.ObjectStreamException;
 import java.io.Serializable;
 import java.net.InetAddress;
@@ -288,6 +289,10 @@ public class Node implements NodeInterface, Serializable {
 		//This should never happen in a valid HyPeerWeb
 		assert(false);
 		return null;
+	}
+
+	public void accept(SyncVisitor aThis, Object object) {
+		throw new UnsupportedOperationException("Not supported yet.");
 	}
 	
 	//FIND VALID NODES

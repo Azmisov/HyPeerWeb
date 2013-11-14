@@ -1,5 +1,7 @@
 package hypeerweb.visitors;
 
+import chat.ChatServer;
+import hypeerweb.HyPeerWebSegment;
 import hypeerweb.Node;
 
 /**
@@ -10,6 +12,9 @@ public class SendVisitor extends AbstractVisitor{
 	private static final String
 		target = "TARGET",
 		approx = "APPROX";
+	private String message = "";
+	private int originId;
+	private boolean messageBeingSent = false;
 	
 	/**
 	 * Navigate to the node with webID = 0, with
@@ -35,6 +40,19 @@ public class SendVisitor extends AbstractVisitor{
 	public SendVisitor(int targetWebId, boolean approximateMatch){
 		data.setAttribute(target, targetWebId);
 		data.setAttribute(approx, approximateMatch);
+	}
+	/**
+	 * Creates a new send visitor that can send a message.
+	 * @param originWebId The WebId of the origin
+	 * @param targetWebId The WebId of the destination
+	 * @param message the message
+	 */
+	public SendVisitor(int originWebId, int targetWebId, String mess){
+		originId = originWebId;
+		message = mess;
+		messageBeingSent = true;
+		data.setAttribute(target, targetWebId);
+		data.setAttribute(approx, false);
 	}
 
 	/**
@@ -63,10 +81,22 @@ public class SendVisitor extends AbstractVisitor{
 	 * Perform an operation on the target node (the one we were searching for)
 	 * @param node the node we are visiting
 	 */
-	public void performTargetOperation(Node node){}
+	public void performTargetOperation(Node node){
+		if(messageBeingSent){
+			HyPeerWebSegment segment = (HyPeerWebSegment) node;
+			segment.getChatServer().receiveMessage(message);
+		}
+	}
 	/**
 	 * Perform an operation on an intermediate node
 	 * @param node the node we are visiting
 	 */
 	public void performIntermediateOperation(Node node){}
+	/**
+	 * 
+	 * @return probably not null
+	 */
+	public Node getFinalNode(){
+		return null;
+	}
 }
