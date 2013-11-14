@@ -1,23 +1,18 @@
 package hypeerweb.visitors;
 
+import hypeerweb.Attributes;
 import hypeerweb.Node;
+import java.io.Serializable;
 
 /**
  * Visitor Pattern for the HyPeerWeb
  */
-public abstract class AbstractVisitor{
+public abstract class AbstractVisitor implements Serializable{
+	protected Attributes data = new Attributes();
+	
 	/**
 	 * Visit a particular node
 	 * @param n the node to visit
 	 */
-	public void visit(Node n){
-		visit(n, null);
-	}
-	/**
-	 * Visit a particular node; use of this method is implementation
-	 * dependent; you may need to use the default constructor
-	 * @param n the node to visit
-	 * @param a parameters to pass along with each visit
-	 */
-	public abstract void visit(Node n, Object a);
+	public abstract void visit(Node n);
 }

@@ -1,6 +1,5 @@
 package hypeerweb.visitors;
 
-import hypeerweb.Attributes;
 import hypeerweb.Node;
 
 /**
@@ -14,39 +13,36 @@ public class BroadcastVisitor extends AbstractVisitor{
 	 * Begin broadcasting from this node
 	 * @param n a node to begin broadcasting from
 	 */
-	@Override
-	public void visit(Node n){
+	public final void begin(Node n){
 		//Set the blacklist attribute to -1 to kick of the broadcast
-		Attributes a = new Attributes();
-		a.setAttribute(childOrigin, -1);
-		visit(n, a);
+		data.setAttribute(childOrigin, -1);
+		visit(n);
 	}
 	
 	/**
 	 * Do not call this method! use visit(Node n) instead
 	 * @param n a node to begin broadcasting from
-	 * @param a data to pass along
 	 */
 	@Override
-	public void visit(Node n, Object o){
-		Attributes a = (Attributes) o;
+	public final void visit(Node n){
 		performOperation(n);
 		//Broadcast to children
-		Integer blacklist = (Integer) (a != null ? a.getAttribute(childOrigin) : null);
+		Integer blacklist = (Integer) data.getAttribute(childOrigin);
 		for (Node child : n.getTreeChildren()){
 			if (blacklist == null || child.getWebId() != blacklist)
-				child.accept(this, null);
+				child.accept(this);
 		}
 		//Broadcast to parent, if necessary
-		if (blacklist != null && a != null){
+		if (blacklist != null){
 			Node parent = n.getTreeParent();
 			if (parent != null){
 				//Put child in blacklist, so we don't broadcast to it again
-				a.setAttribute(childOrigin, n.getWebId());
-				parent.accept(this, a);
+				data.setAttribute(childOrigin, n.getWebId());
+				parent.accept(this);
 			}
 		}
-	}	
+	}
+	
 	/**
 	 * Perform a broadcast operation
 	 * @param n the node that has been broadcasted to

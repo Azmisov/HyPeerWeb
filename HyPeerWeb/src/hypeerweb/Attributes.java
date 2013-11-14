@@ -1,13 +1,14 @@
 package hypeerweb;
 
+import java.io.Serializable;
 import java.util.HashMap;
 
 /**
  * Hold name-value pair for attributes
  * @author John
  */
-public class Attributes {
-	private HashMap<String, Object> attributes = new HashMap<>();
+public class Attributes implements Serializable{
+	private final HashMap<String, Object> attributes = new HashMap<>();
 
 	/**
 	 * Set a data attribute
