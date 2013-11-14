@@ -6,8 +6,10 @@ import java.awt.AlphaComposite;
 import java.awt.BasicStroke;
 import java.awt.BorderLayout;
 import java.awt.Color;
+import java.awt.Cursor;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
+import java.awt.RenderingHints;
 import java.awt.Stroke;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
@@ -31,9 +33,13 @@ import javax.swing.JComboBox;
  * @author isaac
  */
 public class GraphTab extends JPanel{
-	private static final int maxSizeX = 500, maxSizeY = 500;
+	private static final int maxSizeX = 500, maxSizeY = 700;
+	private final ChatClient container;
+	private final JComboBox<GraphMode> modes = new JComboBox(GraphMode.values());
+	private final Graph graph;
 	
-	public GraphTab(){
+	public GraphTab(ChatClient container){
+		this.container = container;
 		setLayout(new BorderLayout(0, 0));
 		
 		//Graphing tab is split into a toolbar and graph
@@ -45,7 +51,6 @@ public class GraphTab extends JPanel{
 		 * Hide, Unhide All, Help, Viewing Mode, Go up a level
 		 */
 		bar.add(new JLabel("Mode: "));
-		JComboBox<GraphMode> modes = new JComboBox(GraphMode.values());
 		bar.add(modes);
 		bar.add(new JButton("Hide Selected"));
 		bar.add(new JButton("Unhide All"));
@@ -55,125 +60,124 @@ public class GraphTab extends JPanel{
 		bar.add(btnHelp);
 		
 		//Bottom is the actual graph
-		Graph g = new Graph();
+		graph = new Graph();
 		
 		//Layout components
-		add(bar, BorderLayout.NORTH);
-		add(g, BorderLayout.CENTER);
+		//add(bar, BorderLayout.NORTH);
+		add(graph, BorderLayout.CENTER);
+	}
+	
+	public void draw(Node n){
+		graph.draw(n);
 	}
 	
 	private enum GraphMode{
 		DEFAULT ("Default"){
-			private static final int margin = 0;	//Minimum margin between nodes (within allowed window space)
+			//Minimum margin between nodes (within allowed window space)
+			private static final int margin = 3;
+			private int levels = 3;
 			
 			@Override
-			public ArrayList<DrawData> draw(Node n, int levels){
-				ArrayList<DrawData> nodes = new ArrayList();
+			public void draw(Node n){
+				nodes = new HashMap();
+				links = new HashSet();
+				HashSet<DrawLink> linksPot = new HashSet();
 				
-				//Get diameters of circles
-				int radius = (int) (maxSizeX/2-levels*margin);
+				//Start off with the active node
+				int radius = (int) (maxSizeX/2-levels*margin)/2;
 				Point2D origin = new Point2D.Double(maxSizeX/2, maxSizeY/2);
+				DrawData active = new DrawData(n, null, null, -1, 0, origin);
+				nodes.put(n, active);
 				
-				//Graph begins in the center of screen
-				nodes.add(new DrawData(n, null, null, -1, 0, origin));
-				//Loop through each connection level and draw circles
-				ArrayList<Node> parents = new ArrayList<>();
-				ArrayList<Node> friends;
-				parents.add(n);
-				for (int level = 0; level < levels; level++){
-					radius /= 2;
-					friends = new ArrayList<>();
-					for (Node parent: parents)
-						friends.addAll(drawCircle(parent, radius+margin, level));
-					if (friends.isEmpty()) break;
-					parents = friends;
-				}
-				
-				return nodes;
-			}
-			
-			/**
-			 * Paints a circle of nodes
-			 * @param n the parent node to draw around
-			 * @param radius the radius of the circle
-			 * @param level what is the depth of this graph circle? Use -1 when redrawing
-			 * @return a list of nodes added children nodes (of n, the parent)
-			 */
-			private ArrayList<Node> drawCircle(Node n, int radius, int level){
-				DrawData parentData = data.get(n);
-				Point2D origin = parentData.coord;
-				//Get a list of nodes that haven't been drawn already
-				ArrayList<Node> friends;
-				if (level != -1){
-					friends = new ArrayList<>();
-					Node[][] Nlinks = {
-						n.getNeighbors(),
-						n.getSurrogateNeighbors(),
-						n.getInverseSurrogateNeighbors()
-					};
-					for (int i=0; i<Ntypes.length; i++){
-						for (Node link: Nlinks[i]){
-							if (!data.containsKey(link))
-								friends.add(link);
-							links.add(new DrawLink(n, link, Ntypes[i]));
+				//Each level evenly distributes the nodes to the parents
+				ArrayList<DrawData> parents = new ArrayList();
+				parents.add(active);
+				for (int level = 0, adjRadius; level < levels; level++, radius /= 2){
+					//Generate a hashset of all parents for quick lookup
+					HashSet<Integer> allParentIDs = new HashSet();
+					for (DrawData p: parents)
+						allParentIDs.add(p.n.getWebId());
+					//Generate all children of the parent
+					ArrayList<DrawData> newParents = new ArrayList();
+					for (final DrawData p: parents){
+						//Set skew for this parent
+						if (p.skew == -1)
+							p.skew = Math.random()*Math.PI;						
+						int parID = p.n.getWebId();
+						ArrayList<Node> childs = new ArrayList();
+						ArrayList<Node> potential = new ArrayList();
+
+						//Create links
+						potential.addAll(p.n.L.getNeighborsSet());
+						for (Node x: p.n.L.getNeighborsSet())
+							linksPot.add(new DrawLink(p.n, x, Links.Type.NEIGHBOR));
+						potential.addAll(p.n.L.getSurrogateNeighborsSet());
+						for (Node x: p.n.L.getSurrogateNeighborsSet())
+							linksPot.add(new DrawLink(p.n, x, Links.Type.SNEIGHBOR));
+
+						//Only add potential children if they are a direct child
+						//of the parent or not a direct child of any other parent
+						for (Node c: potential){
+							//Make sure this hasn't been drawn already
+							if (!nodes.containsKey(c)){
+								int webID = c.getWebId(),
+									childsParID = webID & ~Integer.highestOneBit(webID);
+								if (parID == childsParID || !allParentIDs.contains(childsParID))
+									childs.add(c);
+							}
 						}
+
+						//Now we have a list of children, build the draw data for each
+						ArrayList<DrawData> childData = new ArrayList();
+						int numChilds = childs.size();
+						double theta = 2*Math.PI / (double)(numChilds == 2 ? 3 : numChilds);
+						double angle = p.skew;
+						adjRadius = radius + margin;
+						for (Node c: childs){
+							DrawData data = new DrawData(c, p, null, -1, level, new Point2D.Double(
+								(adjRadius*Math.cos(angle)) + p.coord.getX(),
+								(adjRadius*Math.sin(angle)) + p.coord.getY()
+							));
+							childData.add(data);
+							nodes.put(c, data);
+							angle += theta;
+						}
+						//Set references to children data
+						p.children = childData;
+						newParents.addAll(childData);
 					}
-					parentData.children = friends;
+					if (newParents.isEmpty())
+						break;
+					parents = newParents;
 				}
-				else friends = parentData.children;
-				//Remove hidden friends
-				ArrayList<Node> temp = new ArrayList<>();
-				for (Node z: friends){
-					if (!hide.contains(z))
-						temp.add(z);
+				
+				//Filter out links
+				for (DrawLink l: linksPot){
+					if (nodes.containsKey(l.friend) && nodes.containsKey(l.origin))
+						links.add(l);
 				}
-				friends = temp;
-				//Draw these friends in a circle
-				if (parentData.skew == -1)
-					parentData.skew = Math.random()*2*Math.PI/friends.size();
-				double theta = 2*Math.PI/(double) (friends.size() == 2 ? 3 : friends.size()),
-						angle = parentData.skew;
-				Point2D coord = new Point2D.Double();
-				for (Node friend: friends){
-					if (level != -1)
-						addNodeData(friend, n, null, -1, level, null);
-					coord.setLocation(
-						radius*Math.cos(angle),
-						radius*Math.sin(angle)
-					);
-					data.get(n).coord.setLocation(
-						(int) (origin.getX()+coord.getX()),
-						(int) (origin.getY()+coord.getY())
-					);
-					angle += theta;
-				}
-				return friends;
-			}
-		},
-		TREE ("Spanning Tree"){
-			@Override
-			public ArrayList<DrawData> draw(Node n, int levels){
-				return null;
-			}
-		},
-		PETRIE ("Petrie Polygon"){
-			@Override
-			public ArrayList<DrawData> draw(Node n, int levels){
-				return null;
 			}
 		};
+		/*
+		TREE ("Spanning Tree"),
+		PETRIE ("Petrie Polygon"),
+		SAND ("Sand Pile");
+		*/
 		
-		private String name;
+		public HashMap<Node, DrawData> nodes;
+		public HashSet<DrawLink> links;
+		
+		private final String name;
 		GraphMode(String name){
 			this.name = name;
 		}
-		public abstract ArrayList<DrawData> draw(Node n, int levels);
+		public abstract void draw(Node n);
 		@Override
 		public String toString(){
 			return name;
 		}
 	}
-	private class DrawLink implements Comparable{
+	private static class DrawLink implements Comparable{
 		public Node origin;
 		public Node friend;
 		public Links.Type type;
@@ -212,14 +216,15 @@ public class GraphTab extends JPanel{
 		}
 	}
 	private static class DrawData{
-		static int nodeSize = 10; //Node size, in pixels
-		ArrayList<Node> children;
-		Node n, parent;		//Active & Parent node's (if level != 0)
-		double skew;		//Rotation skew angle
-		int level;			//Level that this was drawn at
-		Point2D coord;		//Coordinates on screen
+		public static int nodeSize = 6;			//Node size, in pixels
+		public ArrayList<DrawData> children;		//Children of current drawdata
+		public DrawData parent;					//Parent of current drawdata (if level != 0)
+		public Node n;							//Node associated with this data
+		public double skew;						//Rotation skew angle
+		public int level;						//Level that this was drawn at
+		public Point2D coord;					//Coordinates on screen
 
-		public DrawData(Node n, Node parent, ArrayList<Node> children, double skew, int level, Point2D coord){
+		public DrawData(Node n, DrawData parent, ArrayList<DrawData> children, double skew, int level, Point2D coord){
 			this.n = n;
 			this.parent = parent;
 			this.children = children;
@@ -235,16 +240,14 @@ public class GraphTab extends JPanel{
 	}
 	
 	private class Graph extends JPanel{
-		//Graph stuff
+		//Graph title
 		private String title;					//Graph title
 		//Node stuff
-		private String detail;					//Node details
 		private Node n;							//Node we are going to draw
-		private Node nParent;					//The node's parent
-		private final int
-			selMargin = 5;						//Mimimum margin before a node is close enough to mouse for selection
-		private int mx, my,	winSize;			//Mouse coordinates and window size
-		private final TreeSet<DrawLink> links;		//Set of links for the graph
+		private final int selMargin = 15;		//Mimimum margin before a node is close enough to mouse for selection
+		private int mx, my;						//Current mouse coordinates
+		private final HashSet<Node> hide;		//Hidden subtrees
+		GraphMode mode;							//Holds all data for the graph
 		//Link types
 		private final Links.Type[] Ntypes = {
 			Links.Type.NEIGHBOR,
@@ -252,9 +255,6 @@ public class GraphTab extends JPanel{
 			Links.Type.ISNEIGHBOR
 		};
 		//Drawing modes
-		private int levels;
-		private final HashSet<Node> hide;
-		private final HashMap<Node, DrawData> data;
 		private final AlphaComposite compMode = AlphaComposite.getInstance(AlphaComposite.DST_OVER);
 		private final float[] dash1 = {4}, dash2 = {10};
 		private final Stroke
@@ -267,10 +267,9 @@ public class GraphTab extends JPanel{
 		private boolean redraw = false;
 
 		public Graph(){
-			hide = new HashSet<>();
-			data = new HashMap<>();
-			links = new TreeSet<>();
-			//Mouse listeners
+			//Initialize data structures
+			hide = new HashSet();
+			//Initialize Mouse listeners
 			addMouseListener(new MouseListener(){
 				@Override
 				public void mousePressed(MouseEvent e) {
@@ -292,22 +291,19 @@ public class GraphTab extends JPanel{
 				}
 				@Override
 				public void mouseMoved(MouseEvent e) {
-					moveMouse(e.getX(), e.getY());
+					mx = e.getX();
+					my = e.getY();
+					highlightNode();
 				}
 			});
 		}
 
 		//MOUSE
-		public void moveMouse(int x, int y){
-			mx = x;
-			my = y;
-			highlightNode();
-		}
 		public void dragMouse(int x, int y){
 			//Rotate, if a node is selected
-			DrawNode ddChild, ddParent;
+			DrawData ddChild, ddParent;
 			if (selected != null && (ddChild = selected.getValue()).parent != null){
-				ddParent = data.get(ddChild.parent);
+				ddParent = ddChild.parent;
 				double px = ddParent.coord.getX(),
 						py = ddParent.coord.getY();
 				ddParent.skew += Math.atan2(y-py, x-px)-Math.atan2(my-py, mx-px);
@@ -334,13 +330,15 @@ public class GraphTab extends JPanel{
 		//ACTIONS
 		public void viewSelected(){
 			if (selected != null)
-				draw(selected.getKey(), levels);
+				draw(selected.getKey());
 		}
 		public void highlightNode(){
+			if (mode == null || mode.nodes == null)
+				return;
 			//Highlight a node for selection
 			Point2D temp;
-			for (Map.Entry<Node, DrawData> datum: data.entrySet()){
-				if (datum.getValue().coord.distance(mx, my) <= nodeSize){
+			for (Map.Entry<Node, DrawData> datum: mode.nodes.entrySet()){
+				if (datum.getValue().coord.distance(mx, my) <= selMargin){
 					if (active != datum){
 						active = datum;
 						repaint();
@@ -356,25 +354,14 @@ public class GraphTab extends JPanel{
 		public void selectNode(){
 			if (active != null){
 				selected = active;
+				container.setSelectedNode(selected.getKey());
 				repaint();
 			}
 		}
 		public void hideNode(){
 			if (selected == null)
 				return;
-			//Hide all nodes descending from this one
 			hide.add(selected.getKey());
-			ArrayList<Node> nodes = selected.getValue().children;
-			while (nodes != null && !nodes.isEmpty()){
-				hide.addAll(nodes);
-				ArrayList<Node> temp = new ArrayList<>();
-				for (Node z: nodes){
-					ArrayList<Node> childs = data.get(z).children;
-					if (childs != null)
-						temp.addAll(childs);
-				}
-				nodes = temp;
-			}
 			selected = null;
 			redraw(false);
 		}
@@ -384,42 +371,35 @@ public class GraphTab extends JPanel{
 		}
 
 		//DRAWING
-		public ArrayList<DrawData> draw(Node n, int levels){
+		public void draw(Node n){
 			this.n = n;
-			this.levels = levels;
-			nParent = n.getParent();
+			Node parent = n.getParent();
+			//Graph Title
 			title = "Graph of Node #"+n.getWebId()+" ("+n.getHeight()+")";
-			if (nParent != null)
-				title += ", child of Node #"+nParent.getWebId()+" ("+nParent.getHeight()+")";
-			detail = "Link Counts = N:"+n.getNeighbors().length+
-						", SN:"+n.getSurrogateNeighbors().length+
-						", ISN:"+n.getInverseSurrogateNeighbors().length+
-						", F:"+(n.getFold() == null ? "0" : "1")+
-						", SF:"+(n.getSurrogateFold()== null ? "0" : "1")+
-						", ISF:"+(n.getInverseSurrogateFold()== null ? "0" : "1");
-			System.out.println("Drawing Graph of..."+n);
+			if (parent != null)
+				title += ", child of Node #"+parent.getWebId()+" ("+parent.getHeight()+")";
+			//Get drawing data from the graph's mode
 			hide.clear();
-			data.clear();
-			links.clear();
+			mode = (GraphMode) modes.getSelectedItem();
+			mode.draw(n);
 			selected = null;
 			active = null;
 			buffer = null;
 			repaint();
-			return null;
 		}
 		private void redraw(boolean force){
 			if (force){
 				selected = null;
 				active = null;
 				buffer = null;
-				data.clear();
+				mode.nodes.clear();
 			}
 			redraw = !force;
 			repaint();
 		}
 		@Override
-		protected void paintComponent(Graphics g) {
-			//super.paintComponent(g); UNCOMMENT THIS
+		protected void paintComponent(Graphics g){
+			super.paintComponent(g);
 			Graphics2D g2 = (Graphics2D) g;
 			//Redrawing
 			if (buffer != null && !redraw){
@@ -428,191 +408,111 @@ public class GraphTab extends JPanel{
 				if (active != null){
 					DrawData temp = active.getValue();
 					g2.setColor(Color.CYAN);
-					repaintNode(g2, active.getKey());
+					temp.draw(g2);
 					//Children of selection
 					if (temp.children != null){
 						g2.setColor(Color.YELLOW);
-						for (Node child: temp.children)
-							repaintNode(g2, child);
+						for (DrawData child: temp.children)
+							child.draw(g2);
 					}
 					//Parent of selection
 					if (temp.parent != null){
 						g2.setColor(Color.GREEN);
-						repaintNode(g2, temp.parent);
+						temp.parent.draw(g2);
 					}
 				}
+				//Set cursor
+				container.setCursor(active != null ?
+					Cursor.getPredefinedCursor(Cursor.CROSSHAIR_CURSOR) :
+					Cursor.getPredefinedCursor(Cursor.DEFAULT_CURSOR)
+				);
 				drawSelected(g2);
 				return;
 			}
 			//Draw a node
 			if (n != null){
-				buffer = new BufferedImage(winSize, winSize, BufferedImage.TYPE_INT_ARGB);
+				buffer = new BufferedImage(maxSizeX, maxSizeY, BufferedImage.TYPE_INT_ARGB);
 				Graphics2D gbi = buffer.createGraphics();
+				gbi.setRenderingHint(
+					RenderingHints.KEY_TEXT_ANTIALIASING,
+					RenderingHints.VALUE_TEXT_ANTIALIAS_ON
+				);
+
 				//Graph title
 				gbi.setColor(Color.BLACK);
 				gbi.drawString(title, 20, 20);
-				gbi.drawString(detail, 20, 35);
-				//Get diameters of circles
-				int radius = (int) (winSize/2-levels*margin);
-				//Paint the starting node inthe center of the screen
-				gbi.setColor(Color.BLUE);
-				if (!redraw)
-					addNodeData(n, null, null, -1, 0, null);
-				paintNode(gbi, n, winSize/2, winSize/2);
-				//Loop through each connection level and draw circles
-				ArrayList<Node> parents = new ArrayList<>();
-				ArrayList<Node> friends;
-				parents.add(n);
-				for (int level = 0; level < levels; level++){
-					radius /= 2;
-					friends = new ArrayList<>();
-					for (Node parent: parents){
-						if (!hide.contains(parent))
-							friends.addAll(paintCircle(gbi, parent, radius+margin, redraw ? -1 : level));
-					}
-					if (friends.isEmpty()) break;
-					parents = friends;
-				}
+
+				//Draw all nodes, recursively
+				drawNode(gbi, mode.nodes.get(n));
+				
 				//Paint all links
 				gbi.setComposite(compMode);
 				paintLinks(gbi);
+				
+				//Draw buffer to screen
 				g2.drawImage(buffer, null, 0, 0);
 				drawSelected(g2);
 			}
 			redraw = false;
 		}
-		/**
-		 * Paints a circle of nodes
-		 * @param g graphics context
-		 * @param n the parent node to draw around
-		 * @param radius the radius of the circle
-		 * @param level what is the depth of this graph circle? Use -1 when redrawing
-		 * @return a list of nodes added children nodes (of n, the parent)
-		 */
-		private ArrayList<Node> paintCircle(Node n, int radius, int level){
-			DrawData parentData = data.get(n);
-			Point2D origin = parentData.coord;
-			//Get a list of nodes that haven't been drawn already
-			ArrayList<Node> friends;
-			if (level != -1){
-				friends = new ArrayList<>();
-				Node[][] Nlinks = {
-					n.getNeighbors(),
-					n.getSurrogateNeighbors(),
-					n.getInverseSurrogateNeighbors()
-				};
-				for (int i=0; i<Ntypes.length; i++){
-					for (Node link: Nlinks[i]){
-						if (!data.containsKey(link))
-							friends.add(link);
-						links.add(new DrawLink(n, link, Ntypes[i]));
-					}
+		
+		private void drawNode(Graphics2D g, DrawData d){
+			d.draw(g);
+			if (d.children != null){
+				for (DrawData c: d.children){
+					if (!hide.contains(c.n))
+						drawNode(g, c);
 				}
-				parentData.children = friends;
 			}
-			else friends = parentData.children;
-			//Remove hidden friends
-			ArrayList<Node> temp = new ArrayList<>();
-			for (Node z: friends){
-				if (!hide.contains(z))
-					temp.add(z);
-			}
-			friends = temp;
-			//Draw these friends in a circle
-			if (parentData.skew == -1)
-				parentData.skew = Math.random()*2*Math.PI/friends.size();
-			double theta = 2*Math.PI/(double) (friends.size() == 2 ? 3 : friends.size()),
-					angle = parentData.skew;
-			Point2D coord = new Point2D.Double();
-			for (Node friend: friends){
-				if (level != -1)
-					addNodeData(friend, n, null, -1, level, null);
-				coord.setLocation(
-					radius*Math.cos(angle),
-					radius*Math.sin(angle)
-				);
-				data.get(n).coord.setLocation(
-					(int) (origin.getX()+coord.getX()),
-					(int) (origin.getY()+coord.getY())
-				);
-				angle += theta;
-			}
-			return friends;
-		}
-		/**
-		 * Draws an individual node
-		 * @param g graphics context
-		 * @param n the node to draw
-		 * @param x x-coord location
-		 * @param y y-coord location
-		 */
-		private void paintNode(Graphics2D g, DrawData n){
-			draw(g, n, x, y);
-		}
-		private void repaintNode(Graphics2D g, Node n){
-			Point2D p = data.get(n).coord;
-			drawNode(g, n, (int) p.getX(), (int) p.getY());
-		}
-		private void drawNode(Graphics2D g, Node n, int x, int y){
-			
 		}
 		private void drawSelected(Graphics2D g2){
 			if (selected != null){
-				DrawData d = selected.getValue();
-				g2.setColor(Color.BLACK);
-				//g2.setComposite(compMode);
-				int s = nodeSize*2;
-				g2.drawOval((int) d.coord.getX()-nodeSize, (int) d.coord.getY()-nodeSize, s, s);
+				DrawData sel = selected.getValue();
+				g2.setColor(Color.BLUE);
+				g2.setStroke(strokeN);
+				int d = DrawData.nodeSize*4,
+					r = d/2;
+				g2.drawOval((int) sel.coord.getX()-r, (int) sel.coord.getY()-r, d, d);
 			}
 		}
+		
+		
 		/**
 		 * Draws all links between the nodes in the graph
 		 * @param g graphics context
 		 */
+		
 		private void paintLinks(Graphics2D g){
-			DrawNode d1, d2;
+			DrawData d1, d2;
 			Links.Type curType = null;
-			ArrayList<DrawLink> badLinks = new ArrayList<>();
-			for (DrawLink l: links){
-				d1 = data.get(l.friend);
-				d2 = data.get(l.origin);
+			for (DrawLink l: mode.links){
+				d1 = mode.nodes.get(l.friend);
+				d2 = mode.nodes.get(l.origin);
 				//Make sure references exist in the graph
-				if (d1 != null && d2 != null){
-					if (hide.contains(l.friend) || hide.contains(l.origin))
-						continue;
-					//Switch drawing mode
-					//TreeSet is ordered by type, so we'll only switch modes thrice
-					if (curType != l.type){
-						curType = l.type;
-						switch (l.type){
-							case NEIGHBOR:
-								g.setStroke(strokeN);
-								g.setColor(Color.RED);
-								break;
-							case SNEIGHBOR:
-								g.setStroke(strokeSN);
-								g.setColor(Color.GREEN);
-								break;
-							case ISNEIGHBOR:
-								g.setStroke(strokeISN);
-								g.setColor(Color.MAGENTA);
-								break;
-						}
+				if (hide.contains(l.friend) || hide.contains(l.origin))
+					continue;
+				//Switch drawing mode
+				//TreeSet is ordered by type, so we'll only switch modes thrice
+				if (curType != l.type){
+					curType = l.type;
+					switch (l.type){
+						case NEIGHBOR:
+							g.setStroke(strokeN);
+							g.setColor(Color.RED);
+							break;
+						case SNEIGHBOR:
+							g.setStroke(strokeSN);
+							g.setColor(Color.GREEN);
+							break;
+						case ISNEIGHBOR:
+							g.setStroke(strokeISN);
+							g.setColor(Color.MAGENTA);
+							break;
 					}
-					//Draw a line
-					g.drawLine((int) d1.coord.getX(), (int) d1.coord.getY(), (int) d2.coord.getX(), (int) d2.coord.getY());
 				}
-				else badLinks.add(l);
+				//Draw a line
+				g.drawLine((int) d1.coord.getX(), (int) d1.coord.getY(), (int) d2.coord.getX(), (int) d2.coord.getY());
 			}
-			links.removeAll(badLinks);
 		}
-
-		//DATA STRUCTURES
-		private void addNodeData(Node n, Node parent, ArrayList<Node> children, double skew, int level, Point2D coord){
-			if (coord == null)
-				coord = new Point2D.Double();
-			data.put(n, new DrawData(parent, children, skew, level, coord));
-		}
-
 	}
 }

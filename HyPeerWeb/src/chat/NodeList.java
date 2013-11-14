@@ -12,7 +12,9 @@ public class NodeList {
 	public TreeMap<Integer, Node> list;
 	
 	public NodeList(TreeMap<Integer, Node> initialList){
-		list = initialList;
+		if (initialList == null)
+			list = new TreeMap();
+		else list = initialList;
 	}
 	
 	/**

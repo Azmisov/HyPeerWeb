@@ -211,10 +211,7 @@ public class HyPeerWeb implements HyPeerWebInterface {
 		//Always start at Node with WebID = 0
 		if (nodes.isEmpty())
 			return null;
-		Node first = nodes.firstEntry().getValue();
-		randVisitor = new SendVisitor(rand.nextInt(Integer.MAX_VALUE), true);
-		randVisitor.visit(first);
-		return randVisitor.getFinalNode();
+		return getAllSegmentNodes()[rand.nextInt(nodes.size())];
 	}
 	
 	//VALIDATION

@@ -339,7 +339,7 @@ public class Links{
 	 * Implementor must not modify the values
 	 * @return a set of neighbors
 	 */
-	protected TreeSet<Node> getNeighborsSet(){
+	public TreeSet<Node> getNeighborsSet(){
 		return neighbors;
 	}
 	/**
@@ -347,7 +347,7 @@ public class Links{
 	 * Implementor must not modify the values
 	 * @return a set of surrogate neighbors
 	 */
-	protected TreeSet<Node> getSurrogateNeighborsSet(){
+	public TreeSet<Node> getSurrogateNeighborsSet(){
 		return surrogateNeighbors;
 	}
 	/**
@@ -355,7 +355,7 @@ public class Links{
 	 * Implementor must not modify the values
 	 * @return a set of inverse surrogate neighbors
 	 */
-	protected TreeSet<Node> getInverseSurrogateNeighborsSet(){
+	public TreeSet<Node> getInverseSurrogateNeighborsSet(){
 		return inverseSurrogateNeighbors;
 	}
 	/**
@@ -363,7 +363,7 @@ public class Links{
 	 * Implementor must not modify the values
 	 * @return a set of all connections
 	 */
-	protected TreeSet<Node> getAllLinks(){
+	public TreeSet<Node> getAllLinks(){
 		return highest;
 	}
 }
