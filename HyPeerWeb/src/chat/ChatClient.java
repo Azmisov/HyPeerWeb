@@ -326,7 +326,7 @@ public class ChatClient extends JFrame{
 			int delay = 3000;
 			try {
 				chat.writeStatus("Beginning chat simulation");
-				chat.updateUser(0, "user91023");
+				chat.updateUser(0, "user90210");
 				sleep(delay);
 				chat.receiveMessage(0, -1, "Hello world");
 				sleep(delay);
