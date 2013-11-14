@@ -2,15 +2,14 @@ package chat;
 
 import hypeerweb.Links;
 import hypeerweb.Node;
-import java.awt.AlphaComposite;
-import java.awt.BasicStroke;
-import java.awt.BorderLayout;
-import java.awt.Color;
-import java.awt.Cursor;
-import java.awt.Graphics;
-import java.awt.Graphics2D;
-import java.awt.RenderingHints;
-import java.awt.Stroke;
+import java.awt.*;
+import java.awt.RenderingHints.Key;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.event.ComponentEvent;
+import java.awt.event.ComponentListener;
+import java.awt.event.FocusEvent;
+import java.awt.event.FocusListener;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.awt.event.MouseMotionListener;
@@ -23,6 +22,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.TreeSet;
 import javax.swing.JButton;
+import javax.swing.JCheckBox;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JToolBar;
@@ -33,9 +33,15 @@ import javax.swing.JComboBox;
  * @author isaac
  */
 public class GraphTab extends JPanel{
-	private static final int maxSizeX = 500, maxSizeY = 700;
 	private final ChatClient container;
+	private Node activeNode;	//the selected node; may not be in graph
+	//Drawing stuff
+	private static final int maxSizeX = 500, maxSizeY = 700;
+	private boolean DIRTY_BUFFER = false;	//do we need to redraw?
+	private boolean useBinary = false;	
+	//Graphing stuff
 	private final JComboBox<GraphMode> modes = new JComboBox(GraphMode.values());
+	private int previousMode = 0;
 	private final Graph graph;
 	
 	public GraphTab(ChatClient container){
@@ -51,24 +57,59 @@ public class GraphTab extends JPanel{
 		 * Hide, Unhide All, Help, Viewing Mode, Go up a level
 		 */
 		bar.add(new JLabel("Mode: "));
+		//Redraw when the mode changes
+		modes.addActionListener(new ActionListener(){
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				int newMode = modes.getSelectedIndex();
+				if (previousMode != newMode){
+					previousMode = newMode;
+					graph.draw(graph.n);
+				}
+			}
+		});
 		bar.add(modes);
-		bar.add(new JButton("Hide Selected"));
-		bar.add(new JButton("Unhide All"));
-		bar.add(new JButton("Navigate Up"));		
-		JButton btnHelp = new JButton("Help");
-		btnHelp.setAlignmentX(RIGHT_ALIGNMENT);
-		bar.add(btnHelp);
+		final JCheckBox chckBinary = new JCheckBox("Binary", false);
+		chckBinary.addActionListener(new ActionListener(){
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				useBinary = chckBinary.isSelected();
+				graph.redraw(true);
+			}
+		});
+		bar.add(chckBinary);
+		JPanel rightAlign = new JPanel(new FlowLayout(FlowLayout.RIGHT, 5, 0));
+		rightAlign.add(new JButton("Hide Selected"));
+		rightAlign.add(new JButton("Unhide All"));
+		bar.add(rightAlign);
 		
 		//Bottom is the actual graph
 		graph = new Graph();
 		
 		//Layout components
-		//add(bar, BorderLayout.NORTH);
+		add(bar, BorderLayout.NORTH);
 		add(graph, BorderLayout.CENTER);
 	}
 	
 	public void draw(Node n){
 		graph.draw(n);
+	}
+	public void select(Node n){
+		/*
+		//This node is already selected
+		if (graph.selected.getKey() == n)
+			return;
+		//Can show selection
+		if (GraphMode.nodes.containsKey(n)){
+			graph.selected = GraphMode.nodes
+			graph.redraw(false);
+		}
+		//Can't show selection
+		else if (graph.selected != null){
+			graph.selected = null;
+			graph.redraw(false);
+		}
+		*/
 	}
 	
 	private enum GraphMode{
@@ -80,7 +121,7 @@ public class GraphTab extends JPanel{
 			@Override
 			public void draw(Node n){
 				nodes = new HashMap();
-				links = new HashSet();
+				links = new TreeSet();
 				HashSet<DrawLink> linksPot = new HashSet();
 				
 				//Start off with the active node
@@ -110,10 +151,10 @@ public class GraphTab extends JPanel{
 						//Create links
 						potential.addAll(p.n.L.getNeighborsSet());
 						for (Node x: p.n.L.getNeighborsSet())
-							linksPot.add(new DrawLink(p.n, x, Links.Type.NEIGHBOR));
+							linksPot.add(new DrawLink(p.n, x));
 						potential.addAll(p.n.L.getSurrogateNeighborsSet());
 						for (Node x: p.n.L.getSurrogateNeighborsSet())
-							linksPot.add(new DrawLink(p.n, x, Links.Type.SNEIGHBOR));
+							linksPot.add(new DrawLink(p.n, x, DrawLink.Type.DOTTED));
 
 						//Only add potential children if they are a direct child
 						//of the parent or not a direct child of any other parent
@@ -128,23 +169,11 @@ public class GraphTab extends JPanel{
 						}
 
 						//Now we have a list of children, build the draw data for each
-						ArrayList<DrawData> childData = new ArrayList();
 						int numChilds = childs.size();
 						double theta = 2*Math.PI / (double)(numChilds == 2 ? 3 : numChilds);
-						double angle = p.skew;
-						adjRadius = radius + margin;
-						for (Node c: childs){
-							DrawData data = new DrawData(c, p, null, -1, level, new Point2D.Double(
-								(adjRadius*Math.cos(angle)) + p.coord.getX(),
-								(adjRadius*Math.sin(angle)) + p.coord.getY()
-							));
-							childData.add(data);
-							nodes.put(c, data);
-							angle += theta;
-						}
 						//Set references to children data
-						p.children = childData;
-						newParents.addAll(childData);
+						p.children = drawCircle(childs, p, p.coord, p.skew, theta, radius+margin, level);
+						newParents.addAll(p.children);
 					}
 					if (newParents.isEmpty())
 						break;
@@ -157,15 +186,58 @@ public class GraphTab extends JPanel{
 						links.add(l);
 				}
 			}
+		},
+		TREE ("Spanning Tree"){
+			private int levels = 4, radiusDelta;
+			private Point2D origin;
+			
+			@Override
+			public void draw(Node n) {
+				nodes = new HashMap();
+				links = new TreeSet();
+				
+				//Start out with node in middle
+				origin = new Point2D.Double(maxSizeX/2, maxSizeY/2);
+				DrawData active = new DrawData(n, null, null, -1, 0, origin);
+				nodes.put(n, active);
+				
+				//Draw tree in a circle; evenly distributing all branches around circle
+				if (levels > 0){
+					radiusDelta = (maxSizeX/2-20)/levels;
+					drawBranch(active, 0, Math.PI*2, radiusDelta, levels);
+				}
+			}
+			private void drawBranch(DrawData p, double angleOffset, double angle, int radius, int level){
+				//Create links
+				int idx = Integer.highestOneBit(p.n.getWebId());
+				ArrayList<Node> childs = p.n.getTreeChildren();
+				for (Node c: childs){
+					boolean isSurr = Integer.highestOneBit(c.getWebId()) == idx;
+					links.add(new DrawLink(p.n, c, isSurr ? DrawLink.Type.DOTTED : DrawLink.Type.SOLID));
+				}
+				if (!childs.isEmpty()){
+					//Draw children
+					angleOffset -= angle/2.0;
+					double delta = angle/(double) childs.size();
+					p.children = drawCircle(childs, p, origin, angleOffset, delta, radius, level);
+					//Recurse
+					if (--level != 0){
+						radius += radiusDelta;
+						for (DrawData d: p.children){
+							drawBranch(d, angleOffset, delta, radius, level);
+							angleOffset += delta;
+						}
+					}
+				}
+			}
 		};
 		/*
-		TREE ("Spanning Tree"),
 		PETRIE ("Petrie Polygon"),
 		SAND ("Sand Pile");
 		*/
 		
-		public HashMap<Node, DrawData> nodes;
-		public HashSet<DrawLink> links;
+		public static HashMap<Node, DrawData> nodes;
+		public static TreeSet<DrawLink> links;
 		
 		private final String name;
 		GraphMode(String name){
@@ -176,16 +248,41 @@ public class GraphTab extends JPanel{
 		public String toString(){
 			return name;
 		}
+		private static ArrayList<DrawData> drawCircle(
+			ArrayList<Node> childs, DrawData parent, Point2D origin,
+			double angle, double delta, double radius, int level
+		){
+			ArrayList<DrawData> res = new ArrayList();
+			for (Node c: childs){
+				DrawData data = new DrawData(c, parent, null, -1, level, new Point2D.Double(
+					(radius*Math.cos(angle)) + origin.getX(),
+					(radius*Math.sin(angle)) + origin.getY()
+				));
+				res.add(data);
+				nodes.put(c, data);
+				angle += delta;
+			}
+			return res;
+		}
 	}
 	private static class DrawLink implements Comparable{
+		public static enum Type {SOLID, DOTTED};
 		public Node origin;
 		public Node friend;
-		public Links.Type type;
+		public Type type;
+		public Color color;
 
-		public DrawLink(Node origin, Node friend, Links.Type type){
+		public DrawLink(Node origin, Node friend){
+			this(origin, friend, Type.SOLID);
+		}
+		public DrawLink(Node origin, Node friend, Type type){
+			this(origin, friend, type, type == Type.SOLID ? Color.RED : Color.GREEN);
+		}
+		public DrawLink(Node origin, Node friend, Type type, Color color){
 			this.origin = origin;
 			this.friend = friend;
 			this.type = type;
+			this.color = color;
 		}
 
 		@Override
@@ -210,13 +307,15 @@ public class GraphTab extends JPanel{
 			if (o == null || getClass() != o.getClass())
 				return 1;
 			DrawLink l = (DrawLink) o;
+			if (this.equals(l))
+				return 0;
 			if (l.type == type)
-				return this.equals(l) ? 0 : 1;
+				return Integer.compare(l.color.getRGB(), color.getRGB());
 			return l.type.compareTo(type);
 		}
 	}
 	private static class DrawData{
-		public static int nodeSize = 6;			//Node size, in pixels
+		public static int nodeSize = 7;			//Node size, in pixels
 		public ArrayList<DrawData> children;		//Children of current drawdata
 		public DrawData parent;					//Parent of current drawdata (if level != 0)
 		public Node n;							//Node associated with this data
@@ -232,10 +331,14 @@ public class GraphTab extends JPanel{
 			this.level = level;
 			this.coord = coord;
 		}
-		public void draw(Graphics2D g2){
+		public void draw(Graphics2D g2, boolean useBinary){
 			double x = coord.getX(), y = coord.getY();
 			g2.fillOval((int) (x-nodeSize/2.0), (int) (y-nodeSize/2.0), nodeSize, nodeSize);
-			g2.drawString(n.getWebId()+" ("+n.getHeight()+")", (int) x+5, (int) y-5);
+			String id;
+			if (useBinary)
+				id = Integer.toBinaryString(n.getWebId());
+			else id = String.valueOf(n.getWebId());
+			g2.drawString(id+" ("+n.getHeight()+")", (int) x+5, (int) y-5);
 		}
 	}
 	
@@ -248,19 +351,12 @@ public class GraphTab extends JPanel{
 		private int mx, my;						//Current mouse coordinates
 		private final HashSet<Node> hide;		//Hidden subtrees
 		GraphMode mode;							//Holds all data for the graph
-		//Link types
-		private final Links.Type[] Ntypes = {
-			Links.Type.NEIGHBOR,
-			Links.Type.SNEIGHBOR,
-			Links.Type.ISNEIGHBOR
-		};
 		//Drawing modes
 		private final AlphaComposite compMode = AlphaComposite.getInstance(AlphaComposite.DST_OVER);
-		private final float[] dash1 = {4}, dash2 = {10};
+		private final float[] dash1 = {4};
 		private final Stroke
-			strokeN = new BasicStroke(2, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND),
-			strokeSN = new BasicStroke(2, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND, 10, dash1, 10),
-			strokeISN = new BasicStroke(2, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND, 10, dash2, 10);
+			strokeSolid = new BasicStroke(2, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND),
+			strokeDotted = new BasicStroke(2, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND, 10, dash1, 10);			
 		//Drawing buffer
 		private BufferedImage buffer;
 		private Map.Entry<Node, DrawData> active, selected;
@@ -333,29 +429,29 @@ public class GraphTab extends JPanel{
 				draw(selected.getKey());
 		}
 		public void highlightNode(){
-			if (mode == null || mode.nodes == null)
+			if (mode == null || GraphMode.nodes == null)
 				return;
 			//Highlight a node for selection
 			Point2D temp;
-			for (Map.Entry<Node, DrawData> datum: mode.nodes.entrySet()){
+			for (Map.Entry<Node, DrawData> datum: GraphMode.nodes.entrySet()){
 				if (datum.getValue().coord.distance(mx, my) <= selMargin){
 					if (active != datum){
 						active = datum;
-						repaint();
+						redraw(false);
 					}
 					return;
 				}
 			}
 			if (active != null){
 				active = null;
-				repaint();
+				redraw(false);
 			}
 		}
 		public void selectNode(){
 			if (active != null){
 				selected = active;
 				container.setSelectedNode(selected.getKey());
-				repaint();
+				redraw(false);
 			}
 		}
 		public void hideNode(){
@@ -370,30 +466,37 @@ public class GraphTab extends JPanel{
 			redraw(false);
 		}
 
-		//DRAWING
+		//DRAWING		
 		public void draw(Node n){
-			this.n = n;
-			Node parent = n.getParent();
-			//Graph Title
-			title = "Graph of Node #"+n.getWebId()+" ("+n.getHeight()+")";
-			if (parent != null)
-				title += ", child of Node #"+parent.getWebId()+" ("+parent.getHeight()+")";
+			if (this.n != n){
+				this.n = n;
+				Node parent = n.getParent();
+				//Graph Title
+				title = "Graph of Node #"+n.getWebId()+" ("+n.getHeight()+")";
+				if (parent != null)
+					title += ", child of Node #"+parent.getWebId()+" ("+parent.getHeight()+")";
+			}
 			//Get drawing data from the graph's mode
 			hide.clear();
 			mode = (GraphMode) modes.getSelectedItem();
 			mode.draw(n);
-			selected = null;
+			//See if the selected node is in the new graph
+			if (selected != null){
+				DrawData d = GraphMode.nodes.get(selected.getKey());
+				if (d != null)
+					selected.setValue(d);
+				else{
+					selected = null;
+					container.setSelectedNode(null);
+				}
+			}
 			active = null;
 			buffer = null;
 			repaint();
 		}
 		private void redraw(boolean force){
-			if (force){
-				selected = null;
-				active = null;
+			if (force)
 				buffer = null;
-				mode.nodes.clear();
-			}
 			redraw = !force;
 			repaint();
 		}
@@ -408,17 +511,17 @@ public class GraphTab extends JPanel{
 				if (active != null){
 					DrawData temp = active.getValue();
 					g2.setColor(Color.CYAN);
-					temp.draw(g2);
+					temp.draw(g2, useBinary);
 					//Children of selection
 					if (temp.children != null){
 						g2.setColor(Color.YELLOW);
 						for (DrawData child: temp.children)
-							child.draw(g2);
+							child.draw(g2, useBinary);
 					}
 					//Parent of selection
 					if (temp.parent != null){
 						g2.setColor(Color.GREEN);
-						temp.parent.draw(g2);
+						temp.parent.draw(g2, useBinary);
 					}
 				}
 				//Set cursor
@@ -433,21 +536,19 @@ public class GraphTab extends JPanel{
 			if (n != null){
 				buffer = new BufferedImage(maxSizeX, maxSizeY, BufferedImage.TYPE_INT_ARGB);
 				Graphics2D gbi = buffer.createGraphics();
-				gbi.setRenderingHint(
-					RenderingHints.KEY_TEXT_ANTIALIASING,
-					RenderingHints.VALUE_TEXT_ANTIALIAS_ON
-				);
+				gbi.setRenderingHints(new HashMap<RenderingHints.Key, Object>(){{
+					put(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_SPEED);
+					put(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
+				}});
 
 				//Graph title
 				gbi.setColor(Color.BLACK);
 				gbi.drawString(title, 20, 20);
 
-				//Draw all nodes, recursively
-				drawNode(gbi, mode.nodes.get(n));
-				
-				//Paint all links
-				gbi.setComposite(compMode);
+				//Paint all links and nodes, recursively
 				paintLinks(gbi);
+				gbi.setColor(Color.BLACK);
+				drawNode(gbi, GraphMode.nodes.get(n));
 				
 				//Draw buffer to screen
 				g2.drawImage(buffer, null, 0, 0);
@@ -455,9 +556,13 @@ public class GraphTab extends JPanel{
 			}
 			redraw = false;
 		}
-		
+		/**
+		 * Draws a node in the graph, recursively
+		 * @param g graphics context
+		 * @param d the node's draw data
+		 */
 		private void drawNode(Graphics2D g, DrawData d){
-			d.draw(g);
+			d.draw(g, useBinary);
 			if (d.children != null){
 				for (DrawData c: d.children){
 					if (!hide.contains(c.n))
@@ -465,50 +570,51 @@ public class GraphTab extends JPanel{
 				}
 			}
 		}
+		/**
+		 * Draws a blue circle around the selected node
+		 * @param g2 graphics context
+		 */
 		private void drawSelected(Graphics2D g2){
 			if (selected != null){
 				DrawData sel = selected.getValue();
 				g2.setColor(Color.BLUE);
-				g2.setStroke(strokeN);
+				g2.setStroke(strokeSolid);
 				int d = DrawData.nodeSize*4,
 					r = d/2;
 				g2.drawOval((int) sel.coord.getX()-r, (int) sel.coord.getY()-r, d, d);
 			}
 		}
 		
-		
 		/**
 		 * Draws all links between the nodes in the graph
 		 * @param g graphics context
 		 */
-		
 		private void paintLinks(Graphics2D g){
 			DrawData d1, d2;
-			Links.Type curType = null;
-			for (DrawLink l: mode.links){
-				d1 = mode.nodes.get(l.friend);
-				d2 = mode.nodes.get(l.origin);
+			DrawLink.Type curType = null;
+			Color curCol = null;
+			for (DrawLink l: GraphMode.links){
+				d1 = GraphMode.nodes.get(l.friend);
+				d2 = GraphMode.nodes.get(l.origin);
 				//Make sure references exist in the graph
 				if (hide.contains(l.friend) || hide.contains(l.origin))
 					continue;
 				//Switch drawing mode
-				//TreeSet is ordered by type, so we'll only switch modes thrice
+				//TreeSet is ordered by type/color, so we'll only switch modes once in a while
 				if (curType != l.type){
 					curType = l.type;
 					switch (l.type){
-						case NEIGHBOR:
-							g.setStroke(strokeN);
-							g.setColor(Color.RED);
+						case SOLID:
+							g.setStroke(strokeSolid);
 							break;
-						case SNEIGHBOR:
-							g.setStroke(strokeSN);
-							g.setColor(Color.GREEN);
-							break;
-						case ISNEIGHBOR:
-							g.setStroke(strokeISN);
-							g.setColor(Color.MAGENTA);
+						case DOTTED:
+							g.setStroke(strokeDotted);
 							break;
 					}
+				}
+				if (curCol != l.color){
+					curCol = l.color;
+					g.setColor(curCol);
 				}
 				//Draw a line
 				g.drawLine((int) d1.coord.getX(), (int) d1.coord.getY(), (int) d2.coord.getX(), (int) d2.coord.getY());

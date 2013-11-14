@@ -52,24 +52,19 @@ public class ChatClient extends JFrame{
 	//GUI components
 	private final ChatTab chat = new ChatTab(padding, title);
 	private final GraphTab graph = new GraphTab(this);
-	private final JSpinner nodeSelect = new JSpinner();
+	private final JSpinner nodeSelect = new JSpinner(new SpinnerNumberModel(-1, -1, null, 1));
 	private final NodeInfo nodeInfo = new NodeInfo();
 	private final JTable connectList = new JTable(nodeInfo);
 		
 	public ChatClient(){
+		initGUI();
 		//Bind to a hypeerweb segment here...
 		try {
 			web = HyPeerWeb.initialize(false, false, -1);
 			nodeList = new NodeList(null);
-			//*
-			for (int i=0; i<20; i++)
-				web.addNode();
-			//*/
-			//x.draw(web.getFirstNode(), height);
 		} catch (Exception ex) {
 			System.out.println("Cannot bind to a HyPeerWeb");
 		}
-		initGUI();
 	}
 	
 	// <editor-fold defaultstate="collapsed" desc="GUI INITIALIZATION">
@@ -232,17 +227,19 @@ public class ChatClient extends JFrame{
 		//Initialize elements
 		JButton addNode = new JButton("Add");
 		JButton deleteNode = new JButton("Delete");
-		JSpinner addCount = new JSpinner();
+		final JSpinner addCount = new JSpinner(new SpinnerNumberModel(1, 1, null, 1));
 		connectList.setFocusable(false);
 		connectList.setRowSelectionAllowed(false);
 		final JLabel L = new JLabel("Selected:");
 		L.setFont(bold);
 		
+		
 		addNode.addActionListener(new ActionListener(){
 			@Override
 			public void actionPerformed(ActionEvent e) {
 				try{
-					Node n = web.addNode();
+					for (int i=0, max=(int) addCount.getValue(); i<max; i++)
+						web.addNode();
 					graph.draw(web.getFirstNode());
 				}
 				catch (Exception ex){
@@ -343,7 +340,7 @@ public class ChatClient extends JFrame{
 	//ACTIONS
 	public void setSelectedNode(Node n){
 		selected = n;
-		nodeSelect.setValue(n.getWebId());
+		nodeSelect.setValue(n == null ? -1 : n.getWebId());
 		nodeInfo.updateInfo(n);
 	}
 	public void testChatRoom(){
