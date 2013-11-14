@@ -12,7 +12,7 @@ import java.util.Random;
 public class ChatServer{
 	private HyPeerWebSegment<HyPeerWebSegment<Node>> segment;
 	private ChatUser user;
-	private String networkName = "";
+	//private String networkName = "";
 	private ArrayList<SendListener> sendListeners = new ArrayList();
 	private ArrayList<UserListener> userListeners = new ArrayList();
 	private ArrayList<NodeListener> nodeListeners = new ArrayList();
@@ -123,7 +123,11 @@ public class ChatServer{
 	 * 
 	 */
 	public void disconnect(){
-		
+		//this one looks tough
+		//I think this is the part where Dr. Woodfield said that if one segment
+		//wanted to quit, all of the segments would have to quit.  Now I can 
+		//see why.  Sending all of the nodes on this segment to live somewhere
+		//else would be difficult.
 	}
 	
 	/**
