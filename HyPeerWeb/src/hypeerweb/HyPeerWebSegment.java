@@ -321,7 +321,19 @@ public class HyPeerWebSegment<T extends Node> extends Node implements HyPeerWebI
 	 * @return true if it is empty
 	 */
 	public boolean isSegmentEmpty(){
-		return state == HyPeerWebState.HAS_NONE;
+		return nodes.isEmpty();
+	}
+	/**
+	 * Looks for a HyPeerWebSegment that is not empty
+	 * @return the segment found
+	 */
+	public HyPeerWebSegment getNonemptySegment(){
+		if (!isSegmentEmpty())
+				return this;
+		else
+			for (Node neighbor: L.getNeighbors())
+			return ((HyPeerWebSegment)neighbor).getNonemptySegment();
+		return null;
 	}
     @Override
     public String toString() {
@@ -348,10 +360,8 @@ public class HyPeerWebSegment<T extends Node> extends Node implements HyPeerWebI
 		//Always start at Node with WebID = 0
 		if (state == HyPeerWebState.HAS_NONE)
 			return null;
-		else if (nodes.isEmpty()){
-			//TODO, find a segment that isn't empty and run getRandomNode from there
-		}
-		Node first = nodes.firstEntry().getValue();
+		
+		Node first = (Node) getNonemptySegment().nodes.firstEntry().getValue();
 		randVisitor = new SendVisitor(rand.nextInt(Integer.MAX_VALUE), true);
 		randVisitor.visit(first);
 		//TODO, this won't work with a distributed system
@@ -361,8 +371,8 @@ public class HyPeerWebSegment<T extends Node> extends Node implements HyPeerWebI
 	 * Get a list of all the nodes in the HyPeerWeb
 	 * @return an array of nodes
 	 */
-	public void getAllNodes(SyncListener listener) {
-		SyncVisitor visitor = new SyncVisitor(listener);
+	public void getAllNodes(GetAllNodesListener listener) {
+		GetAllNodesVisitor visitor = new GetAllNodesVisitor(listener);
 	}
 	
 	/**
@@ -373,14 +383,7 @@ public class HyPeerWebSegment<T extends Node> extends Node implements HyPeerWebI
 	@Override
 	public T getNode(int webId){
 		//TODO, use sendvisitor to get actual node
-		return (T) nodes.get(webId);
-	}
-	/**
-	 * Get the size of the HyPeerWeb
-	 * @return the number of nodes in the web
-	 */
-	public void getSize(SyncListener listener){
-		CountVisitor counter = new CountVisitor(listener);		
+		return (T) getNonemptySegment().nodes.get(webId);
 	}
 	/**
 	 * Is the HyPeerWeb empty?
@@ -390,18 +393,21 @@ public class HyPeerWebSegment<T extends Node> extends Node implements HyPeerWebI
 		return state == HyPeerWebState.HAS_NONE;
 	}
 	
-	private class CountVisitor extends SyncVisitor{
-		public CountVisitor(SyncListener listener){
-			super(listener);
+	private class GetAllNodesVisitor extends BroadcastVisitor{
+		GetAllNodesListener l;
+		public GetAllNodesVisitor(GetAllNodesListener listener){
+			super();
+			l = listener;
 		}
 		@Override
-		public void visit(Node n) {
-			visit(n, 0);
-		}
-		@Override
-		public Object performOperation(Node n, Object a) {
-			return (int) a + ((HyPeerWebSegment) n).getSegmentSize();
+		public void performOperation(Node n) {
+			l.callback(((HyPeerWebSegment) n).nodes);
 		}
 	}
+
+		public abstract class GetAllNodesListener{
+			public abstract void callback(TreeMap<Integer, Node> set);
+		}
+
 	// </editor-fold>
 }
