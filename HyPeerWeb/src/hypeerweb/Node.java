@@ -1,17 +1,10 @@
 package hypeerweb;
 
-import communicator.GlobalObjectId;
 import communicator.LocalObjectId;
-import communicator.PortNumber;
 import hypeerweb.visitors.AbstractVisitor;
-import hypeerweb.visitors.SyncVisitor;
 import java.io.ObjectStreamException;
 import java.io.Serializable;
-import java.net.InetAddress;
-import java.net.UnknownHostException;
 import java.util.*;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import validator.NodeInterface;
 
 /**
@@ -25,7 +18,7 @@ import validator.NodeInterface;
 public class Node implements NodeInterface, Serializable {
 	private static final long serialVersionUID = 314159265L;
 	//Node Attributes
-	private int webID, height;
+	protected int webID, height;
 	/**
 	 * A reference to a node's connections
 	 */
@@ -35,7 +28,7 @@ public class Node implements NodeInterface, Serializable {
 	private static final int recurseLevel = 2; //2 = neighbor's neighbors
 	private FoldStateInterface foldState = new FoldStateStable(); 
 	//Hash code prime
-	private static long prime = Long.parseLong("2654435761");
+	private static long prime = 2654435761L;
 	private LocalObjectId localObjectId;
 	
 	//CONSTRUCTORS
@@ -289,10 +282,6 @@ public class Node implements NodeInterface, Serializable {
 		//This should never happen in a valid HyPeerWeb
 		assert(false);
 		return null;
-	}
-
-	public void accept(SyncVisitor aThis, Object object) {
-		throw new UnsupportedOperationException("Not supported yet.");
 	}
 	
 	//FIND VALID NODES
@@ -817,14 +806,7 @@ public class Node implements NodeInterface, Serializable {
 	}
 	
 	public Object writeReplace() throws ObjectStreamException {
-		
-		try {
-			return new NodeProxy(new GlobalObjectId(InetAddress.getLocalHost().getHostAddress(), PortNumber.DEFAULT_PORT_NUMBER, localObjectId));
-		} catch (UnknownHostException ex) {
-			Logger.getLogger(Node.class.getName()).log(Level.SEVERE, null, ex);
-		}
-		
-		return null;
+		return new NodeProxy(this);
 	}
 	
 	public Object readResolve() throws ObjectStreamException {
