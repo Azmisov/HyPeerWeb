@@ -25,7 +25,6 @@ import javax.swing.event.ChangeListener;
  *	- hide should remove selection
  *	- spanning tree fanning
  *  - default graph evenly distribute non-children
- *  - graph-mode options toolbar
  * @author isaac
  */
 public class GraphTab extends JPanel{
@@ -37,7 +36,7 @@ public class GraphTab extends JPanel{
 	private boolean useBinary = false;	
 	//Graphing stuff
 	private final JComboBox<GraphMode> modes = new JComboBox(GraphMode.values());
-	private int previousMode = 0;
+	private GraphMode previousMode = GraphMode.DEFAULT;
 	private static Graph graph;
 	
 	public GraphTab(ChatClient container){
@@ -45,20 +44,26 @@ public class GraphTab extends JPanel{
 		setLayout(new BorderLayout(0, 0));
 		
 		//Graphing tab is split into a toolbar and graph
+		final JPanel toolbars = new JPanel();
+		toolbars.setLayout(new BorderLayout(0, 0));
 		JToolBar bar = new JToolBar(JToolBar.HORIZONTAL);
 		bar.setFloatable(false);
-		
-		/**
-		 * Stuff needed:
-		 * Hide, Unhide All, Help, Viewing Mode, Go up a level
-		 */
-		bar.add(new JLabel("Mode: "));
+		toolbars.add(bar, BorderLayout.NORTH);
+		//Build a list of toolbars for each graphing mode
+		final CardLayout modeBarsLayout = new CardLayout(0,0);
+		final JPanel modeBars = new JPanel(modeBarsLayout);
+		for (GraphMode g: GraphMode.values())
+			modeBars.add(g.getToolbar(), g.name);
+		toolbars.add(modeBars, BorderLayout.SOUTH);
 		//Redraw when the mode changes
+		bar.add(new JLabel("Mode:"));
 		modes.addActionListener(new ActionListener(){
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				int newMode = modes.getSelectedIndex();
+				GraphMode newMode = (GraphMode) modes.getSelectedItem();
 				if (previousMode != newMode){
+					//Switch the action toolbar
+					modeBarsLayout.show(modeBars, newMode.name);
 					previousMode = newMode;
 					graph.draw();
 				}
@@ -101,10 +106,6 @@ public class GraphTab extends JPanel{
 		graph = new Graph();
 		
 		//Layout components
-		JPanel toolbars = new JPanel();
-		toolbars.setLayout(new BorderLayout(0, 0));		
-		toolbars.add(bar, BorderLayout.NORTH);
-		toolbars.add(((GraphMode) modes.getSelectedItem()).getToolbar(), BorderLayout.CENTER);
 		add(toolbars, BorderLayout.NORTH);
 		add(graph, BorderLayout.CENTER);
 	}
@@ -144,8 +145,7 @@ public class GraphTab extends JPanel{
 				helpers = new ArrayList();
 				
 				Node n = container.nodeList.list.get((int) select.getValue());
-				if (n == null)
-					return;
+				if (n == null) return;
 				
 				//Start off with the active node
 				int levels = (int) levelSelect.getValue();
@@ -217,7 +217,7 @@ public class GraphTab extends JPanel{
 			public JToolBar getToolbar(){
 				JToolBar bar = new JToolBar();
 				bar.setFloatable(false);
-				bar.add(new JLabel("Graph Node: "));
+				bar.add(new JLabel("Graph Node:"));
 				select = new JSpinner(new SpinnerNumberModel(0, 0, null, 1));
 				select.setPreferredSize(new Dimension(70, 30));
 				select.addChangeListener(new ChangeListener(){
@@ -227,7 +227,7 @@ public class GraphTab extends JPanel{
 					}
 				});
 				bar.add(select);
-				bar.add(new JLabel("Levels: "));
+				bar.add(new JLabel("Levels:"));
 				levelSelect = new JSpinner(new SpinnerNumberModel(3, 0, 99, 1));
 				levelSelect.addChangeListener(new ChangeListener(){
 					@Override
@@ -239,21 +239,27 @@ public class GraphTab extends JPanel{
 				bar.add(Box.createHorizontalGlue());
 				return bar;
 			}
-		};
-		/*
+		},
 		TREE ("Spanning Tree", RotateMode.ROTATE){
-			private int levels = 4, radiusDelta;
+			private int radiusDelta;
 			private Point2D origin;
+			private JSpinner select;
+			private JSpinner levelSelect;
 			
 			@Override
-			public void draw(Node n) {
+			public void draw(){
 				nodes = new HashMap();
 				links = new TreeSet();
 				helpers = new ArrayList();
 				
+				Node n = container.nodeList.list.get((int) select.getValue());
+				if (n == null) return;
+				
 				//Start out with node in middle
+				int levels = (int) levelSelect.getValue();
 				origin = new Point2D.Double(maxSizeX/2, maxSizeY/2);
 				DrawData active = new DrawData(n, null, null, -1, 0, origin);
+				helpers.add(active);
 				nodes.put(n, active);
 				
 				//Draw tree in a circle; evenly distributing all branches around circle
@@ -289,12 +295,31 @@ public class GraphTab extends JPanel{
 			@Override
 			public JToolBar getToolbar(){
 				JToolBar bar = new JToolBar();
+				bar.setFloatable(false);
 				bar.add(new JLabel("Root Node:"));
-				bar.add(new JSpinner(new SpinnerNumberModel(0, 0, null, 1)));
+				select = new JSpinner(new SpinnerNumberModel(0, 0, null, 1));
+				select.setPreferredSize(new Dimension(70, 30));
+				select.addChangeListener(new ChangeListener(){
+					@Override
+					public void stateChanged(ChangeEvent e){
+						graph.draw();
+					}
+				});
+				bar.add(select);
+				bar.add(new JLabel("Levels:"));
+				levelSelect = new JSpinner(new SpinnerNumberModel(3, 0, 99, 1));
+				levelSelect.addChangeListener(new ChangeListener(){
+					@Override
+					public void stateChanged(ChangeEvent e){
+						graph.draw();
+					}
+				});
+				bar.add(levelSelect);
 				bar.add(Box.createHorizontalGlue());
 				return bar;
 			}
-		},
+		};
+		/*
 		SAND ("Sand Pile", RotateMode.ROTATE){
 			private int minDim = 2, maxDim = 6;
 			
