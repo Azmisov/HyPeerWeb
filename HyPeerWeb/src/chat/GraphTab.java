@@ -11,9 +11,11 @@ import java.awt.geom.AffineTransform;
 import java.awt.geom.Point2D;
 import java.awt.image.BufferedImage;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Objects;
+import java.util.TreeMap;
 import java.util.TreeSet;
 import javax.swing.*;
 import javax.swing.event.ChangeEvent;
@@ -132,14 +134,13 @@ public class GraphTab extends JPanel{
 	}
 	
 	private enum GraphMode{
-		DEFAULT ("Default", RotateMode.TRANSLATE){
+		DEFAULT ("Cluster", RotateMode.TRANSLATE){
 			//Minimum margin between nodes (within allowed window space)
 			private static final int margin = 3;
-			private JSpinner select;
-			private JSpinner levelSelect;
+			private JSpinner select, levelSelect;
 			
 			@Override
-			public void draw(){				
+			public void draw(){
 				nodes = new HashMap();
 				links = new TreeSet();
 				helpers = new ArrayList();
@@ -149,7 +150,7 @@ public class GraphTab extends JPanel{
 				
 				//Start off with the active node
 				int levels = (int) levelSelect.getValue();
-				int radius = (int) (maxSizeX/2-levels*margin)/2;
+				int radius = (int) ((maxSizeX/2-levels*margin)/1.8);
 				Point2D origin = new Point2D.Double(maxSizeX/2, maxSizeY/2);
 				DrawData active = new DrawData(n, null, null, -1, 0, origin);
 				helpers.add(active);
@@ -243,8 +244,7 @@ public class GraphTab extends JPanel{
 		TREE ("Spanning Tree", RotateMode.ROTATE){
 			private int radiusDelta;
 			private Point2D origin;
-			private JSpinner select;
-			private JSpinner levelSelect;
+			private JSpinner select, levelSelect;
 			
 			@Override
 			public void draw(){
@@ -264,7 +264,7 @@ public class GraphTab extends JPanel{
 				
 				//Draw tree in a circle; evenly distributing all branches around circle
 				if (levels > 0){
-					radiusDelta = (maxSizeX/2-20)/levels;
+					radiusDelta = (maxSizeX/2-30)/levels;
 					drawBranch(active, 0, Math.PI*2, radiusDelta, levels);
 				}
 			}
@@ -318,58 +318,78 @@ public class GraphTab extends JPanel{
 				bar.add(Box.createHorizontalGlue());
 				return bar;
 			}
-		};
-		/*
+		},
 		SAND ("Sand Pile", RotateMode.ROTATE){
-			private int minDim = 2, maxDim = 6;
+			private int minDim = 2, maxDim = 4;
 			
 			@Override
-			public void draw(Node n){
+			public void draw(){				
 				nodes = new HashMap();
 				links = new TreeSet();
+				helpers = new ArrayList();
+				
 				TreeMap<Integer, Node> all = container.nodeList.list;
 				Node[] vals = all.values().toArray(new Node[all.size()]);
 				Integer[] keys = all.keySet().toArray(new Integer[all.size()]);
-				
+				HashSet<DrawLink> linksPot = new HashSet();
 				Point2D origin = new Point2D.Double(maxSizeX/2, maxSizeY/2);
 				
 				Node temp;
 				//Hue counters
-				double hueDelta = 1/(double)(maxDim-minDim);
+				double hueDelta = 1/(double)(maxDim-minDim+1);
 				float hue = 0;
 				//Radius counters
-				int radDelta = (maxSizeX/2-20)/(maxDim-minDim+1), radius = 0;
+				int radDelta = (maxSizeX/2-30)/(maxDim-minDim+1), radius = 0;
 				//Each circle corresponds to another Hypercube dimension
 				//Dimension counters
-				int dID = (int) Math.pow(2, minDim),
+				int dID = (int) Math.pow(2, minDim-1),
 					maxDID = dID,
 					d = minDim;
-					//Get starting node
+				//Dimension two shows dims 0-2
+				if (minDim == 2) dID = 0;
+				//Get starting node
 				int index = Arrays.binarySearch(keys, dID);
-				if (index != -1){
+				if (index >= 0 || -index < keys.length){
+					//Normalize start point, if it is negative
+					if (index < 0)
+						index = -index;
 					while (d <= maxDim){
+						DrawData helper = new DrawData(null, null, null, 0, d, origin);
 						//Increment counters
 						maxDID *= 2;
+						double delta = Math.PI*2 / (double)(maxDID - dID);
+						dID = maxDID;
 						radius += radDelta;
 						hue += hueDelta;
 						//Give each dimension its own color
-						Color linkCol = new Color(Color.HSBtoRGB(hue, 1, 0.5f));
+						Color linkCol = new Color(Color.HSBtoRGB(hue, 1, 1));
 						//Loop through all nodes in this dimension
 						ArrayList<DrawData> dimData = new ArrayList();
-						double delta = Math.PI*2 / (double)(maxDID - dID);
-						while (keys[index] < maxDID){
-							//dimNodes.add(vals[index]);
+						while (index < keys.length && keys[index] < maxDID){
+							//Create potential links
+							Node val = vals[index];
+							for (Node x: val.L.getNeighborsSet())
+								linksPot.add(new DrawLink(val, x, DrawLink.Type.SOLID, linkCol));
+							for (Node x: val.L.getSurrogateNeighborsSet())
+								linksPot.add(new DrawLink(val, x, DrawLink.Type.DOTTED, linkCol));
+							//Compute location
 							double angle = (maxDID-keys[index])*delta;
-							/*
-							DrawData data = new DrawData(vals[index], , null, 0, d, new Point2D.Double(
+							DrawData data = new DrawData(vals[index], helper, null, 0, d, new Point2D.Double(
 								(radius*Math.cos(angle)) + origin.getX(),
 								(radius*Math.sin(angle)) + origin.getY()
 							));
+							dimData.add(data);
 							nodes.put(vals[index], data);
-							*
 							index++;
 						}
+						helper.children = dimData;
+						helpers.add(helper);
 						d++;
+					}
+					//Filter links by the nodes that actually got graphed
+					for (DrawLink l: linksPot){
+						if (nodes.containsKey(l.friend) && nodes.containsKey(l.origin))
+							links.add(l);
 					}
 				}
 			}
@@ -377,34 +397,45 @@ public class GraphTab extends JPanel{
 			@Override
 			public JToolBar getToolbar(){
 				JToolBar bar = new JToolBar();
+				bar.setFloatable(false);
 				bar.add(new JLabel("Low Dimension:"));
-				final JSpinner loDim = new JSpinner(new SpinnerNumberModel(2, 2, null, 1));
-				loDim.addChangeListener(new ChangeListener(){
+				final JSpinner minSelect = new JSpinner(new SpinnerNumberModel(minDim, minDim, maxDim, 1));
+				minSelect.setPreferredSize(new Dimension(70, 30));
+				minSelect.addChangeListener(new ChangeListener(){
 					@Override
 					public void stateChanged(ChangeEvent e){
-						minDim = (int) loDim.getValue();
+						int newVal = (int) minSelect.getValue();
+						if (newVal != minDim){
+							minDim = newVal;
+							graph.draw();
+						}
 					}
 				});
-				bar.add(loDim);
+				bar.add(minSelect);
 				bar.add(new JLabel("High Dimension:"));
-				final JSpinner hiDim = new JSpinner(new SpinnerNumberModel(2, 2, null, 1));
-				hiDim.addChangeListener(new ChangeListener(){
+				final JSpinner maxSelect = new JSpinner(new SpinnerNumberModel(maxDim, minDim, null, 1));
+				maxSelect.setPreferredSize(new Dimension(70, 30));
+				maxSelect.addChangeListener(new ChangeListener(){
 					@Override
 					public void stateChanged(ChangeEvent e) {
-						SpinnerNumberModel lo = (SpinnerNumberModel) loDim.getModel();
-						lo.setMaximum((Comparable) hiDim.getValue());
-						if ((int) lo.getValue() > (int) lo.getMaximum())
-							lo.setValue(lo.getMaximum());
+						Integer newVal = (Integer) maxSelect.getValue();
+						if (maxDim != newVal){
+							maxDim = newVal;
+							SpinnerNumberModel lo = (SpinnerNumberModel) minSelect.getModel();
+							lo.setMaximum((Comparable) newVal);
+							if ((int) lo.getValue() > (int) lo.getMaximum())				
+								minSelect.setValue(lo.getMaximum());
+							graph.draw();
+						}
 					}
 				});
-				bar.add(hiDim);
+				bar.add(maxSelect);
 				bar.add(Box.createHorizontalGlue());
 				return bar;
 			}
 		};
-		/*
-		PETRIE ("Petrie Polygon", RotateMode.ROTATE),
-		*/
+		//TODO, petrie projection
+		//PETRIE ("Petrie Polygon", RotateMode.ROTATE);
 		
 		public static HashMap<Node, DrawData> nodes;
 		public static TreeSet<DrawLink> links;
