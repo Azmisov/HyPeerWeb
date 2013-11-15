@@ -127,6 +127,13 @@ public class HyPeerWebSegment<T extends Node> extends Node implements HyPeerWebI
 	 */
 	public T deleteNode(Node node){
 		//todo something here
+		try{
+			getNonemptySegment().state.removeNode(this, node);
+		}
+		catch (Exception e)
+		{
+			e.printStackTrace();
+		}
 		return (T) node;
 	}
 	/**
@@ -257,6 +264,20 @@ public class HyPeerWebSegment<T extends Node> extends Node implements HyPeerWebI
 					HAS_NONE.addNode(web).data = attrs;
 					web.changeState(HAS_ONE);
 					*/
+					
+					/* Model: 
+					 * //Update map structure to reflect changes
+                nodes.remove(0);
+                nodes.remove(1);
+                nodes.put(0, last);
+                //This must come after removing n
+                last.setWebID(0);
+                last.setHeight(0);
+                last.setFold(null);
+                last.removeNeighbor(n);
+                return n;
+					 * 
+					 */
 				}				
 			}
 		},
