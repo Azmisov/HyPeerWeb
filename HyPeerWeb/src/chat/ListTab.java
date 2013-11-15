@@ -5,7 +5,10 @@ import java.awt.GridLayout;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
+import javax.swing.ListSelectionModel;
 import javax.swing.SwingConstants;
+import javax.swing.event.ListSelectionEvent;
+import javax.swing.event.ListSelectionListener;
 import javax.swing.event.TableModelListener;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.TableColumn;
@@ -26,6 +29,10 @@ public class ListTab extends JPanel{
 		ListTab.container = container;
         table = new JTable(new MyTableModel());
         table.setFillsViewportHeight(true);
+		
+		ListSelectionModel lsm = table.getSelectionModel();
+		lsm.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+		lsm.addListSelectionListener(new selectionHandler());
 		
 		TableColumn col; 
         DefaultTableCellRenderer dtcr = new DefaultTableCellRenderer();    
@@ -133,6 +140,17 @@ public class ListTab extends JPanel{
 		}
 		@Override
 		public void removeTableModelListener(TableModelListener l) {
+		}
+	}
+	
+	private static class selectionHandler implements ListSelectionListener{
+
+		@Override
+		public void valueChanged(ListSelectionEvent e) {
+			ListSelectionModel lsm = (ListSelectionModel)e.getSource();
+			int index = lsm.getMinSelectionIndex();
+			Node n = container.nodeList.getNodes().get(index);
+			container.setSelectedNode(n);	
 		}
 	}
 }
