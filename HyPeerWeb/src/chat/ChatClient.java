@@ -239,8 +239,8 @@ public class ChatClient extends JFrame{
 			public void actionPerformed(ActionEvent e) {
 				try{
 					for (int i=0, max=(int) addCount.getValue(); i<max; i++)
-						web.addNode();
-					graph.draw(web.getFirstNode());
+						nodeList.addNode(web.addNode());
+					graph.draw();
 				}
 				catch (Exception ex){
 					System.out.println(ex.getMessage());
@@ -253,7 +253,8 @@ public class ChatClient extends JFrame{
 			public void actionPerformed(ActionEvent e) {
 				try{
 					Node remove = web.removeNode((int) nodeSelect.getValue());
-					graph.draw(web.getFirstNode());
+					nodeList.removeNode(remove);
+					graph.draw();
 					if (remove == selected){
 						selected = web.getNode(remove.getWebId());
 						nodeInfo.updateInfo(selected);

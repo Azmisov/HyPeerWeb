@@ -16,6 +16,8 @@ import java.util.HashSet;
 import java.util.Objects;
 import java.util.TreeSet;
 import javax.swing.*;
+import javax.swing.event.ChangeEvent;
+import javax.swing.event.ChangeListener;
 
 /**
  * Draws a directed graph of a HyPeerWeb node
@@ -23,12 +25,11 @@ import javax.swing.*;
  *	- hide should remove selection
  *	- spanning tree fanning
  *  - default graph evenly distribute non-children
- *  - rotation
  *  - graph-mode options toolbar
  * @author isaac
  */
 public class GraphTab extends JPanel{
-	private final ChatClient container;
+	private static ChatClient container;
 	private Node activeNode;	//the selected node; may not be in graph
 	//Drawing stuff
 	private static final int maxSizeX = 550, maxSizeY = 600;
@@ -37,10 +38,10 @@ public class GraphTab extends JPanel{
 	//Graphing stuff
 	private final JComboBox<GraphMode> modes = new JComboBox(GraphMode.values());
 	private int previousMode = 0;
-	private final Graph graph;
+	private static Graph graph;
 	
 	public GraphTab(ChatClient container){
-		this.container = container;
+		GraphTab.container = container;
 		setLayout(new BorderLayout(0, 0));
 		
 		//Graphing tab is split into a toolbar and graph
@@ -73,7 +74,7 @@ public class GraphTab extends JPanel{
 			}
 		});
 		bar.add(chckBinary);
-		JPanel rightAlign = new JPanel(new FlowLayout(FlowLayout.RIGHT, 5, 0));
+		bar.add(Box.createHorizontalGlue());
 		JButton hideBtn = new JButton("Hide");
 		hideBtn.addActionListener(new ActionListener(){
 			@Override
@@ -85,7 +86,7 @@ public class GraphTab extends JPanel{
 			}
 		});
 		hideBtn.setToolTipText("Right click");
-		rightAlign.add(hideBtn);
+		bar.add(hideBtn);
 		JButton unhideBtn = new JButton("Unhide All");
 		unhideBtn.addActionListener(new ActionListener(){
 			@Override
@@ -94,19 +95,22 @@ public class GraphTab extends JPanel{
 			}
 		});
 		unhideBtn.setToolTipText("Middle click");
-		rightAlign.add(unhideBtn);
-		bar.add(rightAlign);
+		bar.add(unhideBtn);
 		
 		//Bottom is the actual graph
 		graph = new Graph();
 		
 		//Layout components
-		add(bar, BorderLayout.NORTH);
+		JPanel toolbars = new JPanel();
+		toolbars.setLayout(new BorderLayout(0, 0));		
+		toolbars.add(bar, BorderLayout.NORTH);
+		toolbars.add(((GraphMode) modes.getSelectedItem()).getToolbar(), BorderLayout.CENTER);
+		add(toolbars, BorderLayout.NORTH);
 		add(graph, BorderLayout.CENTER);
 	}
 	
-	public void draw(Node n){
-		graph.draw(n);
+	public void draw(){
+		graph.draw();
 	}
 	public void select(Node n){
 		/*
@@ -130,21 +134,29 @@ public class GraphTab extends JPanel{
 		DEFAULT ("Default", RotateMode.TRANSLATE){
 			//Minimum margin between nodes (within allowed window space)
 			private static final int margin = 3;
-			private int levels = 3;
+			private JSpinner select;
+			private JSpinner levelSelect;
 			
 			@Override
-			public void draw(Node n){
+			public void draw(){				
 				nodes = new HashMap();
 				links = new TreeSet();
-				HashSet<DrawLink> linksPot = new HashSet();
+				helpers = new ArrayList();
+				
+				Node n = container.nodeList.list.get((int) select.getValue());
+				if (n == null)
+					return;
 				
 				//Start off with the active node
+				int levels = (int) levelSelect.getValue();
 				int radius = (int) (maxSizeX/2-levels*margin)/2;
 				Point2D origin = new Point2D.Double(maxSizeX/2, maxSizeY/2);
 				DrawData active = new DrawData(n, null, null, -1, 0, origin);
+				helpers.add(active);
 				nodes.put(n, active);
 				
 				//Each level evenly distributes the nodes to the parents
+				HashSet<DrawLink> linksPot = new HashSet();
 				ArrayList<DrawData> parents = new ArrayList();
 				parents.add(active);
 				for (int level = 0, adjRadius; level < levels; level++, radius /= 2){
@@ -200,7 +212,35 @@ public class GraphTab extends JPanel{
 						links.add(l);
 				}
 			}
-		},
+			
+			@Override
+			public JToolBar getToolbar(){
+				JToolBar bar = new JToolBar();
+				bar.setFloatable(false);
+				bar.add(new JLabel("Graph Node: "));
+				select = new JSpinner(new SpinnerNumberModel(0, 0, null, 1));
+				select.setPreferredSize(new Dimension(70, 30));
+				select.addChangeListener(new ChangeListener(){
+					@Override
+					public void stateChanged(ChangeEvent e){
+						graph.draw();
+					}
+				});
+				bar.add(select);
+				bar.add(new JLabel("Levels: "));
+				levelSelect = new JSpinner(new SpinnerNumberModel(3, 0, 99, 1));
+				levelSelect.addChangeListener(new ChangeListener(){
+					@Override
+					public void stateChanged(ChangeEvent e){
+						graph.draw();
+					}
+				});
+				bar.add(levelSelect);
+				bar.add(Box.createHorizontalGlue());
+				return bar;
+			}
+		};
+		/*
 		TREE ("Spanning Tree", RotateMode.ROTATE){
 			private int levels = 4, radiusDelta;
 			private Point2D origin;
@@ -209,6 +249,7 @@ public class GraphTab extends JPanel{
 			public void draw(Node n) {
 				nodes = new HashMap();
 				links = new TreeSet();
+				helpers = new ArrayList();
 				
 				//Start out with node in middle
 				origin = new Point2D.Double(maxSizeX/2, maxSizeY/2);
@@ -244,14 +285,106 @@ public class GraphTab extends JPanel{
 					}
 				}
 			}
+			
+			@Override
+			public JToolBar getToolbar(){
+				JToolBar bar = new JToolBar();
+				bar.add(new JLabel("Root Node:"));
+				bar.add(new JSpinner(new SpinnerNumberModel(0, 0, null, 1)));
+				bar.add(Box.createHorizontalGlue());
+				return bar;
+			}
+		},
+		SAND ("Sand Pile", RotateMode.ROTATE){
+			private int minDim = 2, maxDim = 6;
+			
+			@Override
+			public void draw(Node n){
+				nodes = new HashMap();
+				links = new TreeSet();
+				TreeMap<Integer, Node> all = container.nodeList.list;
+				Node[] vals = all.values().toArray(new Node[all.size()]);
+				Integer[] keys = all.keySet().toArray(new Integer[all.size()]);
+				
+				Point2D origin = new Point2D.Double(maxSizeX/2, maxSizeY/2);
+				
+				Node temp;
+				//Hue counters
+				double hueDelta = 1/(double)(maxDim-minDim);
+				float hue = 0;
+				//Radius counters
+				int radDelta = (maxSizeX/2-20)/(maxDim-minDim+1), radius = 0;
+				//Each circle corresponds to another Hypercube dimension
+				//Dimension counters
+				int dID = (int) Math.pow(2, minDim),
+					maxDID = dID,
+					d = minDim;
+					//Get starting node
+				int index = Arrays.binarySearch(keys, dID);
+				if (index != -1){
+					while (d <= maxDim){
+						//Increment counters
+						maxDID *= 2;
+						radius += radDelta;
+						hue += hueDelta;
+						//Give each dimension its own color
+						Color linkCol = new Color(Color.HSBtoRGB(hue, 1, 0.5f));
+						//Loop through all nodes in this dimension
+						ArrayList<DrawData> dimData = new ArrayList();
+						double delta = Math.PI*2 / (double)(maxDID - dID);
+						while (keys[index] < maxDID){
+							//dimNodes.add(vals[index]);
+							double angle = (maxDID-keys[index])*delta;
+							/*
+							DrawData data = new DrawData(vals[index], , null, 0, d, new Point2D.Double(
+								(radius*Math.cos(angle)) + origin.getX(),
+								(radius*Math.sin(angle)) + origin.getY()
+							));
+							nodes.put(vals[index], data);
+							*
+							index++;
+						}
+						d++;
+					}
+				}
+			}
+			
+			@Override
+			public JToolBar getToolbar(){
+				JToolBar bar = new JToolBar();
+				bar.add(new JLabel("Low Dimension:"));
+				final JSpinner loDim = new JSpinner(new SpinnerNumberModel(2, 2, null, 1));
+				loDim.addChangeListener(new ChangeListener(){
+					@Override
+					public void stateChanged(ChangeEvent e){
+						minDim = (int) loDim.getValue();
+					}
+				});
+				bar.add(loDim);
+				bar.add(new JLabel("High Dimension:"));
+				final JSpinner hiDim = new JSpinner(new SpinnerNumberModel(2, 2, null, 1));
+				hiDim.addChangeListener(new ChangeListener(){
+					@Override
+					public void stateChanged(ChangeEvent e) {
+						SpinnerNumberModel lo = (SpinnerNumberModel) loDim.getModel();
+						lo.setMaximum((Comparable) hiDim.getValue());
+						if ((int) lo.getValue() > (int) lo.getMaximum())
+							lo.setValue(lo.getMaximum());
+					}
+				});
+				bar.add(hiDim);
+				bar.add(Box.createHorizontalGlue());
+				return bar;
+			}
 		};
 		/*
-		PETRIE ("Petrie Polygon"),
-		SAND ("Sand Pile");
+		PETRIE ("Petrie Polygon", RotateMode.ROTATE),
 		*/
 		
 		public static HashMap<Node, DrawData> nodes;
 		public static TreeSet<DrawLink> links;
+		public static ArrayList<DrawData> helpers;
+		
 		public static enum RotateMode {TRANSLATE, ROTATE}
 		
 		private final String name;
@@ -261,11 +394,9 @@ public class GraphTab extends JPanel{
 			this.name = name;
 			this.rotateMode = rotateMode;
 		}
-		public abstract void draw(Node n);
-		@Override
-		public String toString(){
-			return name;
-		}
+		
+		public abstract void draw();	
+		public abstract JToolBar getToolbar();
 		private static ArrayList<DrawData> drawCircle(
 			ArrayList<Node> childs, DrawData parent, Point2D origin,
 			double angle, double delta, double radius, int level
@@ -281,6 +412,11 @@ public class GraphTab extends JPanel{
 				angle += delta;
 			}
 			return res;
+		}
+		
+		@Override
+		public String toString(){
+			return name;
 		}
 	}
 	private static class DrawLink implements Comparable{
@@ -349,10 +485,12 @@ public class GraphTab extends JPanel{
 			this.coord = coord;
 		}
 		public void draw(Graphics2D g2, boolean useBinary){
-			double x = coord.getX(), y = coord.getY();
-			g2.fillOval((int) (x-nodeSize/2.0), (int) (y-nodeSize/2.0), nodeSize, nodeSize);
-			String name = useBinary ? Integer.toBinaryString(n.getWebId()) : String.valueOf(n.getWebId());
-			g2.drawString(name+" ("+n.getHeight()+")", (int) x+5, (int) y-5);
+			if (n != null){
+				double x = coord.getX(), y = coord.getY();
+				g2.fillOval((int) (x-nodeSize/2.0), (int) (y-nodeSize/2.0), nodeSize, nodeSize);
+				String name = useBinary ? Integer.toBinaryString(n.getWebId()) : String.valueOf(n.getWebId());
+				g2.drawString(name+" ("+n.getHeight()+")", (int) x+5, (int) y-5);
+			}
 		}
 	}
 	
@@ -364,7 +502,6 @@ public class GraphTab extends JPanel{
 		//Graph title
 		private String title;					//Graph title
 		//Node stuff
-		private Node n;							//Node we are going to draw
 		private int mx, my;						//Current mouse coordinates
 		private final int selMargin = 15;		//Mimimum margin before a node is close enough to mouse for selection
 		private final HashSet<DrawData> hide;	//Hidden subtrees
@@ -379,6 +516,10 @@ public class GraphTab extends JPanel{
 		private BufferedImage buffer;
 		private DrawData active, selected;
 
+		/**
+		 * Create a new graph and bind mouse listeners
+		 * to the component
+		 */
 		public Graph(){
 			//Initialize data structures
 			hide = new HashSet();
@@ -452,8 +593,10 @@ public class GraphTab extends JPanel{
 
 		//ACTIONS
 		public void viewSelected(){
+			/*
 			if (selected != null)
 				draw(selected.n);
+			*/
 		}
 		public void highlightNode(){
 			if (mode == null || GraphMode.nodes == null)
@@ -461,7 +604,9 @@ public class GraphTab extends JPanel{
 			//Highlight a node for selection
 			Point2D temp;
 			for (DrawData datum: GraphMode.nodes.values()){
-				if (!hide.contains(datum) && datum.coord.distance(mx, my) <= selMargin){
+				if (!hide.contains(datum) && datum.n != null &&
+					datum.coord.distance(mx, my) <= selMargin)
+				{
 					if (active != datum){
 						active = datum;
 						redraw(false);
@@ -513,28 +658,13 @@ public class GraphTab extends JPanel{
 
 		//DRAWING
 		/**
-		 * Performs a full refresh on the previous node
+		 * Performs a full refresh on the graph
 		 */
 		public void draw(){
-			if (n != null) draw(n);
-		}
-		/**
-		 * Performs a full refresh on the specified node
-		 * @param n 
-		 */
-		public void draw(Node n){
-			if (this.n != n){
-				this.n = n;
-				Node parent = n.getParent();
-				//Graph Title
-				title = "Graph of Node #"+n.getWebId()+" ("+n.getHeight()+")";
-				if (parent != null)
-					title += ", child of Node #"+parent.getWebId()+" ("+parent.getHeight()+")";
-			}
 			//Get drawing data from the graph's mode
 			hide.clear();
 			mode = (GraphMode) modes.getSelectedItem();
-			mode.draw(n);
+			mode.draw();
 			//See if the selected node is in the new graph
 			if (selected != null){
 				DrawData d = GraphMode.nodes.get(selected.n);
@@ -621,8 +751,15 @@ public class GraphTab extends JPanel{
 		protected void paintComponent(Graphics g){
 			super.paintComponent(g);
 			Graphics2D g2 = (Graphics2D) g;
+			//Empty graph
+			if (GraphMode.nodes == null || GraphMode.nodes.isEmpty()){
+				g2.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
+				g2.setFont(new Font("Sans Serif", Font.BOLD, 30));
+				g2.drawString("EMPTY GRAPH", maxSizeX/2-100, maxSizeY/2-15);
+				return;
+			}
 			//Draw a node
-			if (buffer == null && n != null){
+			if (buffer == null){
 				buffer = new BufferedImage(maxSizeX, maxSizeY, BufferedImage.TYPE_INT_ARGB);
 				Graphics2D gbi = buffer.createGraphics();
 				gbi.setRenderingHints(new HashMap<RenderingHints.Key, Object>(){{
@@ -630,14 +767,11 @@ public class GraphTab extends JPanel{
 					put(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
 				}});
 
-				//Graph title
-				gbi.setColor(Color.BLACK);
-				gbi.drawString(title, 20, 20);
-
 				//Paint all links and nodes, recursively
 				paintLinks(gbi);
 				gbi.setColor(Color.BLACK);
-				drawNode(gbi, GraphMode.nodes.get(n));
+				for (DrawData d: GraphMode.helpers)
+					drawNode(gbi, d);
 			}
 			//Draw buffer to screen
 			g2.drawImage(buffer, null, 0, 0);

@@ -24,7 +24,7 @@ public class NodeList {
 	 */
 	public ArrayList<Node> addNode(Node n){
 		//TODO, don't update nodes that aren't proxies
-		
+		list.put(n.getWebId(), n);
 		return null;
 	}
 	/**
@@ -34,7 +34,7 @@ public class NodeList {
 	 */
 	public ArrayList<Node> removeNode(Node n){
 		//TODO, don't update nodes that aren't proxies
-		
+		list.remove(n.getWebId());
 		return null;
 	}
 }
