@@ -8,9 +8,9 @@ Done(No)			Convert HyPeerWebGraph code to new GUI
 Done(No)			implement Graph drawing modes (Default, Tree, Petrie)
 
 Done(No)		ListTab 
-Done(No)			toolbar at top has combo box to select which segment's node's to view 
-Done(No)			show a list of nodes in a table; include info like: parent, neighbors, folds, height, webid, etc 
-Done(No)			have option to show all nodes, with added table column for segment
+Done(No)			Toolbar at top has combo box to select which segment's node's to view 
+Done(No)			Show a list of nodes in a table; include info like: parent, neighbors, folds, height, webid, etc 
+Done(No)			Have option to show all nodes, with added table column for segment
 
 Done(No)		Action bar 
 Done(No)			NetworkingBox: UI, talk to ChatServer
@@ -32,7 +32,7 @@ Done(No)			block/pause/shutdown entire HyPeerWeb
 Done(No)			addFooListener's for talking to the ChatServer
 
 Done(No)	InceptionWeb/ChatServer 
-Done(No)		finish writing skeleton 
+Done(Yes)		finish writing skeleton 
 Done(No)		username's, network name, generation etc.
 Done(No)		implement skeleton methods (i.e. talk to ChatClient and HWSegments)
 
