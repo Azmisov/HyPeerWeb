@@ -644,6 +644,15 @@ public class Node implements NodeInterface, Serializable {
 	}
 	
 	//SETTERS
+	
+	/**
+	 * Sets the WebID of the Node
+	 * @param id the new webID
+	 */
+	public void setWebID(int id){
+		webID = id;
+	}
+	
 	/**
 	 * Sets the Height of the Node and updates all pointers
 	 * @param h The new height

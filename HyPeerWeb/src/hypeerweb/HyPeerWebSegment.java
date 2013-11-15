@@ -4,8 +4,6 @@ import chat.ChatServer;
 import communicator.LocalObjectId;
 import hypeerweb.visitors.SendVisitor;
 import hypeerweb.visitors.BroadcastVisitor;
-import hypeerweb.visitors.SyncListener;
-import hypeerweb.visitors.SyncVisitor;
 import java.util.ArrayList;
 import java.util.Random;
 import java.util.TreeMap;
@@ -252,32 +250,30 @@ public class HyPeerWebSegment<T extends Node> extends Node implements HyPeerWebI
 				}
 				//If the broadcastStateChangeentire HyPeerWeb has only two nodes
 				else{
-					//TODO, I think there is a better way to do this
-					throw new Exception("Not implemented");
-					/*
-					//handle special case
-					//broadcast state change to HAS_ONE
-					last = n.getNeighbors()[0];
-					//Save the remaining node's attributes
-					Attributes attrs = last.data;
-					web.removeAllNodes();
-					HAS_NONE.addNode(web).data = attrs;
+					//removing node 0
+					if(n.getWebId() == 0){
+						Node replace = n.getFold(); //gets node 1
+						if (replace == null)
+							throw removeNodeErr;
+						//Remove node from list of nodes
+						web.nodes.remove(0);
+						//Replace the node to be deleted
+						replace.L.removeNeighbor(n);
+						replace.L.setFold(null);
+						replace.setWebID(0);
+						replace.setHeight(0);
+					}
+					//removing node 1
+					else{
+						Node other = n.getFold();
+						if (other == null)
+							throw removeNodeErr;
+						web.nodes.remove(1);
+						other.L.removeNeighbor(n);
+						other.L.setFold(null);
+						other.setHeight(0);
+					}
 					web.changeState(HAS_ONE);
-					*/
-					
-					/* Model: 
-					 * //Update map structure to reflect changes
-                nodes.remove(0);
-                nodes.remove(1);
-                nodes.put(0, last);
-                //This must come after removing n
-                last.setWebID(0);
-                last.setHeight(0);
-                last.setFold(null);
-                last.removeNeighbor(n);
-                return n;
-					 * 
-					 */
 				}				
 			}
 		},
