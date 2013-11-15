@@ -37,4 +37,11 @@ public class NodeList {
 		list.remove(n.getWebId());
 		return null;
 	}
+	
+	public ArrayList<Node> getNodes(){
+		ArrayList<Node> nodes = new ArrayList();
+		for(Node node : list.values())
+			nodes.add(node);
+		return nodes;
+	}
 }

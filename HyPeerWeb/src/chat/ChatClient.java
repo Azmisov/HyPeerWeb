@@ -55,6 +55,7 @@ public class ChatClient extends JFrame{
 	private final JSpinner nodeSelect = new JSpinner(new SpinnerNumberModel(-1, -1, null, 1));
 	private final NodeInfo nodeInfo = new NodeInfo();
 	private final JTable connectList = new JTable(nodeInfo);
+	private final ListTab listTab = new ListTab(this);
 		
 	public ChatClient(){
 		initGUI();
@@ -89,7 +90,7 @@ public class ChatClient extends JFrame{
 		hSplit.add(tabs, BorderLayout.CENTER);
 		tabs.addTab("Chat", chat);
 		tabs.addTab("Node Graph", graph);
-		tabs.addTab("Node List", new ListTab());
+		tabs.addTab("Node List", listTab);
 	}
 	public JPanel initActionBar(){
 		JPanel bar = new JPanel();
@@ -241,6 +242,7 @@ public class ChatClient extends JFrame{
 					for (int i=0, max=(int) addCount.getValue(); i<max; i++)
 						nodeList.addNode(web.addNode());
 					graph.draw();
+					listTab.draw();
 				}
 				catch (Exception ex){
 					System.out.println(ex.getMessage());
@@ -255,6 +257,7 @@ public class ChatClient extends JFrame{
 					Node remove = web.removeNode((int) nodeSelect.getValue());
 					nodeList.removeNode(remove);
 					graph.draw();
+					listTab.draw();
 					if (remove == selected){
 						selected = web.getNode(remove.getWebId());
 						nodeInfo.updateInfo(selected);

@@ -9,7 +9,7 @@ Done(No)			implement Graph drawing modes (Default, Tree, Petrie)
 
 Done(No)		ListTab 
 Done(No)			Toolbar at top has combo box to select which segment's node's to view 
-Done(No)			Show a list of nodes in a table; include info like: parent, neighbors, folds, height, webid, etc 
+Done(Yes)			Show a list of nodes in a table; include info like: parent, neighbors, folds, height, webid, etc 
 Done(No)			Have option to show all nodes, with added table column for segment
 
 Done(No)		Action bar 
