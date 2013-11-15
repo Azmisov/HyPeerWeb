@@ -118,7 +118,7 @@ public class HyPeerWebSegment<T extends Node> extends Node implements HyPeerWebI
 	 * @throws Exception if it fails to add a node
 	 */
 	public T addNode() throws Exception{
-		return (T) state.addNode(this);
+		return (T) getNonemptySegment().state.addNode(this);
 	}
 	/**
 	 * 
@@ -337,7 +337,9 @@ public class HyPeerWebSegment<T extends Node> extends Node implements HyPeerWebI
 		else
 			for (Node neighbor: L.getNeighbors())
 			return ((HyPeerWebSegment)neighbor).getNonemptySegment();
-		return null;
+		//For Add Node method. If no segments are nonempty, 
+		//this segment is as good a place to start as any.
+		return this;
 	}
     @Override
     public String toString() {
