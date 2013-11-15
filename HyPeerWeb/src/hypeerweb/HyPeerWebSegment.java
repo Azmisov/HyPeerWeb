@@ -1,11 +1,12 @@
 package hypeerweb;
 
 import chat.ChatServer;
+import communicator.LocalObjectId;
 import hypeerweb.visitors.SendVisitor;
 import hypeerweb.visitors.BroadcastVisitor;
 import hypeerweb.visitors.SyncListener;
 import hypeerweb.visitors.SyncVisitor;
-import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.Random;
 import java.util.TreeMap;
 import validator.HyPeerWebInterface;
@@ -30,6 +31,8 @@ public class HyPeerWebSegment<T extends Node> extends Node implements HyPeerWebI
 			clearErr = new Exception("Failed to clear the HyPeerWeb"),
 			replaceErr = new Exception("Failed to replace a node. Warning! Your HyPeerWeb is corrupted."),
 			corruptErr = new Exception("The HyPeerWeb is corrupt! Cannot proceed.");
+	
+	private static ArrayList<HyPeerWebSegment> segmentList = new ArrayList();
 	
 	/**
 	 * Constructor for initializing the HyPeerWeb with default Node values
@@ -66,6 +69,7 @@ public class HyPeerWebSegment<T extends Node> extends Node implements HyPeerWebI
 		if (seed != -1)
 			rand.setSeed(seed);
 		chatServer = cs;
+		segmentList.add(this);
 	}
 	
 	/**
@@ -348,6 +352,17 @@ public class HyPeerWebSegment<T extends Node> extends Node implements HyPeerWebI
 	 */
 	public ChatServer getChatServer(){
 		return chatServer;
+	}
+	
+	public T getNode(int webId, LocalObjectId id) {
+		Node node = getNode(webId);
+		if(node.getLocalObjectId().equals(id))
+			return (T) node;
+		return null;
+	}
+	
+	public static ArrayList<HyPeerWebSegment> getSegmentList(){
+		return segmentList;
 	}
 	// </editor-fold>
 	

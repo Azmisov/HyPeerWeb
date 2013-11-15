@@ -6,36 +6,19 @@ import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import validator.NodeInterface;
 
 public class NodeProxy
     extends Node
 {
     private GlobalObjectId globalObjectId;
 
-    public NodeProxy(GlobalObjectId globalObjectId){
-		super(0, 0);
-        this.globalObjectId = globalObjectId;
-    }
-
-	@Override
-    public boolean equals(java.lang.Object p0){
-        String[] parameterTypeNames = new String[1];
-        parameterTypeNames[0] = "java.lang.Object";
-        Object[] actualParameters = new Object[1];
-        actualParameters[0] = p0;
-        Command command = new Command(globalObjectId.getLocalObjectId(), "hypeerweb.Node", "equals", parameterTypeNames, actualParameters, true);
-        Object result = PeerCommunicator.getSingleton().sendSynchronous(globalObjectId, command);
-        return (Boolean)result;
-    }
-
-	@Override
-    public int hashCode(){
-        String[] parameterTypeNames = new String[0];
-        Object[] actualParameters = new Object[0];
-        Command command = new Command(globalObjectId.getLocalObjectId(), "hypeerweb.Node", "hashCode", parameterTypeNames, actualParameters, true);
-        Object result = PeerCommunicator.getSingleton().sendSynchronous(globalObjectId, command);
-        return (Integer)result;
+    public NodeProxy(Node node){
+		super(node.getWebId(), 0);
+		try {
+			this.globalObjectId = new GlobalObjectId(InetAddress.getLocalHost().getHostAddress(), PortNumber.getApplicationsPortNumber(), node.getLocalObjectId());
+		} catch (UnknownHostException ex) {
+			Logger.getLogger(NodeProxy.class.getName()).log(Level.SEVERE, null, ex);
+		}
     }
 
 	@Override
@@ -48,33 +31,11 @@ public class NodeProxy
     }
 
 	@Override
-    public int compareTo(NodeInterface p0){
+    public void accept(hypeerweb.visitors.AbstractVisitor p0){
         String[] parameterTypeNames = new String[1];
-        parameterTypeNames[0] = "interface validator.NodeInterface";
+        parameterTypeNames[0] = "hypeerweb.visitors.AbstractVisitor";
         Object[] actualParameters = new Object[1];
         actualParameters[0] = p0;
-        Command command = new Command(globalObjectId.getLocalObjectId(), "hypeerweb.Node", "compareTo", parameterTypeNames, actualParameters, true);
-        Object result = PeerCommunicator.getSingleton().sendSynchronous(globalObjectId, command);
-        return (Integer)result;
-    }
-
-	@Override
-    public Node getParent(){
-        String[] parameterTypeNames = new String[0];
-        Object[] actualParameters = new Object[0];
-        Command command = new Command(globalObjectId.getLocalObjectId(), "hypeerweb.Node", "getParent", parameterTypeNames, actualParameters, true);
-        Object result = PeerCommunicator.getSingleton().sendSynchronous(globalObjectId, command);
-        return (hypeerweb.Node)result;
-    }
-
-	@Override
-    public void accept(hypeerweb.visitors.AbstractVisitor p0, hypeerweb.Attributes p1){
-        String[] parameterTypeNames = new String[2];
-        parameterTypeNames[0] = "hypeerweb.visitors.AbstractVisitor";
-        parameterTypeNames[1] = "hypeerweb.Attributes";
-        Object[] actualParameters = new Object[2];
-        actualParameters[0] = p0;
-        actualParameters[1] = p1;
         Command command = new Command(globalObjectId.getLocalObjectId(), "hypeerweb.Node", "accept", parameterTypeNames, actualParameters, false);
         PeerCommunicator.getSingleton().sendASynchronous(globalObjectId, command);
     }
@@ -86,15 +47,6 @@ public class NodeProxy
         Command command = new Command(globalObjectId.getLocalObjectId(), "hypeerweb.Node", "getNeighbors", parameterTypeNames, actualParameters, true);
         Object result = PeerCommunicator.getSingleton().sendSynchronous(globalObjectId, command);
         return (hypeerweb.Node[])result;
-    }
-
-	@Override
-    public int getWebId(){
-        String[] parameterTypeNames = new String[0];
-        Object[] actualParameters = new Object[0];
-        Command command = new Command(globalObjectId.getLocalObjectId(), "hypeerweb.Node", "getWebId", parameterTypeNames, actualParameters, true);
-        Object result = PeerCommunicator.getSingleton().sendSynchronous(globalObjectId, command);
-        return (Integer)result;
     }
 
 	@Override
@@ -131,17 +83,6 @@ public class NodeProxy
         Command command = new Command(globalObjectId.getLocalObjectId(), "hypeerweb.Node", "getTreeChildren", parameterTypeNames, actualParameters, true);
         Object result = PeerCommunicator.getSingleton().sendSynchronous(globalObjectId, command);
         return (java.util.ArrayList)result;
-    }
-
-	@Override
-    public int scoreWebIdMatch(int p0){
-        String[] parameterTypeNames = new String[1];
-        parameterTypeNames[0] = "int";
-        Object[] actualParameters = new Object[1];
-        actualParameters[0] = p0;
-        Command command = new Command(globalObjectId.getLocalObjectId(), "hypeerweb.Node", "scoreWebIdMatch", parameterTypeNames, actualParameters, true);
-        Object result = PeerCommunicator.getSingleton().sendSynchronous(globalObjectId, command);
-        return (Integer)result;
     }
 
 	@Override
@@ -211,8 +152,14 @@ public class NodeProxy
 	public Object readResolve() throws ObjectStreamException {
 			
 		try {
-			if(globalObjectId.getMachineAddr().equals(InetAddress.getLocalHost().getHostAddress()))
-				// return the actual Node somehow?
+			if(globalObjectId.getMachineAddr().equals(InetAddress.getLocalHost().getHostAddress())
+					&& globalObjectId.getPortNumber().equals(PortNumber.getApplicationsPortNumber()))
+				
+				for(HyPeerWebSegment segment : HyPeerWebSegment.getSegmentList()) {
+					Node node = segment.getNode(webID, globalObjectId.getLocalObjectId());
+					if (node != null)
+						return node;
+				}
 				return null;
 		} catch (UnknownHostException ex) {
 			Logger.getLogger(NodeProxy.class.getName()).log(Level.SEVERE, null, ex);
