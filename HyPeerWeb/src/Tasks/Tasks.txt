@@ -20,10 +20,9 @@ Done(No)			NodeBox: UI, talk to GraphTab/ListTab and ChatServer
 Done(No)	HyPeerWeb Segments 
 Done(No)		Change state to "corrupt" if we ever encounter an exception
 Done(No)		Fix these methods (these all need to use some variation of Visitor pattern to get working)
-Done(No)			getSize: count # of nodes in entire HyPeerWeb 
-Done(No)			getNode: get any node in the HyPeerWeb, not just on current segment 
-Done(No)			getAllNodes: get an ordered list of nodes from every segment in the web 
-Done(No)			getRandomNode: won't work for distributed system 
+Done(Yes)			getNode: get any node in the HyPeerWeb, not just on current segment 
+Done(Yes)			getAllNodes: get an ordered list of nodes from every segment in the web 
+Done(Yes)			getRandomNode: won't work for distributed system 
 Done(No)			removeNode: navigate to segment that has the node before removing 
 Done(No)			addNode: navigate to segment that has a node (unless state is "has_zero") before adding
 Done(No)		Create these methods 
