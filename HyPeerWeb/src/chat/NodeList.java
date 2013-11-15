@@ -3,6 +3,7 @@ package chat;
 import hypeerweb.Node;
 import java.util.ArrayList;
 import java.util.TreeMap;
+import validator.NodeInterface;
 
 /**
  * Keep a local copy of all the nodes in the HyPeerWeb
