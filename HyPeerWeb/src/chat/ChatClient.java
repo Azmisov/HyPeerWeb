@@ -402,11 +402,11 @@ public class ChatClient extends JFrame{
 					addInfo("ISF:",temp);
 				Node[] temp2;
 				if ((temp2 = n.getNeighbors()).length > 0)
-					addInfo("N:",temp2);
+					addInfo("Ns:",temp2);
 				if ((temp2 = n.getSurrogateNeighbors()).length > 0)
-					addInfo("SN:",temp2);
+					addInfo("SNs:",temp2);
 				if ((temp2 = n.getInverseSurrogateNeighbors()).length > 0)
-					addInfo("ISN:",temp2);
+					addInfo("ISNs:",temp2);
 			}
 			fireTableStructureChanged();
 			connectList.getColumnModel().getColumn(0).setPreferredWidth(12);
