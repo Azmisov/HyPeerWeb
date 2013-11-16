@@ -2,6 +2,7 @@ package chat;
 
 import hypeerweb.Node;
 import java.awt.BorderLayout;
+import java.awt.Dimension;
 import javax.swing.ComboBoxModel;
 import javax.swing.JComboBox;
 import javax.swing.JLabel;
@@ -10,12 +11,14 @@ import javax.swing.JScrollPane;
 import javax.swing.JTable;
 import javax.swing.ListSelectionModel;
 import javax.swing.SwingConstants;
+import javax.swing.border.EmptyBorder;
 import javax.swing.event.ListDataListener;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
 import javax.swing.event.TableModelListener;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.TableColumn;
+import javax.swing.table.TableColumnModel;
 import javax.swing.table.TableModel;
 
 /**
@@ -25,8 +28,8 @@ import javax.swing.table.TableModel;
  */
 public class ListTab extends JPanel{
 	private static ChatClient container;
-	private JTable table;
-	private JComboBox segmentBox;
+	private final JTable table;
+	private final JComboBox segmentBox;
 	
 	public ListTab(ChatClient container) {
 		super(new BorderLayout());
@@ -34,7 +37,8 @@ public class ListTab extends JPanel{
 		JPanel segmentPanel = new JPanel();
 		JLabel label = new JLabel("Segment:");
 		segmentBox = new JComboBox(new segmentModel());
-		segmentBox.setSize(50, 100);
+		segmentBox.setPreferredSize(new Dimension(150, 30));
+		segmentBox.setBorder(new EmptyBorder(4, 8, 4, 4));
 		segmentPanel.add(label);
 		segmentPanel.add(segmentBox);
 		this.add(segmentPanel, BorderLayout.NORTH);
@@ -42,6 +46,7 @@ public class ListTab extends JPanel{
 		ListTab.container = container;
         table = new JTable(new MyTableModel());
         table.setFillsViewportHeight(true);
+		TableColumnModel model = table.getColumnModel();
 		
 		ListSelectionModel lsm = table.getSelectionModel();
 		lsm.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
@@ -51,19 +56,19 @@ public class ListTab extends JPanel{
         DefaultTableCellRenderer dtcr = new DefaultTableCellRenderer();    
         dtcr.setHorizontalAlignment(SwingConstants.CENTER);  
 		for(int i = 0; i < table.getModel().getColumnCount(); i++){
-			col = table.getColumnModel().getColumn(i); 
+			col = model.getColumn(i); 
 			col.setCellRenderer(dtcr);
 		}
 		
-		table.getColumnModel().getColumn(0).setPreferredWidth(58);
-		table.getColumnModel().getColumn(1).setPreferredWidth(44);
-		table.getColumnModel().getColumn(2).setPreferredWidth(45);
-		table.getColumnModel().getColumn(3).setPreferredWidth(85);
-		table.getColumnModel().getColumn(4).setPreferredWidth(50);
-		table.getColumnModel().getColumn(5).setPreferredWidth(50);
-		table.getColumnModel().getColumn(6).setPreferredWidth(25);
-		table.getColumnModel().getColumn(7).setPreferredWidth(25);
-		table.getColumnModel().getColumn(8).setPreferredWidth(25);
+		model.getColumn(0).setPreferredWidth(58);
+		model.getColumn(1).setPreferredWidth(44);
+		model.getColumn(2).setPreferredWidth(45);
+		model.getColumn(3).setPreferredWidth(85);
+		model.getColumn(4).setPreferredWidth(50);
+		model.getColumn(5).setPreferredWidth(50);
+		model.getColumn(6).setPreferredWidth(25);
+		model.getColumn(7).setPreferredWidth(25);
+		model.getColumn(8).setPreferredWidth(25);
 		
         JScrollPane scrollPane = new JScrollPane(table);
         add(scrollPane, BorderLayout.CENTER);
@@ -75,7 +80,7 @@ public class ListTab extends JPanel{
 	}
 
 	private static class MyTableModel implements TableModel {
-		private String[] columnNames = {"Segment",
+		private final String[] columnNames = {"Segment",
 										"WebID",
                                         "Height",
                                         "Ns",
@@ -166,7 +171,7 @@ public class ListTab extends JPanel{
 	
 	private static class segmentModel implements ComboBoxModel{
 		//temporary
-		private String[] segments = {"All", "1", "2", "3"};
+		private final String[] segments = {"All", "1", "2", "3"};
 		
 		int selection = -1;//-1 for all segments
 		

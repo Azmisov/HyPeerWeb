@@ -34,8 +34,7 @@ public class GraphTab extends JPanel{
 	private Node activeNode;	//the selected node; may not be in graph
 	//Drawing stuff
 	private static final int maxSizeX = 550, maxSizeY = 600;
-	private boolean DIRTY_BUFFER = false;	//do we need to redraw?
-	private boolean useBinary = false;	
+	private static boolean useLabels = true, useBinary = false;	
 	//Graphing stuff
 	private final JComboBox<GraphMode> modes = new JComboBox(GraphMode.values());
 	private GraphMode previousMode = GraphMode.DEFAULT;
@@ -45,7 +44,12 @@ public class GraphTab extends JPanel{
 		GraphTab.container = container;
 		setLayout(new BorderLayout(0, 0));
 		
-		//Graphing tab is split into a toolbar and graph
+		//Bottom is the actual graph
+		int defaultLineWidth = 2;
+		graph = new Graph();
+		graph.setLineWidth(defaultLineWidth);
+		
+		//Upper portion is a set of toolbars
 		final JPanel toolbars = new JPanel();
 		toolbars.setLayout(new BorderLayout(0, 0));
 		JToolBar bar = new JToolBar(JToolBar.HORIZONTAL);
@@ -72,6 +76,28 @@ public class GraphTab extends JPanel{
 			}
 		});
 		bar.add(modes);
+		//Drawing widths
+		final JSpinner nodeSize = new JSpinner(new SpinnerNumberModel(DrawData.nodeSize, 1, 10, 1));
+		nodeSize.addChangeListener(new ChangeListener(){
+			@Override
+			public void stateChanged(ChangeEvent e) {
+				DrawData.nodeSize = (int) nodeSize.getValue();
+				graph.redraw(true);
+			}
+		});
+		bar.add(new JLabel("Points"));
+		bar.add(nodeSize);
+		final JSpinner lineSize = new JSpinner(new SpinnerNumberModel(defaultLineWidth, 1, 5, 1));
+		lineSize.addChangeListener(new ChangeListener(){
+			@Override
+			public void stateChanged(ChangeEvent e) {
+				graph.setLineWidth((int) lineSize.getValue());
+				graph.redraw(true);
+			}
+		});
+		bar.add(new JLabel("Lines"));
+		bar.add(lineSize);
+		//Drawing labels
 		final JCheckBox chckBinary = new JCheckBox("Binary", false);
 		chckBinary.addActionListener(new ActionListener(){
 			@Override
@@ -80,7 +106,18 @@ public class GraphTab extends JPanel{
 				graph.redraw(true);
 			}
 		});
+		final JCheckBox chckLabel = new JCheckBox("Labels", true);
+		chckLabel.addActionListener(new ActionListener(){
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				useLabels = chckLabel.isSelected();
+				chckBinary.setEnabled(useLabels);
+				graph.redraw(true);
+			}
+		});
+		bar.add(chckLabel);
 		bar.add(chckBinary);
+		//Hide and Unhide
 		bar.add(Box.createHorizontalGlue());
 		JButton hideBtn = new JButton("Hide");
 		hideBtn.addActionListener(new ActionListener(){
@@ -94,7 +131,7 @@ public class GraphTab extends JPanel{
 		});
 		hideBtn.setToolTipText("Right click");
 		bar.add(hideBtn);
-		JButton unhideBtn = new JButton("Unhide All");
+		JButton unhideBtn = new JButton("Unhide");
 		unhideBtn.addActionListener(new ActionListener(){
 			@Override
 			public void actionPerformed(ActionEvent e) {
@@ -103,9 +140,6 @@ public class GraphTab extends JPanel{
 		});
 		unhideBtn.setToolTipText("Middle click");
 		bar.add(unhideBtn);
-		
-		//Bottom is the actual graph
-		graph = new Graph();
 		
 		//Layout components
 		add(toolbars, BorderLayout.NORTH);
@@ -145,7 +179,7 @@ public class GraphTab extends JPanel{
 				links = new TreeSet();
 				helpers = new ArrayList();
 				
-				Node n = container.nodeList.list.get((int) select.getValue());
+				Node n = getActiveNode();
 				if (n == null) return;
 				
 				//Start off with the active node
@@ -213,12 +247,15 @@ public class GraphTab extends JPanel{
 						links.add(l);
 				}
 			}
+			private Node getActiveNode(){
+				return container.nodeList.list.get((int) select.getValue());
+			}
 			
 			@Override
 			public JToolBar getToolbar(){
 				JToolBar bar = new JToolBar();
 				bar.setFloatable(false);
-				bar.add(new JLabel("Graph Node:"));
+				bar.add(new JLabel("Root Node:"));
 				select = new JSpinner(new SpinnerNumberModel(0, 0, null, 1));
 				select.setPreferredSize(new Dimension(70, 30));
 				select.addChangeListener(new ChangeListener(){
@@ -237,6 +274,29 @@ public class GraphTab extends JPanel{
 					}
 				});
 				bar.add(levelSelect);
+				//Navigation handlers
+				final JButton btnSelect = new JButton("Graph Selected");
+				btnSelect.addActionListener(new ActionListener(){
+					@Override
+					public void actionPerformed(ActionEvent e) {
+						if (graph.selected != null)
+							select.setValue(graph.selected.n.getWebId());
+					}
+				});
+				bar.add(btnSelect);
+				final JButton btnParent = new JButton("Graph Parent");
+				btnParent.addActionListener(new ActionListener(){
+					@Override
+					public void actionPerformed(ActionEvent e) {
+						Node n = getActiveNode();
+						if (n != null){
+							n = n.getParent();
+							if (n != null)
+								select.setValue(n.getWebId());
+						}
+					}
+				});
+				bar.add(btnParent);
 				bar.add(Box.createHorizontalGlue());
 				return bar;
 			}
@@ -252,7 +312,7 @@ public class GraphTab extends JPanel{
 				links = new TreeSet();
 				helpers = new ArrayList();
 				
-				Node n = container.nodeList.list.get((int) select.getValue());
+				Node n = getActiveNode();
 				if (n == null) return;
 				
 				//Start out with node in middle
@@ -291,6 +351,9 @@ public class GraphTab extends JPanel{
 					}
 				}
 			}
+			private Node getActiveNode(){
+				return container.nodeList.list.get((int) select.getValue());
+			}
 			
 			@Override
 			public JToolBar getToolbar(){
@@ -315,6 +378,29 @@ public class GraphTab extends JPanel{
 					}
 				});
 				bar.add(levelSelect);
+				//Navigation handlers
+				final JButton btnSelect = new JButton("Graph Selected");
+				btnSelect.addActionListener(new ActionListener(){
+					@Override
+					public void actionPerformed(ActionEvent e) {
+						if (graph.selected != null)
+							select.setValue(graph.selected.n.getWebId());
+					}
+				});
+				bar.add(btnSelect);
+				final JButton btnParent = new JButton("Graph Parent");
+				btnParent.addActionListener(new ActionListener(){
+					@Override
+					public void actionPerformed(ActionEvent e) {
+						Node n = getActiveNode();
+						if (n != null){
+							n = n.getParent();
+							if (n != null)
+								select.setValue(n.getWebId());
+						}
+					}
+				});
+				bar.add(btnParent);
 				bar.add(Box.createHorizontalGlue());
 				return bar;
 			}
@@ -540,12 +626,14 @@ public class GraphTab extends JPanel{
 			this.level = level;
 			this.coord = coord;
 		}
-		public void draw(Graphics2D g2, boolean useBinary){
+		public void draw(Graphics2D g2){
 			if (n != null){
 				double x = coord.getX(), y = coord.getY();
 				g2.fillOval((int) (x-nodeSize/2.0), (int) (y-nodeSize/2.0), nodeSize, nodeSize);
-				String name = useBinary ? Integer.toBinaryString(n.getWebId()) : String.valueOf(n.getWebId());
-				g2.drawString(name+" ("+n.getHeight()+")", (int) x+5, (int) y-5);
+				if (useLabels){
+					String name = useBinary ? Integer.toBinaryString(n.getWebId()) : String.valueOf(n.getWebId());
+					g2.drawString(name+" ("+n.getHeight()+")", (int) x+5, (int) y-5);
+				}
 			}
 		}
 	}
@@ -564,10 +652,7 @@ public class GraphTab extends JPanel{
 		GraphMode mode;							//Holds all data for the graph
 		//Drawing modes
 		private final AlphaComposite compMode = AlphaComposite.getInstance(AlphaComposite.DST_OVER);
-		private final float[] dash1 = {4};
-		private final Stroke
-			strokeSolid = new BasicStroke(2, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND),
-			strokeDotted = new BasicStroke(2, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND, 10, dash1, 10);			
+		private Stroke strokeSolid, strokeDotted;
 		//Drawing buffer
 		private BufferedImage buffer;
 		private DrawData active, selected;
@@ -648,6 +733,11 @@ public class GraphTab extends JPanel{
 		}
 
 		//ACTIONS
+		public void setLineWidth(int width){
+			strokeSolid = new BasicStroke(width);
+			float[] dash = {Math.max(4, width*2)};
+			strokeDotted = new BasicStroke(width, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND, 10, dash, 10);
+		}
 		public void viewSelected(){
 			/*
 			if (selected != null)
@@ -747,7 +837,7 @@ public class GraphTab extends JPanel{
 		 * @param d the node's draw data
 		 */
 		private void drawNode(Graphics2D g, DrawData d){
-			d.draw(g, useBinary);
+			d.draw(g);
 			if (d.children != null){
 				for (DrawData c: d.children){
 					if (!hide.contains(c))
@@ -820,6 +910,7 @@ public class GraphTab extends JPanel{
 				Graphics2D gbi = buffer.createGraphics();
 				gbi.setRenderingHints(new HashMap<RenderingHints.Key, Object>(){{
 					put(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_SPEED);
+					put(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 					put(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
 				}});
 
@@ -834,19 +925,19 @@ public class GraphTab extends JPanel{
 			//Selected nodes
 			if (active != null){
 				g2.setColor(Color.CYAN);
-				active.draw(g2, useBinary);
+				active.draw(g2);
 				//Children of selection
 				if (active.children != null){
 					g2.setColor(Color.YELLOW);
 					for (DrawData child: active.children){
 						if (!hide.contains(child))
-							child.draw(g2, useBinary);
+							child.draw(g2);
 					}
 				}
 				//Parent of selection
 				if (active.parent != null){
 					g2.setColor(Color.GREEN);
-					active.parent.draw(g2, useBinary);
+					active.parent.draw(g2);
 				}
 			}
 			//Set cursor

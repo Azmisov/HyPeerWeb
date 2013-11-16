@@ -198,8 +198,11 @@ public class ChatClient extends JFrame{
 		JTextField txtName = new JTextField();
 		
 		//Disconnect button
-		JButton btn = new JButton("Disconnect");
-		btn.setPreferredSize(new Dimension(150, 25));
+		JButton btnDisconnect = new JButton("Disconnect");
+		btnDisconnect.setPreferredSize(new Dimension(150, 25));
+		
+		//Shutdown button
+		JButton btnShutdown = new JButton("Shutdown");
 		
 		// <editor-fold defaultstate="collapsed" desc="Layout components in grid">
 		JPanel box = new JPanel();
@@ -219,7 +222,9 @@ public class ChatClient extends JFrame{
 		c.insets.bottom = 4;
 		box.add(txtName, c);
 		c.gridy++;
-		box.add(btn, c);
+		box.add(btnDisconnect, c);
+		c.gridy++;
+		box.add(btnShutdown, c);
 		// </editor-fold>
 		
 		return box;
