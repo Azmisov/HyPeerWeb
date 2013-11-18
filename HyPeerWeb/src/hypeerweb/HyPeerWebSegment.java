@@ -266,7 +266,7 @@ public class HyPeerWebSegment<T extends Node> extends Node implements HyPeerWebI
 					if(n.getWebId() == 0){
 						Node replace = n.getFold(); //gets node 1
 						if (replace == null)
-							throw removeNodeErr;
+							web.changeState(CORRUPT);
 						//Remove node from list of nodes
 						web.nodes.remove(0);
 						//Replace the node to be deleted
@@ -279,7 +279,7 @@ public class HyPeerWebSegment<T extends Node> extends Node implements HyPeerWebI
 					else{
 						Node other = n.getFold();
 						if (other == null)
-							throw removeNodeErr;
+							web.changeState(CORRUPT);
 						web.nodes.remove(1);
 						other.L.removeNeighbor(n);
 						other.L.setFold(null);
