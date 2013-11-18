@@ -4,6 +4,7 @@ import chat.ChatServer;
 import communicator.LocalObjectId;
 import hypeerweb.visitors.SendVisitor;
 import hypeerweb.visitors.BroadcastVisitor;
+import hypeerweb.visitors.SendVisitor.SendListener;
 import java.util.ArrayList;
 import java.util.Random;
 import java.util.TreeMap;
@@ -396,7 +397,12 @@ public class HyPeerWebSegment<T extends Node> extends Node implements HyPeerWebI
 			return null;
 		
 		Node first = (Node) getNonemptySegment().nodes.firstEntry().getValue();
-		randVisitor = new SendVisitor(rand.nextInt(Integer.MAX_VALUE), true);
+		randVisitor = new SendVisitor(rand.nextInt(Integer.MAX_VALUE), true, new SendVisitor.SendListener(){
+			@Override
+			public void callback(Node n){
+				
+			}
+		});
 		randVisitor.visit(first);
 		//TODO, this won't work with a distributed system
 		return (T) randVisitor.getFinalNode();
