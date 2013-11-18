@@ -55,11 +55,19 @@ public class NodeCache implements Serializable{
 		dirty.addAll(syncNeighbors(cache.sn, faux.sn));
 		dirty.addAll(syncNeighbors(cache.isn, faux.isn));
 		
+		//Don't fetch "faux.webID" or "-1"
+		dirty.remove(faux.webID);
+		dirty.remove(-1);
 		
-		//TODO: fetch new nodes, excluding "faux.webID" and "-1"
 		//TODO: account for different SyncType's
+		//i.e., replace sync type?
 		
-		throw new Exception("Not implemented!!!");
+		Integer[] obj = dirty.toArray(new Integer[dirty.size()]);
+		int[] ret = new int[obj.length];
+		for (int i=0; i<obj.length; i++)
+			ret[i] = obj[i].intValue();
+		
+		return ret;
 	}
 	private ArrayList<Integer> syncNeighbors(int[] cacheN, int[] fauxN){
 		//Assuming the two arrays are sorted,
