@@ -15,20 +15,14 @@ public class SendVisitor extends AbstractVisitor{
 	private String message = "";
 	private int originId;
 	private boolean messageBeingSent = false;
+	private SendListener listener;
 	
-	/**
-	 * Navigate to the node with webID = 0, with
-	 * approximateMatch disabled
-	 */
-	public SendVisitor(){
-		this(0, false);
-	}
 	/**
 	 * Navigate to the specified node, with approximateMatch disabled
 	 * @param targetWebId the WebID of the node to navigate to
 	 */
-	public SendVisitor(int targetWebId){
-		this(targetWebId, false);
+	public SendVisitor(int targetWebId, SendListener listener){
+		this(targetWebId, false, listener);
 	}
 	/**
 	 * Creates a new Send operation visitor
@@ -37,9 +31,10 @@ public class SendVisitor extends AbstractVisitor{
 	 * if true, it will try to find a node that is close to targetWebID and may not
 	 * get all the way to the node (e.g. use this to get random nodes)
 	 */
-	public SendVisitor(int targetWebId, boolean approximateMatch){
+	public SendVisitor(int targetWebId, boolean approximateMatch, SendListener listener){
 		data.setAttribute(target, targetWebId);
 		data.setAttribute(approx, approximateMatch);
+		this.listener = listener;
 	}
 	/**
 	 * Creates a new send visitor that can send a message.
@@ -91,12 +86,18 @@ public class SendVisitor extends AbstractVisitor{
 	 * Perform an operation on an intermediate node
 	 * @param node the node we are visiting
 	 */
-	public void performIntermediateOperation(Node node){}
+	public void performIntermediateOperation(Node node){
+		listener.callback(node);
+	}
 	/**
 	 * 
 	 * @return probably not null
 	 */
 	public Node getFinalNode(){
 		return null;
+	}
+	
+	public abstract class SendListener {
+		public abstract void callback(Node n);
 	}
 }
