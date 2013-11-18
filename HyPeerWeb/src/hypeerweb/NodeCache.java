@@ -20,9 +20,9 @@ public class NodeCache implements Serializable{
 		nodes.putAll(cache.nodes);
 	}
 	
-	public int[] addNode(hypeerweb.Node real){
+	public int[] addNode(hypeerweb.Node real,  boolean sync){
 		Node n = new Node(real);
-		return addNode(n, true);
+		return addNode(n, sync);
 	}
 	public int[] addNode(Node faux, boolean sync){
 		int[] syncNodes = null;
@@ -32,14 +32,14 @@ public class NodeCache implements Serializable{
 		return syncNodes;
 	}
 	
-	public int[] removeNode(hypeerweb.Node real){
-		return removeNode(real.getWebId(), true);
+	public int[] removeNode(hypeerweb.Node real, boolean sync){
+		return removeNode(nodes.get(real.webID), sync);
 	}
-	public int[] removeNode(int webID, boolean sync){
+	public int[] removeNode(Node faux, boolean sync){
 		int[] syncNodes = null;
-		//if (sync)
-			//syncNodes = sync()
-		nodes.remove(webID);
+		if (sync)
+			syncNodes = sync(faux, SyncType.REMOVE);
+		nodes.remove(faux.webID);
 		return syncNodes;
 	}
 	

@@ -97,7 +97,7 @@ public class SendVisitor extends AbstractVisitor{
 		return null;
 	}
 	
-	public abstract class SendListener {
+	public static abstract class SendListener {
 		public abstract void callback(Node n);
 	}
 }

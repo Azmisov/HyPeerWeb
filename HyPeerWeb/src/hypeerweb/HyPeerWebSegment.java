@@ -312,6 +312,12 @@ public class HyPeerWebSegment<T extends Node> extends Node implements HyPeerWebI
 	public TreeMap<Integer, Node> getTreeMapOfAllSegmentNodes(){
 		return nodes;
 	}
+	public NodeCache getNodeCache(int networkID){
+		NodeCache c = new NodeCache();
+		for (Node n: nodes.values())
+			c.addNode(n, false);
+		return c;
+	}
 	/**
 	 * Gets the first node in the HyPeerWeb
 	 * @return node with webID = 0
@@ -379,10 +385,6 @@ public class HyPeerWebSegment<T extends Node> extends Node implements HyPeerWebI
 			return (T) node;
 		return null;
 	}
-	
-	public static ArrayList<HyPeerWebSegment> getSegmentList(){
-		return segmentList;
-	}
 	// </editor-fold>
 	
 	// <editor-fold defaultstate="collapsed" desc="HYPEERWEB GETTERS">
@@ -396,7 +398,12 @@ public class HyPeerWebSegment<T extends Node> extends Node implements HyPeerWebI
 			return null;
 		
 		Node first = (Node) getNonemptySegment().nodes.firstEntry().getValue();
-		randVisitor = new SendVisitor(rand.nextInt(Integer.MAX_VALUE), true);
+		SendVisitor.SendListener randlisten = new SendVisitor.SendListener(){
+		@Override
+		public void callback(Node n){}
+				};
+		
+		randVisitor = new SendVisitor(rand.nextInt(Integer.MAX_VALUE), true, randlisten);
 		randVisitor.visit(first);
 		//TODO, this won't work with a distributed system
 		return (T) randVisitor.getFinalNode();
@@ -435,12 +442,12 @@ public class HyPeerWebSegment<T extends Node> extends Node implements HyPeerWebI
 		}
 		@Override
 		public void performOperation(Node n) {
-			l.callback(((HyPeerWebSegment) n).nodes);
+			l.callback(((HyPeerWebSegment) n).);
 		}
 	}
 
-		public abstract class GetAllNodesListener{
-			public abstract void callback(TreeMap<Integer, Node> set);
+	public abstract class GetAllNodesListener{
+			public abstract void callback(NodeCache cache);
 		}
 
 	// </editor-fold>
