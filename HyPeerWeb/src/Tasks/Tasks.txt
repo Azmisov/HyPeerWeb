@@ -24,7 +24,7 @@ Done(No)		Fix these methods (these all need to use some variation of Visitor pat
 Done(Yes)			getNode: get any node in the HyPeerWeb, not just on current segment 
 Done(Yes)			getAllNodes: get an ordered list of nodes from every segment in the web 
 Done(Yes)			getRandomNode: won't work for distributed system 
-Done(No)			removeNode: navigate to segment that has the node before removing 
+Done(Yes)			removeNode: navigate to segment that has the node before removing 
 Done(Yes)			addNode: navigate to segment that has a node (unless state is "has_zero") before adding
 Done(No)		Create these methods 
 Done(No)			disconnect from HyPeerWeb 
