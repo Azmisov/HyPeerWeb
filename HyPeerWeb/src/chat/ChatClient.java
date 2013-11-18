@@ -2,7 +2,7 @@ package chat;
 
 import com.alee.laf.WebLookAndFeel;
 import hypeerweb.HyPeerWeb;
-import hypeerweb.Node;
+import hypeerweb.NodeCache.Node;
 import hypeerweb.NodeCache;
 import java.awt.*;
 import java.awt.event.ActionEvent;
@@ -61,7 +61,7 @@ public class ChatClient extends JFrame{
 		//Bind to a hypeerweb segment here...
 		try {
 			web = HyPeerWeb.initialize(false, false, -1);
-			nodeList = new NodeList(null);
+			nodeCache = new NodeCache();
 		} catch (Exception ex) {
 			System.out.println("Cannot bind to a HyPeerWeb");
 		}
@@ -244,7 +244,7 @@ public class ChatClient extends JFrame{
 			public void actionPerformed(ActionEvent e) {
 				try{
 					for (int i=0, max=(int) addCount.getValue(); i<max; i++)
-						nodeList.addNode(web.addNode());
+						nodeCache.addNode(web.addNode());
 					graph.draw();
 					listTab.draw();
 				}
@@ -259,7 +259,7 @@ public class ChatClient extends JFrame{
 			public void actionPerformed(ActionEvent e) {
 				try{
 					Node remove = web.removeNode((int) nodeSelect.getValue());
-					nodeList.removeNode(remove);
+					nodeCache.removeNode(remove);
 					graph.draw();
 					listTab.draw();
 					if (remove == selected){
