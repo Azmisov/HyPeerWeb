@@ -2,6 +2,7 @@ package chat;
 
 import hypeerweb.HyPeerWebSegment;
 import hypeerweb.Node;
+import hypeerweb.NodeCache;
 import hypeerweb.visitors.SendVisitor;
 import java.util.ArrayList;
 import java.util.Random;
@@ -17,20 +18,46 @@ public class ChatServer{
 	private ArrayList<UserListener> userListeners = new ArrayList();
 	private ArrayList<NodeListener> nodeListeners = new ArrayList();
 	private ArrayList<NetworkNameListener> networkNameListeners = new ArrayList();
+	//Node cache for the entire HyPeerWeb
+	private NodeCache cache;
 	
 	public ChatServer(String dbName) throws Exception{
 		segment = new HyPeerWebSegment(dbName, -1, this);
+		cache = new NodeCache();
+		
 	}
 	
+	//NETWORK OPERATIONS
+	
+	//GUI COMMUNICATION
+	/**
+	 * Gets the name of the ChatUser
+	 * @return the name
+	 */
+	public ChatUser getUser(){
+		return user;
+	}	
+	/**
+	 * 
+	 * @return 
+	 */
+	public ArrayList<ChatUser> getAllUsers(){
+		ArrayList<ChatUser>users = new ArrayList();
+		//use broadcast to get all users
+		return users;
+	}
+	
+	//NODE OPERATIONS
 	/**
 	 * Adds a node to the HyPeerWeb and tells the nodeListeners about it.
 	 */
 	public void addNode() throws Exception{
-		Node node = segment.addNode();
-		for(NodeListener listener : nodeListeners)
+		Node node = segment.getFirstSegmentNode().addNode();
+		cache.addNode(node);
+		cache.
+		for (NodeListener listener : nodeListeners)
 			listener.callback(node, true);
 	}
-	
 	/**
 	 * Deletes a node from the HyPeerWeb and tells the nodeListeners about it.
 	 * @param node the node to delete
@@ -40,7 +67,6 @@ public class ChatServer{
 		for(NodeListener listener : nodeListeners)
 			listener.callback(node, false);
 	}
-	
 	/**
 	 * 
 	 * @return 
@@ -51,23 +77,7 @@ public class ChatServer{
 			
 		return nodes;
 	}
-	/**
-	 * Gets the name of the ChatUser
-	 * @return the name
-	 */
-	public ChatUser getUser(){
-		return user;
-	}
 	
-	/**
-	 * 
-	 * @return 
-	 */
-	public ArrayList<ChatUser> getAllUsers(){
-		ArrayList<ChatUser>users = new ArrayList();
-		//use broadcast to get all users
-		return users;
-	}
 	
 	/**
 	 * 

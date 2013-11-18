@@ -19,25 +19,29 @@ public class NodeCache implements Serializable{
 		nodes.putAll(cache.nodes);
 	}
 	
-	public void addNode(hypeerweb.Node real){
+	public int[] addNode(hypeerweb.Node real){
 		Node n = new Node(real);
-		addNode(n);
+		return addNode(n, true);
 	}
-	public void addNode(Node faux){
+	public int[] addNode(Node faux, boolean sync){
+		int[] syncNodes = null;
+		if (sync)
+			 syncNodes = sync(faux, SyncType.ADD);
 		nodes.put(faux.webID, faux);
+		return syncNodes;
 	}
 	
-	public void removeNode(hypeerweb.Node real){
-		removeNode(real.getWebId());
+	public int[] removeNode(hypeerweb.Node real){
+		return removeNode(real.getWebId(), true);
 	}
-	public void removeNode(Node faux){
-		removeNode(faux.webID);
-	}
-	public void removeNode(int webID){
+	public int[] removeNode(int webID, boolean sync){
+		int[] syncNodes = null;
+		if (sync)
+			syncNodes = sync()
 		nodes.remove(webID);
 	}
 	
-	public int[] sync(Node faux, SyncType type) throws Exception{
+	private int[] sync(Node faux, SyncType type){
 		Node cache = nodes.get(faux.webID);
 		//Compare the cached version and the faux/proxy/real version
 		HashSet<Integer> dirty = new HashSet();
