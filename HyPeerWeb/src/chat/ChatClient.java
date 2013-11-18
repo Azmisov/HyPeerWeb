@@ -3,6 +3,7 @@ package chat;
 import com.alee.laf.WebLookAndFeel;
 import hypeerweb.HyPeerWeb;
 import hypeerweb.Node;
+import hypeerweb.NodeCache;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -43,7 +44,7 @@ public class ChatClient extends JFrame{
 	private static final Font bold = new Font("SansSerif", Font.BOLD, 12);
 	
 	//Data items
-	protected NodeList nodeList;	//List of all nodes in HyPeerWeb
+	protected NodeCache nodeCache;	//List of all nodes in HyPeerWeb
 	private HyPeerWeb web;			//Reference to ChatServer (TODO here)
 	private Node selected;			//The selected node
 	
