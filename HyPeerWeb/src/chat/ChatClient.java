@@ -198,8 +198,11 @@ public class ChatClient extends JFrame{
 		JTextField txtName = new JTextField();
 		
 		//Disconnect button
-		JButton btn = new JButton("Disconnect");
-		btn.setPreferredSize(new Dimension(150, 25));
+		JButton btnDisconnect = new JButton("Disconnect");
+		btnDisconnect.setPreferredSize(new Dimension(150, 25));
+		
+		//Shutdown button
+		JButton btnShutdown = new JButton("Shutdown");
 		
 		// <editor-fold defaultstate="collapsed" desc="Layout components in grid">
 		JPanel box = new JPanel();
@@ -219,7 +222,9 @@ public class ChatClient extends JFrame{
 		c.insets.bottom = 4;
 		box.add(txtName, c);
 		c.gridy++;
-		box.add(btn, c);
+		box.add(btnDisconnect, c);
+		c.gridy++;
+		box.add(btnShutdown, c);
 		// </editor-fold>
 		
 		return box;
@@ -397,11 +402,11 @@ public class ChatClient extends JFrame{
 					addInfo("ISF:",temp);
 				Node[] temp2;
 				if ((temp2 = n.getNeighbors()).length > 0)
-					addInfo("N:",temp2);
+					addInfo("Ns:",temp2);
 				if ((temp2 = n.getSurrogateNeighbors()).length > 0)
-					addInfo("SN:",temp2);
+					addInfo("SNs:",temp2);
 				if ((temp2 = n.getInverseSurrogateNeighbors()).length > 0)
-					addInfo("ISN:",temp2);
+					addInfo("ISNs:",temp2);
 			}
 			fireTableStructureChanged();
 			connectList.getColumnModel().getColumn(0).setPreferredWidth(12);

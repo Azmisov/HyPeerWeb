@@ -2,10 +2,11 @@ Done(No)	ChatClient (GUI)
 Done(No)		ChatTab 
 Done(No)			store active user; don't show active user in Send-To box 
 Done(No)			interface with the ChatServer
+Done(No)			NodeCache to hold all node information; have cache handle all selection handling
 	
-Done(No)		GraphTab 
-Done(No)			Convert HyPeerWebGraph code to new GUI 
-Done(No)			implement Graph drawing modes (Default, Tree, Petrie)
+Done(Yes)		GraphTab 
+Done(Yes)			Convert HyPeerWebGraph code to new GUI 
+Done(Yes)			implement Graph drawing modes (Default, Tree, Petrie)
 
 Done(No)		ListTab 
 Done(No)			Toolbar at top has combo box to select which segment's node's to view 
@@ -36,7 +37,7 @@ Done(No)		username's, network name, generation etc.
 Done(No)		implement skeleton methods (i.e. talk to ChatClient and HWSegments)
 
 Done(No)	Proxies & Networking 
-Done(No)		Implement Woodfield's proxy stuff 
+Done(Yes)		Implement Woodfield's proxy stuff 
 Done(No)		Optimize NodeProxy to hold stuff like height/webID by default 
 Done(No)		MockConnections class for testing purposes 
 Done(No)		make add/removeNode add to the segment that made the request
