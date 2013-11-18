@@ -1,5 +1,6 @@
 package hypeerweb;
 
+import communicator.LocalObjectId;
 import java.util.ArrayList;
 import java.util.TreeSet;
 
@@ -21,6 +22,7 @@ public class Links{
 	private TreeSet<Node> surrogateNeighbors;
 	private TreeSet<Node> inverseSurrogateNeighbors;
 	private TreeSet<Node> highest;
+	private LocalObjectId localObjectId;
 	
 	/**
 	 * Creates an empty links object
@@ -30,6 +32,7 @@ public class Links{
 		surrogateNeighbors = new TreeSet<>();
 		inverseSurrogateNeighbors = new TreeSet<>();
 		highest = new TreeSet<>();
+		localObjectId = new LocalObjectId();
 	}
 	/**
 	 * Creates a links object with predefined connections
@@ -365,5 +368,9 @@ public class Links{
 	 */
 	public TreeSet<Node> getAllLinks(){
 		return highest;
+	}
+	
+	public LocalObjectId getLocalObjectId() {
+		return localObjectId;
 	}
 }

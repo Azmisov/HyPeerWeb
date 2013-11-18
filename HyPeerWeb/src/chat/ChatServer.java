@@ -13,7 +13,7 @@ import java.util.Random;
 public class ChatServer{
 	private HyPeerWebSegment<HyPeerWebSegment<Node>> segment;
 	private ChatUser user;
-	//private String networkName = "";
+	private String networkName = "";
 	private ArrayList<SendListener> sendListeners = new ArrayList();
 	private ArrayList<UserListener> userListeners = new ArrayList();
 	private ArrayList<NodeListener> nodeListeners = new ArrayList();

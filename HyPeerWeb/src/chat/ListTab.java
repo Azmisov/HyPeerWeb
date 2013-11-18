@@ -28,15 +28,17 @@ import javax.swing.table.TableModel;
  */
 public class ListTab extends JPanel{
 	private static ChatClient container;
-	private final JTable table;
-	private final JComboBox segmentBox;
+	private static JTable table;
+	private static MyTableModel tabModel = new MyTableModel();
+	private static JComboBox segmentBox;
+	private static segmentModel segModel = new segmentModel();
 	
 	public ListTab(ChatClient container) {
 		super(new BorderLayout());
 		
 		JPanel segmentPanel = new JPanel();
 		JLabel label = new JLabel("Segment:");
-		segmentBox = new JComboBox(new segmentModel());
+		segmentBox = new JComboBox(segModel);
 		segmentBox.setPreferredSize(new Dimension(150, 30));
 		segmentBox.setBorder(new EmptyBorder(4, 8, 4, 4));
 		segmentPanel.add(label);
@@ -44,7 +46,7 @@ public class ListTab extends JPanel{
 		this.add(segmentPanel, BorderLayout.NORTH);
 		
 		ListTab.container = container;
-        table = new JTable(new MyTableModel());
+        table = new JTable(tabModel);
         table.setFillsViewportHeight(true);
 		TableColumnModel model = table.getColumnModel();
 		
@@ -55,7 +57,7 @@ public class ListTab extends JPanel{
 		TableColumn col; 
         DefaultTableCellRenderer dtcr = new DefaultTableCellRenderer();    
         dtcr.setHorizontalAlignment(SwingConstants.CENTER);  
-		for(int i = 0; i < table.getModel().getColumnCount(); i++){
+		for(int i = 0; i < tabModel.getColumnCount(); i++){
 			col = model.getColumn(i); 
 			col.setCellRenderer(dtcr);
 		}
@@ -121,41 +123,45 @@ public class ListTab extends JPanel{
 		public Object getValueAt(int rowIndex, int columnIndex) {
 			String result = "";
 			Node node = container.nodeList.getNodes().get(rowIndex);
-			switch(columnIndex){
-				case 0:
-					result = "1";
-					break;
-				case 1:
-					result += node.getWebId();
-					break;
-				case 2:
-					result += node.getHeight();
-					break;
-				case 3:
-					for(Node n : node.getNeighbors())
-						result += n.getWebId() + " ";
-					break;
-				case 4:
-					for(Node n : node.getSurrogateNeighbors())
-						result += n.getWebId() + " ";
-					break;
-				case 5:
-					for(Node n : node.getInverseSurrogateNeighbors())
-						result += n.getWebId() + " ";
-					break;
-				case 6:
-					if(node.getFold() != null)
-						result += node.getFold().getWebId();
-					break;
-				case 7:
-					if(node.getSurrogateFold() != null)
-						result += node.getSurrogateFold().getWebId();
-					break;
-				case 8:
-					if(node.getInverseSurrogateFold() != null)
-						result += node.getInverseSurrogateFold().getWebId();
-					break;
-			}
+			int selection = segModel.getSelection();
+			
+			if(selection == -1 || selection == node.getSegmentID()){
+				switch(columnIndex){
+					case 0:
+						result = "1";
+						break;
+					case 1:
+						result += node.getWebId();
+						break;
+					case 2:
+						result += node.getHeight();
+						break;
+					case 3:
+						for(Node n : node.getNeighbors())
+							result += n.getWebId() + " ";
+						break;
+					case 4:
+						for(Node n : node.getSurrogateNeighbors())
+							result += n.getWebId() + " ";
+						break;
+					case 5:
+						for(Node n : node.getInverseSurrogateNeighbors())
+							result += n.getWebId() + " ";
+						break;
+					case 6:
+						if(node.getFold() != null)
+							result += node.getFold().getWebId();
+						break;
+					case 7:
+						if(node.getSurrogateFold() != null)
+							result += node.getSurrogateFold().getWebId();
+						break;
+					case 8:
+						if(node.getInverseSurrogateFold() != null)
+							result += node.getInverseSurrogateFold().getWebId();
+						break;
+				}
+			}	
 			return result;
 		}
 		@Override
@@ -190,7 +196,11 @@ public class ListTab extends JPanel{
 			else
 				return selection;
 		}
-
+		
+		public int getSelection(){
+			return selection;
+		}
+		
 		@Override
 		public int getSize() {
 			//get number of segments

@@ -149,7 +149,7 @@ public class HyPeerWeb implements HyPeerWebInterface {
 			return addSecondNode();
 		
 		//Otherwise, use the normal insertion algorithm
-		Node child = getRandomNode().findInsertionNode().addChild(db);
+		Node child = getRandomNode().findInsertionNode().addChild(db, new Node(0,0));
 		if (child == null)
 			throw addNodeErr;
 		//Node successfully added!
