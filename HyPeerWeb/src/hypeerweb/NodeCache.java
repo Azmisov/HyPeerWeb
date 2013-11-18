@@ -13,7 +13,7 @@ import java.util.TreeMap;
  */
 public class NodeCache implements Serializable{
 	public enum SyncType {ADD, REMOVE, REPLACE}
-	public TreeMap<Integer, Node> nodes;	
+	public TreeMap<Integer, Node> nodes;
 	
 	public void merge(NodeCache cache){
 		nodes.putAll(cache.nodes);
@@ -37,7 +37,7 @@ public class NodeCache implements Serializable{
 		nodes.remove(webID);
 	}
 	
-	public void sync(Node faux, SyncType type) throws Exception{
+	public int[] sync(Node faux, SyncType type) throws Exception{
 		Node cache = nodes.get(faux.webID);
 		//Compare the cached version and the faux/proxy/real version
 		HashSet<Integer> dirty = new HashSet();
@@ -54,6 +54,7 @@ public class NodeCache implements Serializable{
 		dirty.addAll(syncNeighbors(cache.n, faux.n));
 		dirty.addAll(syncNeighbors(cache.sn, faux.sn));
 		dirty.addAll(syncNeighbors(cache.isn, faux.isn));
+		
 		
 		//TODO: fetch new nodes, excluding "faux.webID" and "-1"
 		//TODO: account for different SyncType's
@@ -86,6 +87,8 @@ public class NodeCache implements Serializable{
 	}
 	
 	public class Node implements Serializable{
+		//Network id
+		private int networkID;
 		//Node attributes
 		private int webID, height;
 		//Node links
@@ -110,6 +113,15 @@ public class NodeCache implements Serializable{
 		}
 
 		//BASIC GETTERS
+		public int getNetworkId(){
+			return networkID;
+		}
+		public int getWebId(){
+			return webID;
+		}
+		public int getHeight(){
+			return height;
+		}
 		public Node getFold(){
 			return nodes.get(f);
 		}
