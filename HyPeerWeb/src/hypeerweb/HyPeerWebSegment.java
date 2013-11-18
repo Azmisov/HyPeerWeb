@@ -292,16 +292,16 @@ public class HyPeerWebSegment<T extends Node> extends Node implements HyPeerWebI
 		//Network is corrupt; a segment failed to perform an operation
 		CORRUPT {
 			@Override
-			public void addNode(HyPeerWebSegment web, Node.Listener listener) throws Exception {
-				throw corruptErr;
+			public void addNode(HyPeerWebSegment web, Node.Listener listener){
+				System.err.println("CORRUPT HYPEERWEB");
 			}
 			@Override
-			public void removeNode(HyPeerWebSegment web, Node n, Node.Listener listener) throws Exception {
-				throw corruptErr;
+			public void removeNode(HyPeerWebSegment web, Node n, Node.Listener listener){
+				System.err.println("CORRUPT HYPEERWEB");
 			}
 		};
-		public abstract void addNode(final HyPeerWebSegment web, Node.Listener listener) throws Exception;
-		public abstract void removeNode(final HyPeerWebSegment web, Node n, Node.Listener listener) throws Exception;
+		public abstract void addNode(final HyPeerWebSegment web, Node.Listener listener);
+		public abstract void removeNode(final HyPeerWebSegment web, Node n, Node.Listener listener);
 	}
 	/**
 	 * Change the state of the HyPeerWeb
