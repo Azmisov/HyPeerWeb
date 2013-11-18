@@ -16,21 +16,14 @@ import validator.HyPeerWebInterface;
  */
 public class HyPeerWebSegment<T extends Node> extends Node implements HyPeerWebInterface{
 	private Database db = null;
-	private ChatServer chatServer;
 	private TreeMap<Integer, Node> nodes;
 	private HyPeerWebState state;
 	//Random number generator for getting random nodes
 	private static final Random rand = new Random();
 	private static SendVisitor randVisitor;
-	//Error messages
-	private static final Exception
-			addNodeErr = new Exception("Failed to add a new node"),
-			removeNodeErr = new Exception("Failed to remove a node"),
-			clearErr = new Exception("Failed to clear the HyPeerWeb"),
-			replaceErr = new Exception("Failed to replace a node. Warning! Your HyPeerWeb is corrupted."),
-			corruptErr = new Exception("The HyPeerWeb is corrupt! Cannot proceed.");
-	
-	private static ArrayList<HyPeerWebSegment> segmentList = new ArrayList();
+	//Static list of all HWSegments in this process; they may not correspond to the same HyPeerWeb
+	//This is used by NodeProxy to read-resolve
+	public static ArrayList<HyPeerWebSegment> segmentList = new ArrayList();
 	
 	/**
 	 * Constructor for initializing the HyPeerWeb with default Node values
@@ -42,7 +35,7 @@ public class HyPeerWebSegment<T extends Node> extends Node implements HyPeerWebI
 	 * @throws Exception if there was a database error
 	 * @author isaac
 	 */
-	public HyPeerWebSegment(String dbName, long seed, ChatServer cs) throws Exception{
+	public HyPeerWebSegment(String dbName, long seed) throws Exception{
 		this(dbName, seed, 0, 0, cs);
 	}
 	/**
@@ -57,7 +50,7 @@ public class HyPeerWebSegment<T extends Node> extends Node implements HyPeerWebI
 	 * @throws Exception if there was a database error
 	 * @author isaac
 	 */
-	public HyPeerWebSegment(String dbName, long seed, int webID, int height, ChatServer cs) throws Exception{
+	public HyPeerWebSegment(String dbName, long seed, int webID, int height) throws Exception{
 		super(0, 0);
 		if (dbName != null){
 			db = Database.getInstance(dbName);
@@ -66,7 +59,6 @@ public class HyPeerWebSegment<T extends Node> extends Node implements HyPeerWebI
 		else nodes = new TreeMap();
 		if (seed != -1)
 			rand.setSeed(seed);
-		chatServer = cs;
 		segmentList.add(this);
 	}
 	
@@ -76,7 +68,8 @@ public class HyPeerWebSegment<T extends Node> extends Node implements HyPeerWebI
 	 * @return the removed node, or null if it doesn't exist
 	 * @throws Exception if it fails to remove the node
 	 */
-	public T removeNode(int webid) throws Exception{
+	public T removeNode(int webid, Node.Listener listener){
+		
 		return removeNode(getNode(webid));
 	}
 	/**
@@ -85,13 +78,9 @@ public class HyPeerWebSegment<T extends Node> extends Node implements HyPeerWebI
 	 * @return the removed node, or null if it doesn't exist in the HyPeerWeb
 	 * @throws Exception if it fails to remove the node
 	 */
-	public T removeNode(T n) throws Exception{
-		//Make sure Node exists in HyPeerWeb
-		//TODO, make this here work for more stuff
-		if (n == null || !nodes.containsValue(n))
-			return null;
-		state.removeNode(this, n);
-		return n;
+	public void removeNode(T node, Node.Listener listener){
+		//TODO, this will not work
+		getNonemptySegment().state.removeNode(this, node, listener);
 	}
 	/**
 	 * Removes all nodes from HyPeerWeb
@@ -115,17 +104,10 @@ public class HyPeerWebSegment<T extends Node> extends Node implements HyPeerWebI
 	 * @return the new node
 	 * @throws Exception if it fails to add a node
 	 */
-	public void addNode(Node.Listener listener) throws Exception{
+	public void addNode(Node.Listener listener){
+		//TODO: pass in the node to add to .addNode
+		//TODO, only execute addNode on nonempty segment
 		getNonemptySegment().state.addNode(this, listener);
-	}
-	/**
-	 * 
-	 * @param node
-	 * @return 
-	 */
-	public void deleteNode(Node node, Node.Listener listener){
-		//todo something here
-		getNonemptySegment().state.removeNode(this, node, listener);
 	}
 	/**
 	 * Holds the state of the entire HyPeerWeb, not just
@@ -383,14 +365,6 @@ public class HyPeerWebSegment<T extends Node> extends Node implements HyPeerWebI
             builder.append(n);
         return builder.toString();
     }
-	/**
-	 * gets the ChatServer that this node is a part of
-	 * @return 
-	 */
-	public ChatServer getChatServer(){
-		return chatServer;
-	}
-	
 	public T getNode(int webId, LocalObjectId id) {
 		Node node = getNode(webId);
 		if(node.getLocalObjectId().equals(id))

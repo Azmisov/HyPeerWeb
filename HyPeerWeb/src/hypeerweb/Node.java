@@ -647,7 +647,6 @@ public class Node implements NodeInterface, Serializable {
 	}
 	
 	//SETTERS
-	
 	/**
 	 * Sets the WebID of the Node
 	 * @param id the new webID
@@ -655,7 +654,6 @@ public class Node implements NodeInterface, Serializable {
 	public void setWebID(int id){
 		webID = id;
 	}
-	
 	/**
 	 * Sets the Height of the Node and updates all pointers
 	 * @param h The new height
@@ -673,6 +671,22 @@ public class Node implements NodeInterface, Serializable {
 	 */
 	private void setFoldState(boolean stable){
 		foldState = stable ? new Node.FoldStateStable() : new Node.FoldStateUnstable();
+	}
+	/**
+	 * Sets the value of stored data
+	 * @param key string to associate to this data
+	 * @param val data for this key
+	 */
+	public void setData(String key, Object val){
+		data.setAttribute(key, val);
+	}
+	/**
+	 * Gets stored data in this node
+	 * @param key key for this data
+	 * @return data associated with this key
+	 */
+	public Object getData(String key){
+		return data.getAttribute(key);
 	}
 	
 	//FOLD STATE PATTERN

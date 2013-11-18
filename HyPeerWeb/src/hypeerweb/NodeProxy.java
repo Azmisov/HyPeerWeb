@@ -149,7 +149,7 @@ public class NodeProxy
 			if(globalObjectId.getMachineAddr().equals(InetAddress.getLocalHost().getHostAddress())
 					&& globalObjectId.getPortNumber().equals(PortNumber.getApplicationsPortNumber()))
 				
-				for(HyPeerWebSegment segment : HyPeerWebSegment.getSegmentList()) {
+				for(HyPeerWebSegment segment : HyPeerWebSegment.segmentList) {
 					Node node = segment.getNode(webID, globalObjectId.getLocalObjectId());
 					if (node != null)
 						return node;

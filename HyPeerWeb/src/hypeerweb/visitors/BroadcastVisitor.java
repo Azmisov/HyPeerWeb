@@ -7,13 +7,17 @@ import hypeerweb.Node;
  * @author Josh
  */
 public class BroadcastVisitor extends AbstractVisitor{
-	private static final String childOrigin = "BLACKLIST_NODE";
+	private static final String
+		childOrigin = "BLACKLIST_NODE",
+		listen = "LISTEN";
 	
 	/**
 	 * Begin broadcasting from this node
 	 * @param n a node to begin broadcasting from
 	 */
-	public final void begin(Node n){
+	public final void begin(Node n, Node.Listener command){
+		if (command == null) return;
+		data.setAttribute(listen, command);
 		//Set the blacklist attribute to -1 to kick of the broadcast
 		data.setAttribute(childOrigin, -1);
 		visit(n);
@@ -25,7 +29,7 @@ public class BroadcastVisitor extends AbstractVisitor{
 	 */
 	@Override
 	public final void visit(Node n){
-		performOperation(n);
+		((Node.Listener) data.getAttribute(listen)).callback(n);
 		//Broadcast to children
 		Integer blacklist = (Integer) data.getAttribute(childOrigin);
 		for (Node child : n.getTreeChildren()){
@@ -42,10 +46,4 @@ public class BroadcastVisitor extends AbstractVisitor{
 			}
 		}
 	}
-	
-	/**
-	 * Perform a broadcast operation
-	 * @param n the node that has been broadcasted to
-	 */
-	public void performOperation(Node n){}
 }

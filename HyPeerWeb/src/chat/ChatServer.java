@@ -22,9 +22,9 @@ public class ChatServer{
 	private NodeCache cache;
 	
 	public ChatServer(String dbName) throws Exception{
-		segment = new HyPeerWebSegment(dbName, -1, this);
+		segment = new HyPeerWebSegment(dbName, -1);
+		segment.setData("ChatServer", this);
 		cache = new NodeCache();
-		
 	}
 	
 	//NETWORK OPERATIONS
@@ -52,17 +52,25 @@ public class ChatServer{
 	 * Adds a node to the HyPeerWeb and tells the nodeListeners about it.
 	 */
 	public void addNode() throws Exception{
-		Node node = segment.getFirstSegmentNode().addNode();
-		resyncCache(node, NodeCache.SyncType.ADD);
+		segment.getFirstSegmentNode().addNode(new Node.Listener() {
+			@Override
+			public void callback(Node n) {
+				resyncCache(n, NodeCache.SyncType.ADD);
+			}
+		});
 	}
 	/**
 	 * Deletes a node from the HyPeerWeb and tells the nodeListeners about it.
 	 * @param node the node to delete
 	 */
-	public void deleteNode(int webID){
+	public void removeNode(int webID){
 		HyPeerWebSegment hws = segment.getFirstSegmentNode();
-		Node node = hws.deleteNode(hws.getNode(webID));
-		resyncCache(node, NodeCache.SyncType.REMOVE);
+		Node node = hws.removeNode(webID, new Node.Listener(){
+			@Override
+			public void callback(Node n) {
+				resyncCache(n, NodeCache.SyncType.REMOVE);
+			}
+		});
 	}
 	/**
 	 * 
@@ -84,10 +92,10 @@ public class ChatServer{
 		int[] dirty;
 		switch (type){
 			case ADD:
-				dirty = cache.addNode(n);
+				dirty = cache.addNode(n, true);
 				break;
 			case REMOVE:
-				dirty = cache.removeNode(n);
+				dirty = cache.removeNode(n, true);
 				break;
 		}
 		//Retrieve all dirty nodes

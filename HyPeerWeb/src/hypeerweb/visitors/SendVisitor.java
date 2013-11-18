@@ -1,7 +1,5 @@
 package hypeerweb.visitors;
 
-import chat.ChatServer;
-import hypeerweb.HyPeerWebSegment;
 import hypeerweb.Node;
 
 /**
@@ -11,18 +9,15 @@ public class SendVisitor extends AbstractVisitor{
 	//Attributes we will store in the visitor data
 	private static final String
 		target = "TARGET",
-		approx = "APPROX";
-	private String message = "";
-	private int originId;
-	private boolean messageBeingSent = false;
-	private SendListener listener;
+		approx = "APPROX",
+		listen = "LISTEN";
 	
 	/**
 	 * Navigate to the specified node, with approximateMatch disabled
 	 * @param targetWebId the WebID of the node to navigate to
 	 */
-	public SendVisitor(int targetWebId, SendListener listener){
-		this(targetWebId, false, listener);
+	public SendVisitor(int targetWebId, Node.Listener command){
+		this(targetWebId, false, command);
 	}
 	/**
 	 * Creates a new Send operation visitor
@@ -31,23 +26,11 @@ public class SendVisitor extends AbstractVisitor{
 	 * if true, it will try to find a node that is close to targetWebID and may not
 	 * get all the way to the node (e.g. use this to get random nodes)
 	 */
-	public SendVisitor(int targetWebId, boolean approximateMatch, SendListener listener){
+	public SendVisitor(int targetWebId, boolean approximateMatch, Node.Listener command){
+		if (command == null) return;
 		data.setAttribute(target, targetWebId);
 		data.setAttribute(approx, approximateMatch);
-		this.listener = listener;
-	}
-	/**
-	 * Creates a new send visitor that can send a message.
-	 * @param originWebId The WebId of the origin
-	 * @param targetWebId The WebId of the destination
-	 * @param message the message
-	 */
-	public SendVisitor(int originWebId, int targetWebId, String mess){
-		originId = originWebId;
-		message = mess;
-		messageBeingSent = true;
-		data.setAttribute(target, targetWebId);
-		data.setAttribute(approx, false);
+		data.setAttribute(listen, command);
 	}
 
 	/**
@@ -61,39 +44,13 @@ public class SendVisitor extends AbstractVisitor{
 		boolean approxMatch = (boolean) data.getAttribute(approx);
 		
 		if (n.getWebId() == targetID)
-			performTargetOperation(n);
+			((Node.Listener) data.getAttribute(listen)).callback(n);
 		else{
-			performIntermediateOperation(n);
 			Node next = n.getCloserNode(targetID, approxMatch);
 			if (next != null)
 				next.accept(this);
 			else if (approxMatch)
-				performTargetOperation(n);
+				((Node.Listener) data.getAttribute(listen)).callback(n);
 		}
-	}
-	
-	/**
-	 * Perform an operation on the target node (the one we were searching for)
-	 * @param node the node we are visiting
-	 */
-	public void performTargetOperation(Node node){
-		if(messageBeingSent){
-			HyPeerWebSegment segment = (HyPeerWebSegment) node;
-			segment.getChatServer().receiveMessage(message);
-		}
-	}
-	/**
-	 * Perform an operation on an intermediate node
-	 * @param node the node we are visiting
-	 */
-	public void performIntermediateOperation(Node node){
-		listener.callback(node);
-	}
-	/**
-	 * 
-	 * @return probably not null
-	 */
-	public Node getFinalNode(){
-		return null;
 	}
 }
