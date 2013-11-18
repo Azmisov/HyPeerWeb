@@ -121,6 +121,7 @@ public class Node implements NodeInterface, Serializable {
 	protected boolean replaceNode(Database db, Node toReplace){
 		int oldWebID = this.webID;
 		//Swap out connections
+		//We're probably going to have to modify this so it works with proxies.
 		L = toReplace.getLinks();
 		//Inherit the node's fold state
 		foldState = toReplace.getFoldState();
