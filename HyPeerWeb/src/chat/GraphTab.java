@@ -1,6 +1,6 @@
 package chat;
 
-import hypeerweb.Node;
+import hypeerweb.NodeCache.Node;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -210,11 +210,13 @@ public class GraphTab extends JPanel{
 						ArrayList<Node> potential = new ArrayList();
 
 						//Create links
-						potential.addAll(p.n.L.getNeighborsSet());
-						for (Node x: p.n.L.getNeighborsSet())
+						for(Node node : p.n.getNeighbors())
+							potential.add(node);
+						for (Node x: p.n.getNeighbors())
 							linksPot.add(new DrawLink(p.n, x));
-						potential.addAll(p.n.L.getSurrogateNeighborsSet());
-						for (Node x: p.n.L.getSurrogateNeighborsSet())
+						for(Node node : p.n.getSNeighbors())
+							potential.add(node);
+						for (Node x: p.n.getSNeighbors())
 							linksPot.add(new DrawLink(p.n, x, DrawLink.Type.DOTTED));
 
 						//Only add potential children if they are a direct child
@@ -248,7 +250,7 @@ public class GraphTab extends JPanel{
 				}
 			}
 			private Node getActiveNode(){
-				return container.nodeList.list.get((int) select.getValue());
+				return container.nodeCache.nodes.get((int) select.getValue());
 			}
 			
 			@Override
@@ -331,7 +333,9 @@ public class GraphTab extends JPanel{
 			private void drawBranch(DrawData p, double angleOffset, double angle, int radius, int level){
 				//Create links
 				int idx = Integer.highestOneBit(p.n.getWebId());
-				ArrayList<Node> childs = p.n.getTreeChildren();
+				ArrayList<Node> childs = new ArrayList();
+				for(Node node : p.n.getTreeChildren())
+					childs.add(node);
 				for (Node c: childs){
 					boolean isSurr = Integer.highestOneBit(c.getWebId()) < idx;
 					links.add(new DrawLink(p.n, c, isSurr ? DrawLink.Type.DOTTED : DrawLink.Type.SOLID));
@@ -352,7 +356,7 @@ public class GraphTab extends JPanel{
 				}
 			}
 			private Node getActiveNode(){
-				return container.nodeList.list.get((int) select.getValue());
+				return container.nodeCache.nodes.get((int) select.getValue());
 			}
 			
 			@Override
@@ -414,7 +418,7 @@ public class GraphTab extends JPanel{
 				links = new TreeSet();
 				helpers = new ArrayList();
 				
-				TreeMap<Integer, Node> all = container.nodeList.list;
+				TreeMap<Integer, Node> all = container.nodeCache.nodes;
 				Node[] vals = all.values().toArray(new Node[all.size()]);
 				Integer[] keys = all.keySet().toArray(new Integer[all.size()]);
 				HashSet<DrawLink> linksPot = new HashSet();
@@ -454,9 +458,9 @@ public class GraphTab extends JPanel{
 						while (index < keys.length && keys[index] < maxDID){
 							//Create potential links
 							Node val = vals[index];
-							for (Node x: val.L.getNeighborsSet())
+							for (Node x: val.getNeighbors())
 								linksPot.add(new DrawLink(val, x, DrawLink.Type.SOLID, linkCol));
-							for (Node x: val.L.getSurrogateNeighborsSet())
+							for (Node x: val.getSNeighbors())
 								linksPot.add(new DrawLink(val, x, DrawLink.Type.DOTTED, linkCol));
 							//Compute location
 							double angle = (maxDID-keys[index])*delta;

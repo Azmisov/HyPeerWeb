@@ -181,10 +181,10 @@ public class ListTab extends JPanel{
 		int selection = -1;//-1 for all segments
 		
 		private String[] getSegments(){
-			int size;
+			int size = container.nodeCache.segments.size();
 			int index = 1;
-			Integer[] segments = (Integer[]) container.nodeCache.segments.toArray();
-			size = segments.length + 1;//All goes first
+			Integer[] segments = container.nodeCache.segments.toArray(new Integer[size]);
+			size++;//All goes first
 			String[] toReturn = new String[size];
 			toReturn[0] = "All";
 			for(Integer i : segments){

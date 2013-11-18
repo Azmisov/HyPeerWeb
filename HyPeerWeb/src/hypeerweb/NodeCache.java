@@ -14,7 +14,7 @@ import java.util.TreeMap;
 public class NodeCache implements Serializable{
 	public enum SyncType {ADD, REMOVE, REPLACE}
 	public TreeMap<Integer, Node> nodes;
-	public HashSet<Integer> segments;
+	public HashSet<Integer> segments = new HashSet();
 	
 	public void merge(NodeCache cache){
 		nodes.putAll(cache.nodes);

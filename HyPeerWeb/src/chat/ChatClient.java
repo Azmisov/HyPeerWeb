@@ -258,12 +258,12 @@ public class ChatClient extends JFrame{
 			@Override
 			public void actionPerformed(ActionEvent e) {
 				try{
-					Node remove = web.removeNode((int) nodeSelect.getValue());
+					hypeerweb.Node remove = web.removeNode((int) nodeSelect.getValue());
 					nodeCache.removeNode(remove);
 					graph.draw();
 					listTab.draw();
-					if (remove == selected){
-						selected = web.getNode(remove.getWebId());
+					if (remove.getWebId() == selected.getWebId()){
+						selected = nodeCache.nodes.get(remove.getWebId());
 						nodeInfo.updateInfo(selected);
 					}
 				}
@@ -395,16 +395,16 @@ public class ChatClient extends JFrame{
 				Node temp;
 				if ((temp = n.getFold()) != null)
 					addInfo("F:",temp);
-				if ((temp = n.getSurrogateFold()) != null)
+				if ((temp = n.getSFold()) != null)
 					addInfo("SF:",temp);
-				if ((temp = n.getInverseSurrogateFold()) != null)
+				if ((temp = n.getISFold()) != null)
 					addInfo("ISF:",temp);
 				Node[] temp2;
 				if ((temp2 = n.getNeighbors()).length > 0)
 					addInfo("Ns:",temp2);
-				if ((temp2 = n.getSurrogateNeighbors()).length > 0)
+				if ((temp2 = n.getSNeighbors()).length > 0)
 					addInfo("SNs:",temp2);
-				if ((temp2 = n.getInverseSurrogateNeighbors()).length > 0)
+				if ((temp2 = n.getISNeighbors()).length > 0)
 					addInfo("ISNs:",temp2);
 			}
 			fireTableStructureChanged();
