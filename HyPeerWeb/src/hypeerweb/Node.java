@@ -52,11 +52,13 @@ public class Node implements NodeInterface, Serializable {
 	 * @return the new child node; null if the node couldn't be added
 	 * @author Guy, Isaac, Brian
 	 */
-	protected Node addChild(Database db){
+	protected Node addChild(Database db, Node child){
 		//Get new height and child's WebID
 		int childHeight = height+1,
 			childWebID = (1 << height) | webID;
-		Node child = new Node(childWebID, childHeight);
+		
+		child.setHeight(childHeight);
+		child.setWebID(childWebID);
 				
 		//Set neighbours (Guy)
 		NeighborDatabaseChanges ndc = new NeighborDatabaseChanges();
