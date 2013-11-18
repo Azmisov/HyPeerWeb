@@ -1,7 +1,6 @@
 package chat;
 
 import com.alee.laf.WebLookAndFeel;
-import hypeerweb.HyPeerWebSegment;
 import hypeerweb.HyPeerWeb;
 import hypeerweb.Node;
 import java.awt.*;
@@ -19,7 +18,6 @@ import javax.swing.GroupLayout.ParallelGroup;
 import javax.swing.GroupLayout.SequentialGroup;
 import javax.swing.border.CompoundBorder;
 import javax.swing.border.EmptyBorder;
-import javax.swing.border.LineBorder;
 import javax.swing.table.AbstractTableModel;
 
 /**

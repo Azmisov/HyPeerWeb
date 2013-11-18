@@ -209,7 +209,7 @@ public class HyPeerWebSegment<T extends Node> extends Node implements HyPeerWebI
 			@Override
 			public Node addNode(HyPeerWebSegment web) throws Exception{
 				//Use a proxy, if the request came from another segment
-				Node child = web.getRandomNode().findInsertionNode().addChild(web.db);
+				Node child = web.getRandomNode().findInsertionNode().addChild(web.db, new Node(0,0));
 				if (child == null)
 					throw addNodeErr;
 				//Node successfully added!
