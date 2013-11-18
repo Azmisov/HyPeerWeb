@@ -828,4 +828,8 @@ public class Node implements NodeInterface, Serializable {
 	public LocalObjectId getLocalObjectId(){
 		return localObjectId;
 	}
+	
+	public static abstract class Listener {
+		public abstract void callback(Node n);
+	}
 }

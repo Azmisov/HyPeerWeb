@@ -4,7 +4,6 @@ import chat.ChatServer;
 import communicator.LocalObjectId;
 import hypeerweb.visitors.SendVisitor;
 import hypeerweb.visitors.BroadcastVisitor;
-import hypeerweb.visitors.SendVisitor.SendListener;
 import java.util.ArrayList;
 import java.util.Random;
 import java.util.TreeMap;
@@ -116,24 +115,17 @@ public class HyPeerWebSegment<T extends Node> extends Node implements HyPeerWebI
 	 * @return the new node
 	 * @throws Exception if it fails to add a node
 	 */
-	public T addNode() throws Exception{
-		return (T) getNonemptySegment().state.addNode(this);
+	public void addNode(Node.Listener listener) throws Exception{
+		getNonemptySegment().state.addNode(this, listener);
 	}
 	/**
 	 * 
 	 * @param node
 	 * @return 
 	 */
-	public T deleteNode(Node node){
+	public void deleteNode(Node node, Node.Listener listener){
 		//todo something here
-		try{
-			getNonemptySegment().state.removeNode(this, node);
-		}
-		catch (Exception e)
-		{
-			e.printStackTrace();
-		}
-		return (T) node;
+		getNonemptySegment().state.removeNode(this, node, listener);
 	}
 	/**
 	 * Holds the state of the entire HyPeerWeb, not just
@@ -144,26 +136,28 @@ public class HyPeerWebSegment<T extends Node> extends Node implements HyPeerWebI
 		//No nodes
 		HAS_NONE {
 			@Override
-			public Node addNode(HyPeerWebSegment web) throws Exception{
+			public void addNode(final HyPeerWebSegment web, Node.Listener listener){
 				//Use a proxy, if the request came from another segment
 				Node first = new Node(0, 0);
 				if (web.db != null && !web.db.addNode(first))
-					throw HyPeerWebSegment.addNodeErr;
-				web.nodes.put(0, first);
-				//broadcast state change to HAS_ONE
-				web.changeState(HAS_ONE);
-				return first;
+					web.changeState(CORRUPT);
+				else{
+					web.nodes.put(0, first);
+					//broadcast state change to HAS_ONE
+					web.changeState(HAS_ONE);
+					listener.callback(first);
+				}
 			}
 			@Override
-			public void removeNode(HyPeerWebSegment web, Node n) throws Exception{
+			public void removeNode(final HyPeerWebSegment web, Node n, Node.Listener listener){
 				//Throw an error; this shouldn't happen
-				throw removeNodeErr;
+				web.changeState(CORRUPT);
 			}
 		},
 		//Only one node
 		HAS_ONE {
 			@Override
-			public Node addNode(HyPeerWebSegment web) throws Exception{
+			public void addNode(final HyPeerWebSegment web, Node.Listener listener){
 				//Use a proxy, if the request came from another segment
 				//broadcast state change to HAS_MANY
 				//handle special case
@@ -181,7 +175,7 @@ public class HyPeerWebSegment<T extends Node> extends Node implements HyPeerWebI
 					web.db.addNeighbor(0, 1);
 					web.db.addNeighbor(1, 0);
 					if (!web.db.endCommit())
-						throw addNodeErr;
+						web.changeState(CORRUPT);
 				}
 				//Update java struct
 				{
@@ -192,33 +186,44 @@ public class HyPeerWebSegment<T extends Node> extends Node implements HyPeerWebI
 					sec.L.addNeighbor(first);
 					web.nodes.put(1, sec);
 					web.changeState(HAS_MANY);
-					return sec;
+					listener.callback(sec);					
 				}
 			}
 			@Override
-			public void removeNode(HyPeerWebSegment web, Node n) throws Exception{
+			public void removeNode(final HyPeerWebSegment web, Node n, Node.Listener listener){
 				//broadcast state change to HAS_NONE
 				//handle special case
 				if (web.db != null && !web.db.clear())
-					throw clearErr;
-				web.nodes = new TreeMap<>();
-				web.changeState(HAS_NONE);
+					web.changeState(CORRUPT);
+				else{
+					web.nodes = new TreeMap<>();
+					web.changeState(HAS_NONE);
+					listener.callback(n);
+				}
 			}
 		},
 		//More than one node
 		HAS_MANY {
 			@Override
-			public Node addNode(HyPeerWebSegment web) throws Exception{
+			public void addNode(final HyPeerWebSegment web, final Node.Listener listener){
 				//Use a proxy, if the request came from another segment
-				Node child = web.getRandomNode().findInsertionNode().addChild(web.db, new Node(0,0));
-				if (child == null)
-					throw addNodeErr;
-				//Node successfully added!
-				web.nodes.put(child.getWebId(), child);
-				return child;
+				web.getRandomNode(new Node.Listener() {
+					@Override
+					public void callback(Node n) {
+						Node child = n.findInsertionNode().addChild(web.db, new Node(0,0));
+						if (child == null)
+							web.changeState(CORRUPT);
+						else{
+							//Node successfully added!
+							//TODO: might need to change this here
+							web.nodes.put(child.getWebId(), child);
+							listener.callback(child);
+						}
+					}
+				});
 			}
 			@Override
-			public void removeNode(HyPeerWebSegment web, Node n) throws Exception{
+			public void removeNode(final HyPeerWebSegment web, Node n, final Node.Listener listener){
 				//If the HyPeerWeb has more than two nodes, remove normally
 				int size = web.nodes.size();
 				Node last, first = null;
@@ -234,20 +239,26 @@ public class HyPeerWebSegment<T extends Node> extends Node implements HyPeerWebI
 					(size == 1 && last.L.getHighestLink().getWebId() > 1))
 				{
 					//Find a disconnection point
-					Node replace = web.getRandomNode().findDisconnectNode().disconnectNode(web.db);
-					if (replace == null)
-						throw removeNodeErr;
-					//Remove node from list of nodes
-					web.nodes.remove(replace.getWebId());
-					//Replace the node to be deleted
-					if (!n.equals(replace)){
-						int newWebID = n.getWebId();
-						web.nodes.remove(newWebID);
-						web.nodes.put(newWebID, replace);
-						if (!replace.replaceNode(web.db, n))
-							throw replaceErr;
-					}
-					web.changeState(HAS_MANY);
+					web.getRandomNode(new Node.Listener(){
+						@Override
+						public void callback(Node n) {
+							Node replace = n.findDisconnectNode().disconnectNode(web.db);
+							if (replace == null)
+								web.changeState(CORRUPT);
+							//Remove node from list of nodes
+							web.nodes.remove(replace.getWebId());
+							//Replace the node to be deleted
+							if (!n.equals(replace)){
+								int newWebID = n.getWebId();
+								web.nodes.remove(newWebID);
+								web.nodes.put(newWebID, replace);
+								if (!replace.replaceNode(web.db, n))
+									web.changeState(CORRUPT);
+							}
+							web.changeState(HAS_MANY);
+							listener.callback(n);
+						}
+					});
 				}
 				//If the broadcastStateChangeentire HyPeerWeb has only two nodes
 				else{
@@ -281,16 +292,16 @@ public class HyPeerWebSegment<T extends Node> extends Node implements HyPeerWebI
 		//Network is corrupt; a segment failed to perform an operation
 		CORRUPT {
 			@Override
-			public Node addNode(HyPeerWebSegment web) throws Exception {
+			public void addNode(HyPeerWebSegment web, Node.Listener listener) throws Exception {
 				throw corruptErr;
 			}
 			@Override
-			public void removeNode(HyPeerWebSegment web, Node n) throws Exception {
+			public void removeNode(HyPeerWebSegment web, Node n, Node.Listener listener) throws Exception {
 				throw corruptErr;
 			}
 		};
-		public abstract Node addNode(HyPeerWebSegment web) throws Exception;
-		public abstract void removeNode(HyPeerWebSegment web, Node n) throws Exception;
+		public abstract void addNode(final HyPeerWebSegment web, Node.Listener listener) throws Exception;
+		public abstract void removeNode(final HyPeerWebSegment web, Node n, Node.Listener listener) throws Exception;
 	}
 	/**
 	 * Change the state of the HyPeerWeb
@@ -393,21 +404,14 @@ public class HyPeerWebSegment<T extends Node> extends Node implements HyPeerWebI
 	 * Retrieves a random node in the HyPeerWeb
 	 * @return a random node; null, if there are no nodes
 	 */
-	public T getRandomNode(){
+	public void getRandomNode(Node.Listener listener){
 		//Always start at Node with WebID = 0
 		if (state == HyPeerWebState.HAS_NONE)
-			return null;
+			listener.callback(null);
 		
 		Node first = (Node) getNonemptySegment().nodes.firstEntry().getValue();
-		SendVisitor.SendListener randlisten = new SendVisitor.SendListener(){
-		@Override
-		public void callback(Node n){}
-				};
-		
-		randVisitor = new SendVisitor(rand.nextInt(Integer.MAX_VALUE), true, randlisten);
+		randVisitor = new SendVisitor(rand.nextInt(Integer.MAX_VALUE), true, listener);
 		randVisitor.visit(first);
-		//TODO, this won't work with a distributed system
-		return (T) randVisitor.getFinalNode();
 	}
 	/**
 	 * Get a list of all the nodes in the HyPeerWeb
