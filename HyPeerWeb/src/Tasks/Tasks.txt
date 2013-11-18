@@ -51,7 +51,7 @@ Done(No)	Multi-threading/Concurrency
 Done(No)		??? see if Woodfield knows any good ways to implement this
 
 Done(No)	Other 
-Done(No)		make Node's fold state pattern use enums 
+Done(Yes)		make Node's fold state pattern use enums 
 Done(No)		remove all unused code 
 Done(No)		write any missing JavaDoc 
 Done(No)		celebration + pizza party!

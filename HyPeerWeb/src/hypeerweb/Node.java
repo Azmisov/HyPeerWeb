@@ -16,20 +16,19 @@ import validator.NodeInterface;
  */
 
 public class Node implements NodeInterface, Serializable {
+	//Serialization
 	private static final long serialVersionUID = 314159265L;
+	private LocalObjectId localObjectId;
 	//Node Attributes
 	protected int webID, height;
-	/**
-	 * A reference to a node's connections
-	 */
-	public Links L;
 	public Attributes data = new Attributes();
+	//Node's connections
+	public Links L;
 	//State machines
 	private static final int recurseLevel = 2; //2 = neighbor's neighbors
-	private FoldStateInterface foldState = new FoldStateStable(); 
+	private FoldState foldState = FoldState.STABLE; 
 	//Hash code prime
 	private static long prime = 2654435761L;
-	private LocalObjectId localObjectId;
 	
 	//CONSTRUCTORS
 	/**
@@ -502,7 +501,7 @@ public class Node implements NodeInterface, Serializable {
 					case INVERSE:
 						nu.node.L.setInverseSurrogateFold(value);
 						//Update node FoldState; nu.delete corresponds directly to a Stable state
-						nu.node.setFoldState(nu.delete);
+						nu.node.setFoldState(nu.delete ? FoldState.STABLE : FoldState.UNSTABLE);
 						break;
 				}
 			}
@@ -669,8 +668,8 @@ public class Node implements NodeInterface, Serializable {
 	 * Switches the Fold State pattern state
 	 * @param stable whether or not to switch to the stable state
 	 */
-	private void setFoldState(boolean stable){
-		foldState = stable ? new Node.FoldStateStable() : new Node.FoldStateUnstable();
+	private void setFoldState(FoldState state){
+		foldState = state;
 	}
 	/**
 	 * Sets the value of stored data
@@ -694,66 +693,67 @@ public class Node implements NodeInterface, Serializable {
 	 * Gets this node's fold state
 	 * @return a FoldState
 	 */
-	private FoldStateInterface getFoldState(){
+	private FoldState getFoldState(){
 		return foldState;
 	}
-	private static interface FoldStateInterface{
-		public void updateFolds(Node.FoldDatabaseChanges fdc, Node caller, Node child);
-		public void reverseFolds(Node.FoldDatabaseChanges fdc, Node parent, Node child);
-	}
-	private static class FoldStateStable implements FoldStateInterface{
-		@Override
-		//After running we should be in an unstable state
-		public void updateFolds(Node.FoldDatabaseChanges fdc, Node caller, Node child) {
-			Node fold = caller.getFold();
-			//Update reflexive folds
-			fdc.updateDirect(child, fold);
-			fdc.updateDirect(fold, child);
-			//Insert surrogates for non-existant node
-			fdc.updateSurrogate(caller, fold);
-			fdc.updateInverse(fold, caller);
-			//Remove stable state reference
-			fdc.removeDirect(caller, null);
-		}
-		@Override
-		public void reverseFolds(Node.FoldDatabaseChanges fdc, Node parent, Node child) {
-			/* To reverse from a stable state:
-			 * parent.isf = child.f
-			 * child.f.sf = parent
-			 * child.f.f = null
-			 */
-			Node fold = child.getFold();
-			fdc.updateInverse(parent, fold);
-			fdc.updateSurrogate(fold, parent);
-			fdc.removeDirect(fold, null);
-		}
-	}
-	private static class FoldStateUnstable implements FoldStateInterface{
-		@Override
-		//After running, we should be in a stable state
-		public void updateFolds(Node.FoldDatabaseChanges fdc, Node caller, Node child) {
-			//Stable-state fold references
-			Node isfold = caller.getInverseSurrogateFold();
-			fdc.updateDirect(child, isfold);
-			fdc.updateDirect(isfold, child);
-			//Remove surrogate references
-			fdc.removeSurrogate(isfold, null);
-			fdc.removeInverse(caller, null);
-		}
-		@Override
-		public void reverseFolds(Node.FoldDatabaseChanges fdc, Node parent, Node child) {
-			/* To reverse from an unstable state:
-			 * parent.f = child.f
-			 * child.f.f = parent
-			 * parent.sf = null
-			 * child.f.isf = null
-			 */
-			Node fold = child.getFold();
-			fdc.updateDirect(parent, fold);
-			fdc.updateDirect(fold, parent);
-			fdc.removeSurrogate(parent, null);
-			fdc.removeInverse(fold, null);
-		}
+	private enum FoldState{
+		STABLE{
+			//After running we should be in an unstable state
+			@Override
+			public void updateFolds(Node.FoldDatabaseChanges fdc, Node caller, Node child) {
+				Node fold = caller.getFold();
+				//Update reflexive folds
+				fdc.updateDirect(child, fold);
+				fdc.updateDirect(fold, child);
+				//Insert surrogates for non-existant node
+				fdc.updateSurrogate(caller, fold);
+				fdc.updateInverse(fold, caller);
+				//Remove stable state reference
+				fdc.removeDirect(caller, null);
+			}
+			@Override
+			public void reverseFolds(Node.FoldDatabaseChanges fdc, Node parent, Node child) {
+				/* To reverse from a stable state:
+				 * parent.isf = child.f
+				 * child.f.sf = parent
+				 * child.f.f = null
+				 */
+				Node fold = child.getFold();
+				fdc.updateInverse(parent, fold);
+				fdc.updateSurrogate(fold, parent);
+				fdc.removeDirect(fold, null);
+			}
+		},
+		UNSTABLE{			
+			//After running, we should be in a stable state
+			@Override
+			public void updateFolds(Node.FoldDatabaseChanges fdc, Node caller, Node child) {
+				//Stable-state fold references
+				Node isfold = caller.getInverseSurrogateFold();
+				fdc.updateDirect(child, isfold);
+				fdc.updateDirect(isfold, child);
+				//Remove surrogate references
+				fdc.removeSurrogate(isfold, null);
+				fdc.removeInverse(caller, null);
+			}
+			@Override
+			public void reverseFolds(Node.FoldDatabaseChanges fdc, Node parent, Node child) {
+				/* To reverse from an unstable state:
+				 * parent.f = child.f
+				 * child.f.f = parent
+				 * parent.sf = null
+				 * child.f.isf = null
+				 */
+				Node fold = child.getFold();
+				fdc.updateDirect(parent, fold);
+				fdc.updateDirect(fold, parent);
+				fdc.removeSurrogate(parent, null);
+				fdc.removeInverse(fold, null);
+			}
+		};
+		
+		public abstract void updateFolds(Node.FoldDatabaseChanges fdc, Node caller, Node child);
+		public abstract void reverseFolds(Node.FoldDatabaseChanges fdc, Node caller, Node child);
 	}
 	
 	//VISITOR PATTERN
