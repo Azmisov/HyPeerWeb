@@ -10,14 +10,19 @@ public class BroadcastVisitor extends AbstractVisitor{
 	private static final String
 		childOrigin = "BLACKLIST_NODE",
 		listen = "LISTEN";
+	private transient boolean hasListener = false;
+	
+	public BroadcastVisitor(Node.Listener command){
+		data.setAttribute(listen, command);
+		hasListener = command == null;
+	}
 	
 	/**
 	 * Begin broadcasting from this node
 	 * @param n a node to begin broadcasting from
 	 */
-	public final void begin(Node n, Node.Listener command){
-		if (command == null) return;
-		data.setAttribute(listen, command);
+	public final void begin(Node n){
+		if (!hasListener) return;
 		//Set the blacklist attribute to -1 to kick of the broadcast
 		data.setAttribute(childOrigin, -1);
 		visit(n);

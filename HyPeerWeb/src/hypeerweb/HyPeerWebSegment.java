@@ -36,7 +36,7 @@ public class HyPeerWebSegment<T extends Node> extends Node implements HyPeerWebI
 	 * @author isaac
 	 */
 	public HyPeerWebSegment(String dbName, long seed) throws Exception{
-		this(dbName, seed, 0, 0, cs);
+		this(dbName, seed, 0, 0);
 	}
 	/**
 	 * Constructor for initializing the HyPeerWeb with defined Node values
@@ -68,8 +68,8 @@ public class HyPeerWebSegment<T extends Node> extends Node implements HyPeerWebI
 	 * @return the removed node, or null if it doesn't exist
 	 * @throws Exception if it fails to remove the node
 	 */
-	public T removeNode(int webid, Node.Listener listener){
-		
+	public void removeNode(int webid, Node.Listener listener){
+		//TODO, make get node take in a listener
 		return removeNode(getNode(webid));
 	}
 	/**
@@ -86,17 +86,19 @@ public class HyPeerWebSegment<T extends Node> extends Node implements HyPeerWebI
 	 * Removes all nodes from HyPeerWeb
 	 * @throws Exception if it fails to clear the HyPeerWeb
 	 */
-	public void removeAllNodes(){
-		(new BroadcastVisitor(){
+	public void removeAllNodes(final Node.Listener listener){
+		(new BroadcastVisitor(new Node.Listener() {
 			@Override
-			public void performOperation(Node n) {
+			public void callback(Node n) {
 				HyPeerWebSegment seg = (HyPeerWebSegment) n;
 				//If we can't remove all nodes, HyPeerWeb is corrupt
 				if (seg.db != null && !seg.db.clear())
-					changeState(HyPeerWebState.CORRUPT);
-				seg.nodes = new TreeMap<>();
+					seg.changeState(HyPeerWebState.CORRUPT);
+				seg.nodes = new TreeMap();
+				//Call listener
+				listener.callback(n);
 			}
-		}).visit(this);
+		})).visit(this);
 	}
 	
 	/**
@@ -227,18 +229,20 @@ public class HyPeerWebSegment<T extends Node> extends Node implements HyPeerWebI
 							Node replace = n.findDisconnectNode().disconnectNode(web.db);
 							if (replace == null)
 								web.changeState(CORRUPT);
-							//Remove node from list of nodes
-							web.nodes.remove(replace.getWebId());
-							//Replace the node to be deleted
-							if (!n.equals(replace)){
-								int newWebID = n.getWebId();
-								web.nodes.remove(newWebID);
-								web.nodes.put(newWebID, replace);
-								if (!replace.replaceNode(web.db, n))
-									web.changeState(CORRUPT);
+							else{
+								//Remove node from list of nodes
+								web.nodes.remove(replace.getWebId());
+								//Replace the node to be deleted
+								if (!n.equals(replace)){
+									int newWebID = n.getWebId();
+									web.nodes.remove(newWebID);
+									web.nodes.put(newWebID, replace);
+									if (!replace.replaceNode(web.db, n))
+										web.changeState(CORRUPT);
+								}
+								web.changeState(HAS_MANY);
+								listener.callback(n);
 							}
-							web.changeState(HAS_MANY);
-							listener.callback(n);
 						}
 					});
 				}
@@ -290,12 +294,12 @@ public class HyPeerWebSegment<T extends Node> extends Node implements HyPeerWebI
 	 * @param state the new state
 	 */
 	private void changeState(final HyPeerWebState state){
-		(new BroadcastVisitor(){
+		(new BroadcastVisitor(new Node.Listener(){
 			@Override
-			public void performOperation(Node n) {
+			public void callback(Node n) {
 				((HyPeerWebSegment) n).state = state;
 			}
-		}).visit(this);
+		})).visit(this);
 	}
 	
 	// <editor-fold defaultstate="collapsed" desc="SEGMENT GETTERS">

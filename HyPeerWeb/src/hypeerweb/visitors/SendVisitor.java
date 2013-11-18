@@ -11,6 +11,7 @@ public class SendVisitor extends AbstractVisitor{
 		target = "TARGET",
 		approx = "APPROX",
 		listen = "LISTEN";
+	private transient boolean hasListener = false;
 	
 	/**
 	 * Navigate to the specified node, with approximateMatch disabled
@@ -27,10 +28,10 @@ public class SendVisitor extends AbstractVisitor{
 	 * get all the way to the node (e.g. use this to get random nodes)
 	 */
 	public SendVisitor(int targetWebId, boolean approximateMatch, Node.Listener command){
-		if (command == null) return;
 		data.setAttribute(target, targetWebId);
 		data.setAttribute(approx, approximateMatch);
 		data.setAttribute(listen, command);
+		hasListener = command == null;
 	}
 
 	/**
@@ -40,6 +41,7 @@ public class SendVisitor extends AbstractVisitor{
 	 */
 	@Override
 	public final void visit(Node n) {
+		if (!hasListener) return;
 		int targetID = (int) data.getAttribute(target);
 		boolean approxMatch = (boolean) data.getAttribute(approx);
 		
