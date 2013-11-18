@@ -53,19 +53,16 @@ public class ChatServer{
 	 */
 	public void addNode() throws Exception{
 		Node node = segment.getFirstSegmentNode().addNode();
-		cache.addNode(node);
-		cache.
-		for (NodeListener listener : nodeListeners)
-			listener.callback(node, true);
+		resyncCache(node, NodeCache.SyncType.ADD);
 	}
 	/**
 	 * Deletes a node from the HyPeerWeb and tells the nodeListeners about it.
 	 * @param node the node to delete
 	 */
-	public void deleteNode(Node node){
-		node = segment.deleteNode(node);
-		for(NodeListener listener : nodeListeners)
-			listener.callback(node, false);
+	public void deleteNode(int webID){
+		HyPeerWebSegment hws = segment.getFirstSegmentNode();
+		Node node = hws.deleteNode(hws.getNode(webID));
+		resyncCache(node, NodeCache.SyncType.REMOVE);
 	}
 	/**
 	 * 
@@ -76,6 +73,30 @@ public class ChatServer{
 		//use broadcast to make a list of all nodes.
 			
 		return nodes;
+	}
+	/**
+	 * Resyncs the node cache to the actual data in the HyPeerWeb
+	 * @param n the Node that changed
+	 * @param type the change type
+	 */
+	private void resyncCache(Node n, NodeCache.SyncType type){
+		//These are a list of dirty nodes in our cache
+		int[] dirty;
+		switch (type){
+			case ADD:
+				dirty = cache.addNode(n);
+				break;
+			case REMOVE:
+				dirty = cache.removeNode(n);
+				break;
+		}
+		//Retrieve all dirty nodes
+		
+		NodeCache.Node clean[] = new NodeCache.Node[dirty.length];
+		
+		//Notify all listeners that the cache changed
+		for (NodeListener listener : nodeListeners)
+			listener.callback(node, false);
 	}
 	
 	
@@ -206,7 +227,7 @@ public class ChatServer{
 	}
 	
 	public abstract class NodeListener{
-		abstract void callback(Node affectedNode, boolean adding);
+		abstract void callback(NodeCache.Node affectedNode, NodeCache.SyncType type, NodeCache.Node[] updatedNodes);
 	}
 	
 	public abstract class NetworkNameListener{

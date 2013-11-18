@@ -120,6 +120,7 @@ public class HyPeerWeb implements HyPeerWebInterface {
 		Node last = n.getNeighbors()[0];
 		//Save the remaining node's attributes
 		removeAllNodes();
+		addNode();
 		return n;
 	}
 	/**
