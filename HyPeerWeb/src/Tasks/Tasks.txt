@@ -29,7 +29,6 @@ Done(Yes)			addNode: navigate to segment that has a node (unless state is "has_z
 Done(No)		Create these methods 
 Done(No)			disconnect from HyPeerWeb 
 Done(No)			block/pause/shutdown entire HyPeerWeb 
-Done(No)			addFooListener's for talking to the ChatServer
 
 Done(No)	InceptionWeb/ChatServer 
 Done(Yes)		finish writing skeleton 
