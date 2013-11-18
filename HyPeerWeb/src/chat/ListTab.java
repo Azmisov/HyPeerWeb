@@ -1,6 +1,6 @@
 package chat;
 
-import hypeerweb.Node;
+import hypeerweb.NodeCache.Node;
 import java.awt.BorderLayout;
 import java.awt.Dimension;
 import javax.swing.ComboBoxModel;
@@ -96,7 +96,7 @@ public class ListTab extends JPanel{
 		
 		@Override
 		public int getRowCount() {
-			return container.nodeList.list.size();
+			return container.nodeCache.nodes.size();
 		}
 
 		@Override
@@ -122,10 +122,10 @@ public class ListTab extends JPanel{
 		@Override
 		public Object getValueAt(int rowIndex, int columnIndex) {
 			String result = "";
-			Node node = container.nodeList.getNodes().get(rowIndex);
+			Node node = (Node) container.nodeCache.nodes.values().toArray()[rowIndex];
 			int selection = segModel.getSelection();
 			
-			if(selection == -1 || selection == node.getSegmentID()){
+			if(selection == -1 || selection == node.getNetworkId()){
 				switch(columnIndex){
 					case 0:
 						result = "1";
@@ -141,11 +141,11 @@ public class ListTab extends JPanel{
 							result += n.getWebId() + " ";
 						break;
 					case 4:
-						for(Node n : node.getSurrogateNeighbors())
+						for(Node n : node.getSNeighbors())
 							result += n.getWebId() + " ";
 						break;
 					case 5:
-						for(Node n : node.getInverseSurrogateNeighbors())
+						for(Node n : node.getISNeighbors())
 							result += n.getWebId() + " ";
 						break;
 					case 6:
@@ -153,12 +153,12 @@ public class ListTab extends JPanel{
 							result += node.getFold().getWebId();
 						break;
 					case 7:
-						if(node.getSurrogateFold() != null)
-							result += node.getSurrogateFold().getWebId();
+						if(node.getSFold() != null)
+							result += node.getSFold().getWebId();
 						break;
 					case 8:
-						if(node.getInverseSurrogateFold() != null)
-							result += node.getInverseSurrogateFold().getWebId();
+						if(node.getISFold() != null)
+							result += node.getISFold().getWebId();
 						break;
 				}
 			}	
@@ -177,9 +177,21 @@ public class ListTab extends JPanel{
 	
 	private static class segmentModel implements ComboBoxModel{
 		//temporary
-		private final String[] segments = {"All", "1", "2", "3"};
 		
 		int selection = -1;//-1 for all segments
+		
+		private String[] getSegments(){
+			int size;
+			int index = 1;
+			Integer[] segments = (Integer[]) container.nodeCache.segments.toArray();
+			size = segments.length + 1;//All goes first
+			String[] toReturn = new String[size];
+			toReturn[0] = "All";
+			for(Integer i : segments){
+				toReturn[index++] = i.toString();
+			}
+			return toReturn;
+		}
 		
 		@Override
 		public void setSelectedItem(Object anItem) {
@@ -204,12 +216,12 @@ public class ListTab extends JPanel{
 		@Override
 		public int getSize() {
 			//get number of segments
-			return segments.length;
+			return getSegments().length;
 		}
 
 		@Override
 		public Object getElementAt(int index) {
-			return segments[index];
+			return getSegments()[index];
 		}
 
 		@Override
@@ -228,7 +240,7 @@ public class ListTab extends JPanel{
 		public void valueChanged(ListSelectionEvent e) {
 			ListSelectionModel lsm = (ListSelectionModel)e.getSource();
 			int index = lsm.getMinSelectionIndex();
-			Node n = container.nodeList.getNodes().get(index);
+			Node n = (Node) container.nodeCache.nodes.values().toArray()[index];
 			container.setSelectedNode(n);	
 		}
 	}
