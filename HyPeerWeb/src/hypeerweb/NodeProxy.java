@@ -15,7 +15,10 @@ public class NodeProxy
     public NodeProxy(Node node){
 		super(node.getWebId(), 0);
 		try {
-			this.globalObjectId = new GlobalObjectId(InetAddress.getLocalHost().getHostAddress(), PortNumber.getApplicationsPortNumber(), node.getLocalObjectId());
+			this.globalObjectId = new GlobalObjectId(InetAddress.getLocalHost().
+					getHostAddress(), PortNumber.getApplicationsPortNumber(), node.getLocalObjectId());
+			L = new LinksProxy(new GlobalObjectId(InetAddress.getLocalHost().
+					getHostAddress(),PortNumber.getApplicationsPortNumber(),node.L.getLocalObjectId()));
 		} catch (UnknownHostException ex) {
 			Logger.getLogger(NodeProxy.class.getName()).log(Level.SEVERE, null, ex);
 		}
@@ -56,15 +59,6 @@ public class NodeProxy
         Command command = new Command(globalObjectId.getLocalObjectId(), "hypeerweb.Node", "getFold", parameterTypeNames, actualParameters, true);
         Object result = PeerCommunicator.getSingleton().sendSynchronous(globalObjectId, command);
         return (hypeerweb.Node)result;
-    }
-
-	@Override
-    public hypeerweb.Links getLinks(){
-        String[] parameterTypeNames = new String[0];
-        Object[] actualParameters = new Object[0];
-        Command command = new Command(globalObjectId.getLocalObjectId(), "hypeerweb.Node", "getLinks", parameterTypeNames, actualParameters, true);
-        Object result = PeerCommunicator.getSingleton().sendSynchronous(globalObjectId, command);
-        return (hypeerweb.Links)result;
     }
 
 	@Override

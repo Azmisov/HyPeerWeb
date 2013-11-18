@@ -284,6 +284,6 @@ public class ProxyConstructor {
     }
 	
 	public static void main(String[] args){
-		create("hypeerweb.Node");
+		create("hypeerweb.Links");
 	}
 }
