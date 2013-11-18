@@ -396,7 +396,12 @@ public class HyPeerWebSegment<T extends Node> extends Node implements HyPeerWebI
 			return null;
 		
 		Node first = (Node) getNonemptySegment().nodes.firstEntry().getValue();
-		randVisitor = new SendVisitor(rand.nextInt(Integer.MAX_VALUE), true);
+		SendVisitor.SendListener randlisten = new SendVisitor.SendListener(){
+		@Override
+		public void callback(Node n){}
+				};
+		
+		randVisitor = new SendVisitor(rand.nextInt(Integer.MAX_VALUE), true, randlisten);
 		randVisitor.visit(first);
 		//TODO, this won't work with a distributed system
 		return (T) randVisitor.getFinalNode();
