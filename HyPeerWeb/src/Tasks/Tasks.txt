@@ -2,7 +2,7 @@ Done(No)	ChatClient (GUI)
 Done(No)		ChatTab 
 Done(No)			store active user; don't show active user in Send-To box 
 Done(No)			interface with the ChatServer
-Done(No)			NodeCache to hold all node information; have cache handle all selection handling
+Done(Yes)			NodeCache to hold all node information; have cache handle all selection handling
 	
 Done(Yes)		GraphTab 
 Done(Yes)			Convert HyPeerWebGraph code to new GUI 
@@ -54,5 +54,6 @@ Done(No)	Other
 Done(Yes)		make Node's fold state pattern use enums 
 Done(No)		remove all unused code 
 Done(No)		write any missing JavaDoc 
+Done(No)		RSA signing of ChatServer requests? that might be kind of fun
 Done(No)		celebration + pizza party!
 

@@ -4,54 +4,132 @@ import hypeerweb.HyPeerWebSegment;
 import hypeerweb.Node;
 import hypeerweb.NodeCache;
 import hypeerweb.visitors.SendVisitor;
+import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.Objects;
 import java.util.Random;
 
 /**
  * Handles communications in the chat network
  */
 public class ChatServer{
-	private HyPeerWebSegment<HyPeerWebSegment<Node>> segment;
-	private ChatUser user;
+	private final HyPeerWebSegment<HyPeerWebSegment<Node>> segment;
 	private String networkName = "";
-	private ArrayList<SendListener> sendListeners = new ArrayList();
-	private ArrayList<UserListener> userListeners = new ArrayList();
-	private ArrayList<NodeListener> nodeListeners = new ArrayList();
-	private ArrayList<NetworkNameListener> networkNameListeners = new ArrayList();
 	//Node cache for the entire HyPeerWeb
 	private NodeCache cache;
+	//Cached list of all users
+	private static final Random randomName = new Random();
+	private final HashMap<Integer, ChatUser> users = new HashMap();
+	//List of all users and their GUI/Clients that are leeching on this network
+	private final HashMap<Integer, Client> clients = new HashMap();
 	
-	public ChatServer(String dbName) throws Exception{
-		segment = new HyPeerWebSegment(dbName, -1);
+	public ChatServer() throws Exception{
+		segment = new HyPeerWebSegment("InceptionWeb.db", -1);
 		segment.setData("ChatServer", this);
-		cache = new NodeCache();
+		/* TODO:
+			Join the network by creating another node in "segment"
+			Fetch the following from another segment in the InceptionWeb
+			- cache
+			- chatUsers
+		*/
 	}
 	
-	//NETWORK OPERATIONS
-	
-	//GUI COMMUNICATION
+	//GUI
 	/**
-	 * Gets the name of the ChatUser
-	 * @return the name
+	 * Register a GUI/Client with this server
+	 * @param nwl network name listener
+	 * @param nl node change listener
+	 * @param sl send chat message listener
+	 * @param ul user update listener
+	 * @return the ChatUser for this GUI/Client
 	 */
-	public ChatUser getUser(){
-		return user;
-	}	
+	public ChatUser registerClient(NetworkNameListener nwl, NodeListener nl, SendListener sl, UserListener ul){
+		Client c = new Client(nwl, nl, sl, ul);
+		//Generate a userID that has not been taken already
+		int newUser;
+		do{
+			newUser = randomName.nextInt(9999);
+		} while (users.containsKey(newUser));
+		c.user = new ChatUser(newUser, "user"+newUser, segment.getWebId());
+		users.put(newUser, c.user);
+		clients.put(newUser, c);
+		//TODO, broadcast this user update to all segments & userListeners
+		//TODO, send the client the nodecache, userlist, etc, through the listeners
+		return c.user;
+	}
 	/**
-	 * 
-	 * @return 
+	 * Unregisters a GUI/Client from the server
+	 * @param userID the user ID associated with this client
 	 */
-	public ArrayList<ChatUser> getAllUsers(){
-		ArrayList<ChatUser>users = new ArrayList();
-		//use broadcast to get all users
-		return users;
+	public void unregisterClient(int userID){
+		users.remove(userID);
+		clients.remove(userID);
+		//TODO, broadcast this user update to all other segments
+	}
+	/**
+	 * Client object; holds all listeners and a
+	 * reference to the client's ChatUser
+	 */
+	private class Client{
+		public NetworkNameListener networkListener;
+		public NodeListener nodeListener;
+		public SendListener sendListener;
+		public UserListener userListener;
+		public ChatUser user;
+		
+		public Client(NetworkNameListener nwl, NodeListener nl, SendListener sl, UserListener ul){
+			networkListener = nwl;
+			nodeListener = nl;
+			sendListener = sl;
+			userListener = ul;	
+		}
 	}
 	
-	//NODE OPERATIONS
+	//NETWORK
+	/**
+	 * Spawn a new server off of this one
+	 */
+	public void joinNetwork(){
+		//We may need to write our own communication thing
+		//instead of calling this method
+	}
+	/**
+	 * Leech off of this server
+	 */
+	public void watchNetwork(){
+		//We may need to write our own communication thing
+		//instead of calling this method
+	}
+	/**
+	 * Disconnect from the network
+	 */
+	public void disconnect(){
+		//this one looks tough
+		//I think this is the part where Dr. Woodfield said that if one segment
+		//wanted to quit, all of the segments would have to quit.  Now I can 
+		//see why.  Sending all of the nodes on this segment to live somewhere
+		//else would be difficult.
+	}
+	/**
+	 * Change the ChatServer's name
+	 * @param name 
+	 */
+	public void changeNetworkName(String name){
+		networkName = name;
+		//broadcast to all network name listeners
+	}
+	public abstract class NetworkNameListener{
+		abstract void callback();
+	}
+	
+	//NODES
 	/**
 	 * Adds a node to the HyPeerWeb and tells the nodeListeners about it.
 	 */
-	public void addNode() throws Exception{
+	public void addNode(){
 		segment.getFirstSegmentNode().addNode(new Node.Listener() {
 			@Override
 			public void callback(Node n) {
@@ -61,26 +139,16 @@ public class ChatServer{
 	}
 	/**
 	 * Deletes a node from the HyPeerWeb and tells the nodeListeners about it.
-	 * @param node the node to delete
+	 * @param webID the webID of the node to delete
 	 */
 	public void removeNode(int webID){
 		HyPeerWebSegment hws = segment.getFirstSegmentNode();
-		Node node = hws.removeNode(webID, new Node.Listener(){
+		hws.removeNode(webID, new Node.Listener(){
 			@Override
 			public void callback(Node n) {
 				resyncCache(n, NodeCache.SyncType.REMOVE);
 			}
 		});
-	}
-	/**
-	 * 
-	 * @return 
-	 */
-	public ArrayList<Node> getAllNodes(){
-		ArrayList<Node> nodes = new ArrayList();
-		//use broadcast to make a list of all nodes.
-			
-		return nodes;
 	}
 	/**
 	 * Resyncs the node cache to the actual data in the HyPeerWeb
@@ -99,105 +167,63 @@ public class ChatServer{
 				break;
 		}
 		//Retrieve all dirty nodes
-		
 		NodeCache.Node clean[] = new NodeCache.Node[dirty.length];
 		
 		//Notify all listeners that the cache changed
 		for (NodeListener listener : nodeListeners)
 			listener.callback(node, false);
 	}
-	
-	
-	/**
-	 * 
-	 * @param listener 
-	 */
-	public void addSendListener(SendListener listener){
-		sendListeners.add(listener);
+	public abstract class NodeListener{
+		abstract void callback(NodeCache.Node affectedNode, NodeCache.SyncType type, NodeCache.Node[] updatedNodes);
 	}
 	
-	/**
-	 * 
-	 * @param listener
-	 */
-	public void addUserListener(UserListener listener){
-		userListeners.add(listener);
-	}
-	
-	/**
-	 * 
-	 * @param listener 
-	 */
-	public void addNodeListener(NodeListener listener){
-		nodeListeners.add(listener);
-	}
-	
-	/**
-	 * 
-	 * @param listener 
-	 */
-	public void addNetworkNameListener(NetworkNameListener listener){
-		networkNameListeners.add(listener);
-	}
-	
+	//CHAT
 	/**
 	 * Sends a message to another ChatUser
-	 * @param user the destination
+	 * @param senderID who sent this message
+	 * @param recipientID who should receive the message (-1 to give to everyone)
 	 * @param message the message
 	 */
-	public void sendMessage(ChatUser user, String message){
+	public void sendMessage(int senderID, int recipientID, String message){
 		SendVisitor visitor = new SendVisitor(user.getWebId());
 		visitor.visit(segment);
 	}
-	/**
-	 * Method called by sendVisitor to display message destined for this user
-	 * @param message the message to display
-	 */
-	public void receiveMessage(String message){
-		for(SendListener listener : sendListeners)
-			listener.callback(user.getWebId(), message);
+	public abstract class SendListener{
+		abstract void callback(int senderID, int recipientID, String mess);
 	}
 	
+	//USERS
 	/**
-	 * 
+	 * Changes a user's name
+	 * @param userID the user's id we want to update
+	 * @param name new name for this user
 	 */
-	public void disconnect(){
-		//this one looks tough
-		//I think this is the part where Dr. Woodfield said that if one segment
-		//wanted to quit, all of the segments would have to quit.  Now I can 
-		//see why.  Sending all of the nodes on this segment to live somewhere
-		//else would be difficult.
+	public void changeUserName(int userID, String name){
+		if (name != null && users.containsKey(userID)){
+			users.get(userID).name = name;
+			//TODO, broadcast name change
+		}
 	}
-	
-	/**
-	 * 
-	 * @param name 
-	 */
-	public void updateUserName(String name){
-		user.changeName(name);
+	public abstract class UserListener{
+		abstract void callback();
 	}
-	
-	/**
-	 * 
-	 * @param name 
-	 */
-	public void updateNetworkName(String name){
-		networkName = name;
-	}
-	
-	static public class ChatUser {
-	//Random color generator
+	public static class ChatUser implements Serializable{
+		//Random color generator
 		private static final Random rand = new Random();
-		private static final int minRGB = 30, maxRGB = 200;
+		private static final int minRGB = 30, maxRGB = 180;
 		//User attributes
 		public String color, name;
 		public int id;
+		//Server that owns this user
+		public int networkID;
 		
 		/**
 		 * Create a new chat user
+		 * @param id a unique id for this user
 		 * @param name the user's name
+		 * @param networkID the network that contains this user
 		 */
-		public ChatUser(int id, String name){
+		public ChatUser(int id, String name, int networkID){
 			//Random username color
 			//RGB values between 100-250
 			int delta = maxRGB-minRGB;
@@ -209,38 +235,11 @@ public class ChatServer{
 			);
 			this.name = name;
 			this.id = id;
-		}
-		/**
-		 * Changes the name of this chatUser.
-		 * @param newName The new name.
-		 */
-		public void changeName(String newName){
-			name = newName;
+			this.networkID = networkID;
 		}
 		@Override
 		public String toString(){
 			return name;
 		}
-		public int getWebId(){
-			return id;
-		}
 	}
-	
-	public abstract class SendListener{
-		abstract void callback(int recipientID, String mess);
-	}
-	
-	public abstract class UserListener{
-		abstract void callback();
-	}
-	
-	public abstract class NodeListener{
-		abstract void callback(NodeCache.Node affectedNode, NodeCache.SyncType type, NodeCache.Node[] updatedNodes);
-	}
-	
-	public abstract class NetworkNameListener{
-		abstract void callback();
-	}
-	
-	
 }
