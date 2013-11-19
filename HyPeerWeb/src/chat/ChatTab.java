@@ -1,22 +1,13 @@
 package chat;
 
 import chat.ChatServer.ChatUser;
-import chat.ChatServer.SendListener;
-import java.awt.CardLayout;
-import java.awt.Dimension;
-import java.awt.FlowLayout;
-import java.awt.Font;
-import java.awt.GridBagConstraints;
-import java.awt.GridBagLayout;
-import java.awt.Insets;
+import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import java.io.IOException;
 import java.io.StringWriter;
-import java.util.ArrayList;
-import java.util.HashMap;
 import javax.swing.*;
 import javax.swing.border.Border;
 import javax.swing.event.ListDataEvent;
@@ -34,16 +25,13 @@ import javax.swing.text.html.StyleSheet;
  * @author isaac
  */
 public class ChatTab extends JPanel{
+	private ChatClient container;
 	//Active chat users and their associated colors
-	private final HashMap<Integer, ChatUser> chatUsers = new HashMap();
 	private final DefaultComboBoxModel<ChatUser> chatUsersLst = new DefaultComboBoxModel();
 	//The last user that chatted something
 	//If they send another message, we don't want to display their name twice
-	private ChatUser lastUserTo, lastUserFrom, currentUser;
+	private ChatUser lastUserTo, lastUserFrom;
 	private final JTextArea chatBox;
-	
-	//Notify listeners of new message commands
-	private final ArrayList<SendListener> listeners = new ArrayList();
 	
 	//Editing the chat log display
 	private final HTMLDocument document;
@@ -54,7 +42,7 @@ public class ChatTab extends JPanel{
 	//Different layouts depending on amount of users
 	private static final String EMPTY = "Empty", FILLED = "Filled";
 	
-	public ChatTab(Border padding, String title){
+	public ChatTab(ChatClient container, Border padding, String title){
 		//The chat log is on top, the tools are on the bottom
 		JScrollPane chatLogScroll = new JScrollPane(
 			JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED,
@@ -194,70 +182,76 @@ public class ChatTab extends JPanel{
 	
 	//CHAT ACTIONS
 	/**
-	 * Sets who is chatting from this GUI instance
-	 * This can only be called once; otherwise, you'll get unexpected behavior
-	 * @param userid the user's id number
-	 * @param username the user's name/alias
-	 */
-	public void setActiveUser(int userid, String username){
-		
-	}
-	/**
-	 * Updates a user in the chatroom
+	 * Updates a user's alias in the chatroom
 	 * @param userid the ID of the user we want to update
-	 * @param username if null, it will remove the user; if the
-	 * user has already been added, it updates their alias; otherwise,
-	 * it adds them as a new user in the chatroom
+	 * @param username new chat user alias
 	 */
 	public void updateUser(int userid, String username){
-		ChatUser cu = chatUsers.get(userid);
-		if (cu == null && username == null)
+		ChatUser cu = container.chatUsers.get(userid);
+		if (cu == null || username == null)
 			return;
-		//Create a new user
-		if (cu == null){
-			cu = new ChatUser(userid, username);
-			chatUsers.put(userid, cu);
-			chatUsersLst.addElement(cu);
-			writeStatus("<b>"+cu.name+"</b> is online");
-		}
-		//Remove a user
-		else if (username == null){
-			writeStatus("<b>"+cu.name+"</b> is offline");
-			chatUsers.remove(userid);
-			chatUsersLst.removeElement(cu);
-		}
 		//Update existing username
-		else if (!cu.name.equals(username)){
+		if (!cu.name.equals(username)){
 			writeStatus("<b>"+cu.name+"</b> is now known as <b>"+username+"</b>");
 			cu.name = username;
 			//Notify the user list
-			int index = chatUsersLst.getIndexOf(cu);
-			ListDataEvent updateEvt = new ListDataEvent(
-				chatUsersLst, ListDataEvent.CONTENTS_CHANGED, index, index
-			);
-			for (ListDataListener dl: chatUsersLst.getListDataListeners())
-				dl.contentsChanged(updateEvt);
+			//Active user won't be in the user list
+			if (userid != container.activeUser.id){
+				int index = chatUsersLst.getIndexOf(cu);
+				//Make sure it exists; shouldn't happen, but just in case
+				if (index != -1){
+					ListDataEvent updateEvt = new ListDataEvent(
+						chatUsersLst, ListDataEvent.CONTENTS_CHANGED, index, index
+					);
+					for (ListDataListener dl: chatUsersLst.getListDataListeners())
+						dl.contentsChanged(updateEvt);
+				}
+			}
+		}
+	}
+	/**
+	 * Adds a user to the chatroom
+	 * @param user the new user
+	 */
+	public void addUser(ChatUser user){
+		if (!container.chatUsers.containsKey(user.id)){
+			container.chatUsers.put(user.id, user);
+			//Can't send messages to yourself
+			if (user.id != container.activeUser.id)
+				chatUsersLst.addElement(user);
+			writeStatus("<b>"+user.name+"</b> is online");
+		}
+	}
+	/**
+	 * Removes a user from the chatroom
+	 * @param userid the user's id
+	 */
+	public void removeUser(int userid){
+		ChatUser cu = container.chatUsers.get(userid);
+		if (cu != null){
+			writeStatus("<b>"+cu.name+"</b> is offline");
+			container.chatUsers.remove(userid);
+			chatUsersLst.removeElement(cu);
 		}
 	}
 	/**
 	 * Notifies the chat tab that a message has been received
-	 * @param userID who sent the message
+	 * @param userID who sent the message (-1 if this is a status message)
 	 * @param recipientID who should receive the message (-1 if it was sent to everyone)
 	 * @param message the message
 	 */
 	public void receiveMessage(int userID, int recipientID, String message){
-		writeMessage(
-			chatUsers.get(userID),
-			recipientID == -1 ? null : chatUsers.get(recipientID),
-			message
-		);
-	}
-	/**
-	 * Register yourself as wanting sendMessage notifications
-	 * @param listener the sendMessage callback
-	 */
-	public void addSendListener(SendListener listener){
-		listeners.add(listener);
+		//If user & recipient are -1, it is a status message
+		if (userID == -1 && recipientID == -1)
+			writeStatus(message);
+		//Otherwise, a regular chat message
+		else{
+			writeMessage(
+				container.chatUsers.get(userID),
+				recipientID == -1 ? null : container.chatUsers.get(recipientID),
+				message
+			);
+		}
 	}
 	/**
 	 * Notify all listeners of a message should be sent
@@ -268,16 +262,15 @@ public class ChatTab extends JPanel{
 	private void sendMessage(boolean privateMessage){
 		String mess = chatBox.getText().trim();
 		//Cannot send a message if we haven't registered a user to this GUI
-		if (currentUser != null && mess.length() > 0){
+		if (container.activeUser != null && mess.length() > 0){
 			int recipientID = -1;
 			//Only broadcast the message if there are users
 			if (chatUsersLst.getSize() > 0){
 				if (privateMessage)
 					recipientID = ((ChatUser) chatUsersLst.getSelectedItem()).id;
-				for (SendListener l: listeners)
-					l.callback(recipientID, mess);
+				container.sendMessage(container.activeUser.id, recipientID, mess);
 			}
-			receiveMessage(currentUser.id, recipientID, mess);
+			receiveMessage(container.activeUser.id, recipientID, mess);
 		}
 		chatBox.setText(null);
 	}
@@ -292,7 +285,7 @@ public class ChatTab extends JPanel{
 	private void writeMessage(ChatUser userFrom, ChatUser userTo, String message){
 		//We don't know who sent this message; they never sent an updateUser command
 		if (userFrom == null)
-			userFrom = new ChatUser(-1, "anonymous");
+			userFrom = new ChatUser(-1, "anonymous", -1);
 		//This person was the last one to chat something
 		if (userFrom == lastUserFrom && userTo == lastUserTo)
 			writePlain(message+"<br/>");

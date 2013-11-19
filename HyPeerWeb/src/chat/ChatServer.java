@@ -121,7 +121,7 @@ public class ChatServer{
 		networkName = name;
 		//broadcast to all network name listeners
 	}
-	public abstract class NetworkNameListener{
+	public static abstract class NetworkNameListener{
 		abstract void callback();
 	}
 	
@@ -173,7 +173,7 @@ public class ChatServer{
 		for (NodeListener listener : nodeListeners)
 			listener.callback(node, false);
 	}
-	public abstract class NodeListener{
+	public static abstract class NodeListener{
 		abstract void callback(NodeCache.Node affectedNode, NodeCache.SyncType type, NodeCache.Node[] updatedNodes);
 	}
 	
@@ -188,7 +188,7 @@ public class ChatServer{
 		SendVisitor visitor = new SendVisitor(user.getWebId());
 		visitor.visit(segment);
 	}
-	public abstract class SendListener{
+	public static abstract class SendListener{
 		abstract void callback(int senderID, int recipientID, String mess);
 	}
 	
@@ -204,7 +204,7 @@ public class ChatServer{
 			//TODO, broadcast name change
 		}
 	}
-	public abstract class UserListener{
+	public static abstract class UserListener{
 		abstract void callback();
 	}
 	public static class ChatUser implements Serializable{

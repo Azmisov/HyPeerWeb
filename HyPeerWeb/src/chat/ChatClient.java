@@ -1,19 +1,15 @@
 package chat;
 
+import chat.ChatServer.*;
 import com.alee.laf.WebLookAndFeel;
-import hypeerweb.HyPeerWeb;
 import hypeerweb.NodeCache.Node;
 import hypeerweb.NodeCache;
 import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.awt.event.FocusEvent;
-import java.awt.event.FocusListener;
+import java.awt.event.*;
 import static java.lang.Thread.sleep;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Iterator;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import javax.swing.*;
 import javax.swing.GroupLayout.ParallelGroup;
 import javax.swing.GroupLayout.SequentialGroup;
@@ -31,11 +27,9 @@ import javax.swing.table.AbstractTableModel;
  */
 public class ChatClient extends JFrame{
 	//Window title
-	private static final String title = "HyPeerWeb Chat v0.1a";
+	private static final String title = "HyPeerWeb Chat v0.2a";
 	//Window dimensions
 	private static final int width = 750, height = 700;
-	//Upper vertical split percentage
-	private static final double vsplitWeight = 0.8;
 	//Action bar's pixel width
 	private static final int actionBarWidth = 150;
 	//Main pane (graph, list, chat) padding
@@ -44,12 +38,14 @@ public class ChatClient extends JFrame{
 	private static final Font bold = new Font("SansSerif", Font.BOLD, 12);
 	
 	//Data items
-	protected NodeCache nodeCache;	//List of all nodes in HyPeerWeb
-	private HyPeerWeb web;			//Reference to ChatServer (TODO here)
-	private Node selected;			//The selected node
+	private ChatServer server;							//Server reference
+	protected HashMap<Integer, ChatUser> chatUsers;		//List of all chat users
+	protected ChatUser activeUser;						//The user associated with this client
+	protected NodeCache nodeCache;						//List of all nodes in HyPeerWeb
+	private Node selected;								//The selected node
 	
 	//GUI components
-	private final ChatTab chat = new ChatTab(padding, title);
+	private final ChatTab chat = new ChatTab(this, padding, title);
 	private final GraphTab graph = new GraphTab(this);
 	private final JSpinner nodeSelect = new JSpinner(new SpinnerNumberModel(-1, -1, null, 1));
 	private final NodeInfo nodeInfo = new NodeInfo();
@@ -58,13 +54,6 @@ public class ChatClient extends JFrame{
 		
 	public ChatClient(){
 		initGUI();
-		//Bind to a hypeerweb segment here...
-		try {
-			web = HyPeerWeb.initialize(false, false, -1);
-			nodeCache = new NodeCache();
-		} catch (Exception ex) {
-			System.out.println("Cannot bind to a HyPeerWeb");
-		}
 	}
 	
 	// <editor-fold defaultstate="collapsed" desc="GUI INITIALIZATION">
@@ -242,34 +231,14 @@ public class ChatClient extends JFrame{
 		addNode.addActionListener(new ActionListener(){
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				try{
-					for (int i=0, max=(int) addCount.getValue(); i<max; i++)
-						nodeCache.addNode(web.addNode());
-					graph.draw();
-					listTab.draw();
-				}
-				catch (Exception ex){
-					System.out.println(ex.getMessage());
-					System.err.println("Error in adding Node");
-				}
+				server.addNode();
 			}
 		});
 		deleteNode.addActionListener(new ActionListener(){
 			@Override
-			public void actionPerformed(ActionEvent e) {
-				try{
-					hypeerweb.Node remove = web.removeNode((int) nodeSelect.getValue());
-					nodeCache.removeNode(remove);
-					graph.draw();
-					listTab.draw();
-					if (remove.getWebId() == selected.getWebId()){
-						selected = nodeCache.nodes.get(remove.getWebId());
-						nodeInfo.updateInfo(selected);
-					}
-				}
-				catch (Exception ex){
-					System.err.println("Error in removing Node");
-				}
+			public void actionPerformed(ActionEvent e){
+				if (selected != null)
+					server.removeNode(selected.getWebId());
 			}
 		});
 		
@@ -346,6 +315,10 @@ public class ChatClient extends JFrame{
 	//</editor-fold>
 	
 	//ACTIONS
+	public void sendMessage(int userID, int recipientID, String message){
+		if (server != null)
+			server.sendMessage(userID, recipientID, message);
+	}
 	public void setSelectedNode(Node n){
 		selected = n;
 		nodeSelect.setValue(n == null ? -1 : n.getWebId());
@@ -354,6 +327,32 @@ public class ChatClient extends JFrame{
 	public void testChatRoom(){
 		(new Thread(new ChatSimulation())).start();
 	}
+	
+	//LISTENERS
+	private final NetworkNameListener networkListener = new NetworkNameListener(){
+		@Override
+		void callback() {
+			
+		}
+	};
+	private final UserListener userListener = new UserListener(){
+		@Override
+		void callback() {
+			
+		}
+	};
+	private final NodeListener nodeListener = new NodeListener(){
+		@Override
+		void callback(Node affectedNode, NodeCache.SyncType type, Node[] updatedNodes) {
+			
+		}
+	};
+	private final SendListener sendListener = new SendListener(){
+		@Override
+		void callback(int senderID, int recipientID, String mess) {
+			chat.receiveMessage(senderID, recipientID, mess);
+		}
+	};
 	
 	private class ChatSimulation implements Runnable{
 		@Override
@@ -382,11 +381,10 @@ public class ChatClient extends JFrame{
 				chat.updateUser(1, null);
 				chat.writeStatus("Chat simulation finished");
 			} catch (InterruptedException ex) {
-				Logger.getLogger(ChatTab.class.getName()).log(Level.SEVERE, null, ex);
+				System.out.println("Failed to run chat simulation");
 			}
 		}
 	}
-	
 	private class NodeInfo extends AbstractTableModel{
 		ArrayList<String[]> data = new ArrayList();
 		public void updateInfo(Node n){
