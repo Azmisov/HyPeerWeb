@@ -41,7 +41,7 @@ public class ChatClient extends JFrame{
 	private ChatServer server;							//Server reference
 	protected HashMap<Integer, ChatUser> chatUsers;		//List of all chat users
 	protected ChatUser activeUser;						//The user associated with this client
-	protected NodeCache nodeCache;						//List of all nodes in HyPeerWeb
+	protected NodeCache nodeCache = new NodeCache();	//List of all nodes in HyPeerWeb
 	private Node selected;								//The selected node
 	
 	//GUI components
@@ -51,6 +51,7 @@ public class ChatClient extends JFrame{
 	private final NodeInfo nodeInfo = new NodeInfo();
 	private final JTable connectList = new JTable(nodeInfo);
 	private final ListTab listTab = new ListTab(this);
+	private ArrayList<JPanel> boxes;
 		
 	public ChatClient(){
 		initGUI();
@@ -82,26 +83,27 @@ public class ChatClient extends JFrame{
 	}
 	public JPanel initActionBar(){
 		JPanel bar = new JPanel();
-		ArrayList<JPanel> boxes = new ArrayList(){{
+		boxes = new ArrayList(){{
 			add(initNetworkBox());
 			add(initConnectionBox());
 			add(initNodeBox());
 		}};
+		setConnected(false);
 		
 		// <editor-fold defaultstate="collapsed" desc="Layout components in a stack">
-		CompoundBorder boxBorder = new CompoundBorder(
-			padding, BorderFactory.createMatteBorder(0, 0, 2, 0, Color.DARK_GRAY)
-		);
 		GroupLayout stack = new GroupLayout(bar);
 		bar.setLayout(stack);
 		ParallelGroup hgroup = stack.createParallelGroup();
 		SequentialGroup vgroup = stack.createSequentialGroup();
 		Iterator<JPanel> it = boxes.iterator();
+		int i=0;
 		while (it.hasNext()){
 			JPanel box = it.next();
-			box.setBorder(it.hasNext() ? boxBorder : padding);
+			box.setBorder(padding);
 			hgroup.addComponent(box);
 			vgroup.addComponent(box);
+			if (i++ == 1)
+				vgroup.addGap(50);
 		}
 		vgroup.addContainerGap(1000, Short.MAX_VALUE);
 		stack.setHorizontalGroup(hgroup);
@@ -116,6 +118,12 @@ public class ChatClient extends JFrame{
 		
 		//Connect to a network
 		JButton btnJoin = new JButton("Join");
+		btnJoin.addActionListener(new ActionListener(){
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				setConnected(true);
+			}
+		});
 		JButton btnWatch = new JButton("Watch");
 		
 		//Network connection configuration
@@ -315,6 +323,11 @@ public class ChatClient extends JFrame{
 	//</editor-fold>
 	
 	//ACTIONS
+	public void setConnected(boolean connected){
+		boxes.get(0).setVisible(!connected);
+		boxes.get(1).setVisible(connected);
+		boxes.get(2).setVisible(connected);
+	}
 	public void sendMessage(int userID, int recipientID, String message){
 		if (server != null)
 			server.sendMessage(userID, recipientID, message);
