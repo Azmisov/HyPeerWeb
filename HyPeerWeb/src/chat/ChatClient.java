@@ -51,6 +51,7 @@ public class ChatClient extends JFrame{
 	private final NodeInfo nodeInfo = new NodeInfo();
 	private final JTable connectList = new JTable(nodeInfo);
 	private final ListTab listTab = new ListTab(this);
+	private ArrayList<JPanel> boxes;
 		
 	public ChatClient(){
 		initGUI();
@@ -82,11 +83,12 @@ public class ChatClient extends JFrame{
 	}
 	public JPanel initActionBar(){
 		JPanel bar = new JPanel();
-		ArrayList<JPanel> boxes = new ArrayList(){{
+		boxes = new ArrayList(){{
 			add(initNetworkBox());
 			add(initConnectionBox());
 			add(initNodeBox());
 		}};
+		isConnected(false);
 		
 		// <editor-fold defaultstate="collapsed" desc="Layout components in a stack">
 		CompoundBorder boxBorder = new CompoundBorder(
@@ -315,6 +317,11 @@ public class ChatClient extends JFrame{
 	//</editor-fold>
 	
 	//ACTIONS
+	public void isConnected(boolean connected){
+		boxes.get(0).setVisible(!connected);
+		boxes.get(1).setVisible(connected);
+		boxes.get(2).setVisible(connected);
+	}
 	public void sendMessage(int userID, int recipientID, String message){
 		if (server != null)
 			server.sendMessage(userID, recipientID, message);
