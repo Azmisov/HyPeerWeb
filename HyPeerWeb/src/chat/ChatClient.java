@@ -88,22 +88,22 @@ public class ChatClient extends JFrame{
 			add(initConnectionBox());
 			add(initNodeBox());
 		}};
-		isConnected(false);
+		setConnected(false);
 		
 		// <editor-fold defaultstate="collapsed" desc="Layout components in a stack">
-		CompoundBorder boxBorder = new CompoundBorder(
-			padding, BorderFactory.createMatteBorder(0, 0, 2, 0, Color.DARK_GRAY)
-		);
 		GroupLayout stack = new GroupLayout(bar);
 		bar.setLayout(stack);
 		ParallelGroup hgroup = stack.createParallelGroup();
 		SequentialGroup vgroup = stack.createSequentialGroup();
 		Iterator<JPanel> it = boxes.iterator();
+		int i=0;
 		while (it.hasNext()){
 			JPanel box = it.next();
-			box.setBorder(it.hasNext() ? boxBorder : padding);
+			box.setBorder(padding);
 			hgroup.addComponent(box);
 			vgroup.addComponent(box);
+			if (i++ == 1)
+				vgroup.addGap(50);
 		}
 		vgroup.addContainerGap(1000, Short.MAX_VALUE);
 		stack.setHorizontalGroup(hgroup);
@@ -118,6 +118,12 @@ public class ChatClient extends JFrame{
 		
 		//Connect to a network
 		JButton btnJoin = new JButton("Join");
+		btnJoin.addActionListener(new ActionListener(){
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				setConnected(true);
+			}
+		});
 		JButton btnWatch = new JButton("Watch");
 		
 		//Network connection configuration
@@ -317,7 +323,7 @@ public class ChatClient extends JFrame{
 	//</editor-fold>
 	
 	//ACTIONS
-	public void isConnected(boolean connected){
+	public void setConnected(boolean connected){
 		boxes.get(0).setVisible(!connected);
 		boxes.get(1).setVisible(connected);
 		boxes.get(2).setVisible(connected);
