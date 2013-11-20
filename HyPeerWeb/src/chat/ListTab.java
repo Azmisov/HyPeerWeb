@@ -35,6 +35,7 @@ public class ListTab extends JPanel{
 	
 	public ListTab(ChatClient container) {
 		super(new BorderLayout());
+		ListTab.container = container;
 		
 		JPanel segmentPanel = new JPanel();
 		JLabel label = new JLabel("Segment:");
@@ -45,7 +46,6 @@ public class ListTab extends JPanel{
 		segmentPanel.add(segmentBox);
 		this.add(segmentPanel, BorderLayout.NORTH);
 		
-		ListTab.container = container;
         table = new JTable(tabModel);
         table.setFillsViewportHeight(true);
 		TableColumnModel model = table.getColumnModel();
