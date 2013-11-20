@@ -109,7 +109,10 @@ public class HyPeerWebSegment<T extends Node> extends Node implements HyPeerWebI
 	public void addNode(Node.Listener listener){
 		//TODO: pass in the node to add to .addNode
 		//TODO, only execute addNode on nonempty segment
-		getNonemptySegment().state.addNode(this, listener);
+		if (isSegmentEmpty())
+			getNonemptySegment().addNode(listener);
+		else
+			state.addNode(this, listener);
 	}
 	/**
 	 * Holds the state of the entire HyPeerWeb, not just
