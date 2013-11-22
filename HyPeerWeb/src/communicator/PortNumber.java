@@ -5,40 +5,23 @@ package communicator;
  * or more application instances running on one or more machines.  A machine may have one or more instances running on the
  * machine.  Each application instance running on a machine listens for incoming messages on a port.  All application
  * instances on a given machine must listen on a different port. 
- * 
- * <pre>
- * <b>Class Domain:</b>
- *     DEFAULT_PORT_NUMBER : PortNumber
- *     -- Often there is only one application running on a machine.  It usually listens on this default port number.
- *     -- The current value si 49200.
- *     APPLICATIONS_PORT_NUMBER : PortNumber
- *     -- The actual port number of this application is listening on.
- *     
- * <b>Instance Domain:</b>
- *     portNumber : Integer RANGE 49152..65535
- * </pre>
+ * - DEFAULT_PORT_NUMBER : PortNumber
+ * -- Often there is only one application running on a machine.  It usually listens on this default port number.
+ * -- The current value si 49200.
+ * - portNumber : Integer RANGE 49152..65535
  * @author Scott Woodfield
  */
 public class PortNumber {
-//Class Domain Implementation
-	/**
-	 * The default port number that an application listens on.
-	 */
+	//The default port number that an application listens on.
 	public final static PortNumber DEFAULT_PORT_NUMBER = generateDefaultPortNumber();
-	
-	/**
-	 * The actual port number the current application is listening on.
-	 */
+	//The actual port number the current application is listening on.
 	private static PortNumber APPLICATIONS_PORT_NUMBER = null;
 	
 //Class Methods
 	/**
-	 * The setter for the class variable <i>APPLICATIONS_PORT_NUMBER</i>.  Should be called only once when an application
-	 * starts up.
-	 * 
-	 * @pre portNumber &ne; null
-	 * @post APPLICATIONS_PORT_NUMBER = null &rArr; APPLICATIONS_PORT_NUMBER = portNumber
-	 *       ELSE APPLICATIONS_PORT_NUMBER = APPLICATIONS_PORT_NUMBER'
+	 * The setter for the class variable <i>APPLICATIONS_PORT_NUMBER</i>.  Should be
+	 * called only once when an application starts up.
+	 * @param portNumber the applications port number
 	 */
 	public static void setApplicationsPortNumber(PortNumber portNumber){
 		if(APPLICATIONS_PORT_NUMBER == null){
@@ -47,10 +30,8 @@ public class PortNumber {
 	}
 	
 	/**
-	 * The getter for the class variable <i>APPLICATION_PORT_NUMBER</i>.
-	 * 
-	 * @pre <i>None</i>
-	 * @post result = APPLICATIONS_PORT_NUMBER
+	 * Gets the port number of the application
+	 * @return the 
 	 */
 	public static PortNumber getApplicationsPortNumber(){
 		if(APPLICATIONS_PORT_NUMBER == null){

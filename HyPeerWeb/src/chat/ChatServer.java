@@ -181,7 +181,7 @@ public class ChatServer{
 	 * @param message the message
 	 */
 	public void sendMessage(int senderID, int recipientID, String message){
-		SendVisitor visitor = new SendVisitor(user.getWebId());
+		//SendVisitor visitor = new SendVisitor();
 		visitor.visit(segment);
 	}
 	public static abstract class SendListener{

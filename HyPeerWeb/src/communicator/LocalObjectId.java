@@ -81,18 +81,6 @@ public class LocalObjectId
 	public LocalObjectId(int id){
 		this.id = id;
 	}
-	
-	/**
-	 * Copy constructor.
-	 * 
-	 * @param the localObjectId we are going to make a copy of.
-	 * 
-	 * @pre localObjectId &ne; null
-	 * @post this.id = localObjectId.id
-	 */
-	public LocalObjectId(LocalObjectId localObjectId){
-		this.id = localObjectId.id;
-	}
 
 //Queries
 	/**
@@ -134,12 +122,7 @@ public class LocalObjectId
 	 */
 	public String toString(){return Integer.toString(id);}
 
-//Auxiliary Section
-	/**
-	 * Needed when serializing a LocalObjectId so it can be sent across the net.
-	 */
-	private static final long serialVersionUID = 2910164465720674112L;
-	
+//Auxiliary Section	
 	/**
 	 * The initial or first value of all localObjectIds.
 	 */

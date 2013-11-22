@@ -16,7 +16,7 @@ public class LinksProxy
         String[] parameterTypeNames = new String[0];
         Object[] actualParameters = new Object[0];
         Command command = new Command(globalObjectId.getLocalObjectId(), "hypeerweb.Links", "getHighestLink", parameterTypeNames, actualParameters, true);
-        Object result = PeerCommunicator.getSingleton().sendSynchronous(globalObjectId, command);
+        Object result = Communicator.getSingleton().sendSynchronous(globalObjectId, command);
         return (hypeerweb.Node)result;
     }
 
@@ -25,7 +25,7 @@ public class LinksProxy
         String[] parameterTypeNames = new String[0];
         Object[] actualParameters = new Object[0];
         Command command = new Command(globalObjectId.getLocalObjectId(), "hypeerweb.Links", "getLowestLink", parameterTypeNames, actualParameters, true);
-        Object result = PeerCommunicator.getSingleton().sendSynchronous(globalObjectId, command);
+        Object result = Communicator.getSingleton().sendSynchronous(globalObjectId, command);
         return (hypeerweb.Node)result;
     }
 
@@ -34,7 +34,7 @@ public class LinksProxy
         String[] parameterTypeNames = new String[0];
         Object[] actualParameters = new Object[0];
         Command command = new Command(globalObjectId.getLocalObjectId(), "hypeerweb.Links", "getFold", parameterTypeNames, actualParameters, true);
-        Object result = PeerCommunicator.getSingleton().sendSynchronous(globalObjectId, command);
+        Object result = Communicator.getSingleton().sendSynchronous(globalObjectId, command);
         return (hypeerweb.Node)result;
     }
 
@@ -43,7 +43,7 @@ public class LinksProxy
         String[] parameterTypeNames = new String[0];
         Object[] actualParameters = new Object[0];
         Command command = new Command(globalObjectId.getLocalObjectId(), "hypeerweb.Links", "getSurrogateFold", parameterTypeNames, actualParameters, true);
-        Object result = PeerCommunicator.getSingleton().sendSynchronous(globalObjectId, command);
+        Object result = Communicator.getSingleton().sendSynchronous(globalObjectId, command);
         return (hypeerweb.Node)result;
     }
 
@@ -52,7 +52,7 @@ public class LinksProxy
         String[] parameterTypeNames = new String[0];
         Object[] actualParameters = new Object[0];
         Command command = new Command(globalObjectId.getLocalObjectId(), "hypeerweb.Links", "getInverseSurrogateFold", parameterTypeNames, actualParameters, true);
-        Object result = PeerCommunicator.getSingleton().sendSynchronous(globalObjectId, command);
+        Object result = Communicator.getSingleton().sendSynchronous(globalObjectId, command);
         return (hypeerweb.Node)result;
     }
 
@@ -61,7 +61,7 @@ public class LinksProxy
         String[] parameterTypeNames = new String[0];
         Object[] actualParameters = new Object[0];
         Command command = new Command(globalObjectId.getLocalObjectId(), "hypeerweb.Links", "getNeighbors", parameterTypeNames, actualParameters, true);
-        Object result = PeerCommunicator.getSingleton().sendSynchronous(globalObjectId, command);
+        Object result = Communicator.getSingleton().sendSynchronous(globalObjectId, command);
         return (hypeerweb.Node[])result;
     }
 
@@ -70,7 +70,7 @@ public class LinksProxy
         String[] parameterTypeNames = new String[0];
         Object[] actualParameters = new Object[0];
         Command command = new Command(globalObjectId.getLocalObjectId(), "hypeerweb.Links", "getHighestNeighbor", parameterTypeNames, actualParameters, true);
-        Object result = PeerCommunicator.getSingleton().sendSynchronous(globalObjectId, command);
+        Object result = Communicator.getSingleton().sendSynchronous(globalObjectId, command);
         return (hypeerweb.Node)result;
     }
 
@@ -79,7 +79,7 @@ public class LinksProxy
         String[] parameterTypeNames = new String[0];
         Object[] actualParameters = new Object[0];
         Command command = new Command(globalObjectId.getLocalObjectId(), "hypeerweb.Links", "getLowestNeighbor", parameterTypeNames, actualParameters, true);
-        Object result = PeerCommunicator.getSingleton().sendSynchronous(globalObjectId, command);
+        Object result = Communicator.getSingleton().sendSynchronous(globalObjectId, command);
         return (hypeerweb.Node)result;
     }
 
@@ -88,7 +88,7 @@ public class LinksProxy
         String[] parameterTypeNames = new String[0];
         Object[] actualParameters = new Object[0];
         Command command = new Command(globalObjectId.getLocalObjectId(), "hypeerweb.Links", "getSurrogateNeighbors", parameterTypeNames, actualParameters, true);
-        Object result = PeerCommunicator.getSingleton().sendSynchronous(globalObjectId, command);
+        Object result = Communicator.getSingleton().sendSynchronous(globalObjectId, command);
         return (hypeerweb.Node[])result;
     }
 
@@ -97,7 +97,7 @@ public class LinksProxy
         String[] parameterTypeNames = new String[0];
         Object[] actualParameters = new Object[0];
         Command command = new Command(globalObjectId.getLocalObjectId(), "hypeerweb.Links", "getHighestSurrogateNeighbor", parameterTypeNames, actualParameters, true);
-        Object result = PeerCommunicator.getSingleton().sendSynchronous(globalObjectId, command);
+        Object result = Communicator.getSingleton().sendSynchronous(globalObjectId, command);
         return (hypeerweb.Node)result;
     }
 
@@ -106,7 +106,7 @@ public class LinksProxy
         String[] parameterTypeNames = new String[0];
         Object[] actualParameters = new Object[0];
         Command command = new Command(globalObjectId.getLocalObjectId(), "hypeerweb.Links", "getLowestSurrogateNeighbor", parameterTypeNames, actualParameters, true);
-        Object result = PeerCommunicator.getSingleton().sendSynchronous(globalObjectId, command);
+        Object result = Communicator.getSingleton().sendSynchronous(globalObjectId, command);
         return (hypeerweb.Node)result;
     }
 
@@ -115,7 +115,7 @@ public class LinksProxy
         String[] parameterTypeNames = new String[0];
         Object[] actualParameters = new Object[0];
         Command command = new Command(globalObjectId.getLocalObjectId(), "hypeerweb.Links", "getInverseSurrogateNeighbors", parameterTypeNames, actualParameters, true);
-        Object result = PeerCommunicator.getSingleton().sendSynchronous(globalObjectId, command);
+        Object result = Communicator.getSingleton().sendSynchronous(globalObjectId, command);
         return (hypeerweb.Node[])result;
     }
 
@@ -124,7 +124,7 @@ public class LinksProxy
         String[] parameterTypeNames = new String[0];
         Object[] actualParameters = new Object[0];
         Command command = new Command(globalObjectId.getLocalObjectId(), "hypeerweb.Links", "getHighestInverseSurrogateNeighbor", parameterTypeNames, actualParameters, true);
-        Object result = PeerCommunicator.getSingleton().sendSynchronous(globalObjectId, command);
+        Object result = Communicator.getSingleton().sendSynchronous(globalObjectId, command);
         return (hypeerweb.Node)result;
     }
 
@@ -133,7 +133,7 @@ public class LinksProxy
         String[] parameterTypeNames = new String[0];
         Object[] actualParameters = new Object[0];
         Command command = new Command(globalObjectId.getLocalObjectId(), "hypeerweb.Links", "getLowestInverseSurrogateNeighbor", parameterTypeNames, actualParameters, true);
-        Object result = PeerCommunicator.getSingleton().sendSynchronous(globalObjectId, command);
+        Object result = Communicator.getSingleton().sendSynchronous(globalObjectId, command);
         return (hypeerweb.Node)result;
     }
 
@@ -142,7 +142,7 @@ public class LinksProxy
         String[] parameterTypeNames = new String[0];
         Object[] actualParameters = new Object[0];
         Command command = new Command(globalObjectId.getLocalObjectId(), "hypeerweb.Links", "getNeighborsSet", parameterTypeNames, actualParameters, true);
-        Object result = PeerCommunicator.getSingleton().sendSynchronous(globalObjectId, command);
+        Object result = Communicator.getSingleton().sendSynchronous(globalObjectId, command);
         return (java.util.TreeSet)result;
     }
 
@@ -151,7 +151,7 @@ public class LinksProxy
         String[] parameterTypeNames = new String[0];
         Object[] actualParameters = new Object[0];
         Command command = new Command(globalObjectId.getLocalObjectId(), "hypeerweb.Links", "getSurrogateNeighborsSet", parameterTypeNames, actualParameters, true);
-        Object result = PeerCommunicator.getSingleton().sendSynchronous(globalObjectId, command);
+        Object result = Communicator.getSingleton().sendSynchronous(globalObjectId, command);
         return (java.util.TreeSet)result;
     }
 
@@ -160,7 +160,7 @@ public class LinksProxy
         String[] parameterTypeNames = new String[0];
         Object[] actualParameters = new Object[0];
         Command command = new Command(globalObjectId.getLocalObjectId(), "hypeerweb.Links", "getInverseSurrogateNeighborsSet", parameterTypeNames, actualParameters, true);
-        Object result = PeerCommunicator.getSingleton().sendSynchronous(globalObjectId, command);
+        Object result = Communicator.getSingleton().sendSynchronous(globalObjectId, command);
         return (java.util.TreeSet)result;
     }
 
@@ -169,7 +169,7 @@ public class LinksProxy
         String[] parameterTypeNames = new String[0];
         Object[] actualParameters = new Object[0];
         Command command = new Command(globalObjectId.getLocalObjectId(), "hypeerweb.Links", "getAllLinks", parameterTypeNames, actualParameters, true);
-        Object result = PeerCommunicator.getSingleton().sendSynchronous(globalObjectId, command);
+        Object result = Communicator.getSingleton().sendSynchronous(globalObjectId, command);
         return (java.util.TreeSet)result;
     }
 }

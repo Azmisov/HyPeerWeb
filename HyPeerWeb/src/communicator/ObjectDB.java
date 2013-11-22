@@ -106,40 +106,6 @@ public class ObjectDB { //A Singleton
     }
     
     /**
-     * Returns a random member of the ObjectDB.
-     * 
-     * @pre <i>None</i>
-     * @post getSize() = 0 &rArr; result = null
-     *       ELSE result = random member of the hashTable
-     */
-    public Object getRandomMember() {
-    	//Assumes the DB never has more than Integer.MAX_VALUE members
-    	int randomMemberIndex = random.nextInt(hashTable.size());
-    	return getRandomMember(hashTable.size());
-    }
-    
-    /**
-     * Returns the ith memeber of the ObjectDB. 
-     * 
-     * @param i indicates the value of the ObjectDB to select.
-     * @pre 0 &le; i &lt; |hashTable|
-     * @post given a random ordering defined over the members of the ObjectDB, return the ith value
-     */
-    public Object getRandomMember(int i){
-    	//Assumes the DB never has more than Integer.MAX_VALUE members
-    	int randomMemberIndex = random.nextInt(i);
-    	int count = 0;
-    	Enumeration<Object> enumeration = hashTable.elements();
-    	Object result = null;
-    	while(enumeration.hasMoreElements()){
-    		result = enumeration.nextElement();
-    	if(count == randomMemberIndex)break;
-    		count++;
-    	}
-    	return result;
-    }
-    
-    /**
      * Returns an enumeration of the ObjectDB.
      * 
      * @pre <i>None</i>
@@ -324,18 +290,10 @@ public class ObjectDB { //A Singleton
     }
  
 //Auxillary Section
-    /**
-     * The name of the default location where the ObjectDB is to be saved.
-     */
+    //The name of the default location where the ObjectDB is to be saved.
     private static String FILE_LOCATION = null;
-    
-    /**
-     * The random generator used to select a random member of the ObjectDB.
-     */
+    //The random generator used to select a random member of the ObjectDB.
     private Random random = new Random();
-
-    /**
-     * The default file location.
-     */
+    //The default file location.
     private static final String DEFAULT_FILE_LOCATION = "ObjectDB.db";
 }

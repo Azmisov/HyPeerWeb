@@ -1,6 +1,9 @@
 package communicator;
 
 import java.net.InetAddress;
+import java.net.UnknownHostException;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * Uniquely identifies an object in an application on another machine.
@@ -18,76 +21,45 @@ import java.net.InetAddress;
  * @author Scott Woodfield
  */
 public class GlobalObjectId {
-//Domain Implementation
-	/**
-	 * The machineAddr of the GlobalObjectId
-	 */
+	//The machineAddr of the GlobalObjectId
 	private InetAddress machineAddr;
-	
-	/**
-	 * The portNumber of the GlobalObjectId
-	 */
+	//The portNumber of the GlobalObjectId
 	private PortNumber portNumber;
-	
-	/**
-	 * The localObjectId of the GlobalObjectId
-	 */
+	//The localObjectId of the GlobalObjectId
 	private LocalObjectId localObjectId;
 
-//Constructors
 	/**
-	 * The default constructor.
-	 * 
-	 * @pre <i>None</i>
-	 * @post machineAddress = MachineAddress.getThisMachinesInetAddress() AND
-	 *       portNumber = PortNumber.getApplicationsPortNumber()          AND
-	 *       localObjectId = new LocalObjectId()
+	 * Constructs a GlobalObjectId from a given portNumber, and localObjectId
+	 * Uses localhost as the machine address
+	 * @param portNumber the portNumber of the application the object is in.
+	 * @param localObjectId the localObjectId the object in the application of the other machine
 	 */
-	public GlobalObjectId(){
-		machineAddr = MachineAddress.getThisMachinesInetAddress();
-		portNumber = PortNumber.getApplicationsPortNumber();
-		localObjectId = new LocalObjectId();
-	}
-	
-	/**
-	 * Copy Constructor.
-	 * 
-	 * @param globalObjectId the globalObjectId we will make a copy of.
-	 * 
-	 * @pre <i>globalObjectId &ne; null
-	 * @post this.equals(globalObjectId)
-	 */
-	public GlobalObjectId(GlobalObjectId globalObjectId){
-		machineAddr = globalObjectId.machineAddr;
-		portNumber = new PortNumber(globalObjectId.portNumber);
-		localObjectId = new LocalObjectId(globalObjectId.localObjectId);
+	public GlobalObjectId(PortNumber portNumber, LocalObjectId localObjectId) {
+		this(null, portNumber, localObjectId);
 	}
 	
 	/**
 	 * Constructs a GlobalObjectId from a given machine name, portNumber, and localObjectId
-	 * 
 	 * @param machineName the name of the machine, may be an IP address or domain name.
+	 *		pass null to use localhost as the machine address
 	 * @param portNumber the portNumber of the application the object is in.
 	 * @param localObjectId the localObjectId the object in the application of the other machine
-	 * 
-	 * @pre <i>None</i>
-	 * @post valid machineName &rArr; this.machineAddr = InetAddress.getByName(machineName) AND<br>
-	 *       &not; valid machineName AND &exist; localHost &rArr; machineName = InetAddress.getLocalHost() AND<br>
-	 *       &not; valid machineName AND &not; &exist; localHost &rArr; machineName = null AND<br>
-	 *       this.portNumber = portNumber AND this.localObjectId = localObjectId
 	 */
 	public GlobalObjectId(String machineName, PortNumber portNumber, LocalObjectId localObjectId) {
-		try{
-		    this.machineAddr = InetAddress.getByName(machineName);
-		}catch(Exception e1){
-			System.out.println("GlobalObjectId::GlobalObjectId(String, PortNumber, LocalObjectId):\n" +
-					           "    ERROR: machine name is invalid, using localhost.");
+		if (machineName != null){
+			try {
+				machineAddr = InetAddress.getByName(machineName);
+			} catch (UnknownHostException ex) {
+				System.err.println("Communicator: Machine name is invalid, using localhost.");
+				machineName = null;
+			}
+		}
+		if (machineName == null){
 			try{
-			    this.machineAddr = InetAddress.getLocalHost();
-			}catch(Exception e){
-				System.out.println("GlobalObjectId::GlobalObjectId(String, PortNumber, LocalObjectId):\n" +
-		           "    ERROR: could not get address of local host, using null.");
-				this.machineAddr = null;
+			    machineAddr = InetAddress.getLocalHost();
+			} catch(UnknownHostException ex){
+				System.err.println("Communicator Could not get address of localhost, using null.");
+				machineAddr = null;
 			}
 		}
 		this.portNumber = portNumber;
@@ -97,42 +69,18 @@ public class GlobalObjectId {
 //Queries
 	/**
 	 * Returns the machineAddress as a string.
-	 * 
-	 * @pre machineAddr &ne; null
-	 * @post result = machineAddr.getHostAddress()
 	 */
 	public String getMachineAddr(){return machineAddr.getHostAddress();}
 	
 	/**
 	 * portNumber getter.
-	 * 
-	 * @pre <i>None</i>
-	 * @post result = portNumber
 	 */
 	public PortNumber getPortNumber(){return portNumber;}
 	
 	/**
 	 * localObjectId getter.
-	 * 
-	 * @pre <i>None</i>
-	 * @post result = localObjectId
 	 */
 	public LocalObjectId getLocalObjectId(){return localObjectId;}
-	
-	/**
-	 * Converts a GlobalObjectId to its string representation.
-	 * 
-	 * @pre machineAddr &ne; null
-	 * @post result = "GlobalObjectId: " + <br>
-		              "Machine address = " + getMachineAddr() +", port number = " + portNumber + <br>
-		              ", localObjectId = " + localObjectId;
-	 */
-	public String toString(){
-		String result = "GlobalObjectId: " + 
-		                "Machine address = " + getMachineAddr() +", port number = " + portNumber +
-		                ", localObjectId = " + localObjectId;
-		return result;
-	}
 	
 	/**
 	 * Returns true iff this globalObjectId the the input parameter are in the same application on the same machine.
@@ -174,20 +122,16 @@ public class GlobalObjectId {
 	 *               ELSE
 	 *                   result = 0
 	 */
+	@Override
 	public int hashCode(){
-		long result = 0l;
-		if(machineAddr != null){
+		long result = 0;
+		if (machineAddr != null)
 			result += machineAddr.hashCode();
-		}
-		if(portNumber != null){
+		if (portNumber != null)
 			result += portNumber.hashCode();
-		}
-		
-		if(localObjectId != null){
+		if (localObjectId != null)
 			result += localObjectId.hashCode();
-		}
-		
-		return (int)result;
+		return (int) result;
 	}
 	
 	/**
@@ -197,6 +141,7 @@ public class GlobalObjectId {
 	 * @post result = object != null and object &isin; GlobalObjectId AND<br>
 	 *                machineAddr = object.machineAddr AND portNumber = object.portNumber AND localObjectId = object.localObjectId
 	 */
+	@Override
 	public boolean equals(Object object){
 		boolean result = object != null && object instanceof GlobalObjectId;
 		if(result){
@@ -216,9 +161,4 @@ public class GlobalObjectId {
 		}
 		return result;                 
 	}
-	
-//Auxiliary Constants, Variables, and Methods
-	//private InetAddress getThisMachineAddress(){
-	//	return null;
-	//}
 }
