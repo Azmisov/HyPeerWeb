@@ -35,7 +35,7 @@ public class ChatServer{
 	
 	//GUI
 	/**
-	 * Register a GUI/Client with this server
+	 * Register a GUI/Client with this server (Watch/Leech)
 	 * @param nwl network name listener
 	 * @param nl node change listener
 	 * @param sl send chat message listener
@@ -88,14 +88,7 @@ public class ChatServer{
 	/**
 	 * Spawn a new server off of this one
 	 */
-	public void joinNetwork(){
-		//We may need to write our own communication thing
-		//instead of calling this method
-	}
-	/**
-	 * Leech off of this server
-	 */
-	public void watchNetwork(){
+	public void spawnNewServer(){
 		//We may need to write our own communication thing
 		//instead of calling this method
 	}
@@ -110,15 +103,16 @@ public class ChatServer{
 		//else would be difficult.
 	}
 	/**
+	 * Shutdown all servers in this network
+	 */
+	public void shutdown(){}
+	/**
 	 * Change the ChatServer's name
 	 * @param name 
 	 */
 	public void changeNetworkName(String name){
 		networkName = name;
 		//broadcast to all network name listeners
-	}
-	public static abstract class NetworkNameListener{
-		abstract void callback();
 	}
 	
 	//NODES
@@ -169,9 +163,6 @@ public class ChatServer{
 		for (NodeListener listener : nodeListeners)
 			listener.callback(node, false);
 	}
-	public static abstract class NodeListener{
-		abstract void callback(NodeCache.Node affectedNode, NodeCache.SyncType type, NodeCache.Node[] updatedNodes);
-	}
 	
 	//CHAT
 	/**
@@ -182,10 +173,12 @@ public class ChatServer{
 	 */
 	public void sendMessage(int senderID, int recipientID, String message){
 		//SendVisitor visitor = new SendVisitor();
-		visitor.visit(segment);
-	}
-	public static abstract class SendListener{
-		abstract void callback(int senderID, int recipientID, String mess);
+		segment.getNode(users.get(recipientID).networkID, new Node.Listener(){
+			@Override
+			public void callback(Node n) {
+				((ChatServer) n.getData("ChatServer")).clients.get(recipientID)
+			}
+		});
 	}
 	
 	//USERS
@@ -199,9 +192,6 @@ public class ChatServer{
 			users.get(userID).name = name;
 			//TODO, broadcast name change
 		}
-	}
-	public static abstract class UserListener{
-		abstract void callback();
 	}
 	public static class ChatUser implements Serializable{
 		//Random color generator

@@ -188,10 +188,25 @@ public class ChatTab extends JPanel{
 	 */
 	public void updateUser(int userid, String username){
 		ChatUser cu = container.chatUsers.get(userid);
-		if (cu == null || username == null)
+		if (cu == null && username == null)
 			return;
+		//Remove a user
+		if (username == null){
+			writeStatus("<b>"+cu.name+"</b> is offline");
+			container.chatUsers.remove(userid);
+			chatUsersLst.removeElement(cu);
+		}
+		//Add a new user
+		else if (cu != null){
+			cu = new ChatUser(userid, username, )
+			container.chatUsers.put(user.id, user);
+			//Can't send messages to yourself
+			if (userid != container.activeUser.id)
+				chatUsersLst.addElement(cu);
+			writeStatus("<b>"+user.name+"</b> is online");
+		}
 		//Update existing username
-		if (!cu.name.equals(username)){
+		else if (!cu.name.equals(username)){
 			writeStatus("<b>"+cu.name+"</b> is now known as <b>"+username+"</b>");
 			cu.name = username;
 			//Notify the user list
@@ -207,31 +222,6 @@ public class ChatTab extends JPanel{
 						dl.contentsChanged(updateEvt);
 				}
 			}
-		}
-	}
-	/**
-	 * Adds a user to the chatroom
-	 * @param user the new user
-	 */
-	public void addUser(ChatUser user){
-		if (!container.chatUsers.containsKey(user.id)){
-			container.chatUsers.put(user.id, user);
-			//Can't send messages to yourself
-			if (user.id != container.activeUser.id)
-				chatUsersLst.addElement(user);
-			writeStatus("<b>"+user.name+"</b> is online");
-		}
-	}
-	/**
-	 * Removes a user from the chatroom
-	 * @param userid the user's id
-	 */
-	public void removeUser(int userid){
-		ChatUser cu = container.chatUsers.get(userid);
-		if (cu != null){
-			writeStatus("<b>"+cu.name+"</b> is offline");
-			container.chatUsers.remove(userid);
-			chatUsersLst.removeElement(cu);
 		}
 	}
 	/**

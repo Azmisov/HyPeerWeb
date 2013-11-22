@@ -15,6 +15,8 @@ import javax.swing.GroupLayout.ParallelGroup;
 import javax.swing.GroupLayout.SequentialGroup;
 import javax.swing.border.CompoundBorder;
 import javax.swing.border.EmptyBorder;
+import javax.swing.event.DocumentEvent;
+import javax.swing.event.DocumentListener;
 import javax.swing.table.AbstractTableModel;
 
 /**
@@ -43,6 +45,7 @@ public class ChatClient extends JFrame{
 	protected ChatUser activeUser;						//The user associated with this client
 	protected NodeCache nodeCache = new NodeCache();	//List of all nodes in HyPeerWeb
 	private Node selected;								//The selected node
+	private String subnetName;
 	
 	//GUI components
 	private final ChatTab chat = new ChatTab(this, padding, title);
@@ -51,6 +54,7 @@ public class ChatClient extends JFrame{
 	private final NodeInfo nodeInfo = new NodeInfo();
 	private final JTable connectList = new JTable(nodeInfo);
 	private final ListTab listTab = new ListTab(this);
+	private final JTextField txtSubnetName = new JTextField();
 	private ArrayList<JPanel> boxes;
 		
 	public ChatClient(){
@@ -186,7 +190,14 @@ public class ChatClient extends JFrame{
 		//Segment name
 		JLabel lblSeg = new JLabel("Subnet Name:");
 		lblSeg.setFont(bold);
-		JTextField txtSeg = new JTextField();
+		txtSubnetName.addActionListener(new ActionListener(){
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				String newName = txtSubnetName.getText();
+				if (server != null && !newName.equals(subnetName))
+					server.changeNetworkName(newName);
+			}
+		});
 		
 		//Username
 		JLabel lblName = new JLabel("Chat Alias:");
@@ -211,7 +222,7 @@ public class ChatClient extends JFrame{
 		c.insets = new Insets(0, 0, 2, 0);
 		box.add(lblSeg, c);
 		c.gridy++;
-		box.add(txtSeg, c);
+		box.add(txtSubnetName, c);
 		c.gridy++;
 		box.add(lblName, c);
 		c.gridy++;
@@ -323,49 +334,38 @@ public class ChatClient extends JFrame{
 	//</editor-fold>
 	
 	//ACTIONS
-	public void setConnected(boolean connected){
+	protected void setConnected(boolean connected){
 		boxes.get(0).setVisible(!connected);
 		boxes.get(1).setVisible(connected);
 		boxes.get(2).setVisible(connected);
 	}
-	public void sendMessage(int userID, int recipientID, String message){
+	protected void sendMessage(int userID, int recipientID, String message){
 		if (server != null)
 			server.sendMessage(userID, recipientID, message);
 	}
-	public void setSelectedNode(Node n){
+	protected void setSelectedNode(Node n){
 		selected = n;
 		nodeSelect.setValue(n == null ? -1 : n.getWebId());
 		nodeInfo.updateInfo(n);
 	}
-	public void testChatRoom(){
+	protected void testChatRoom(){
 		(new Thread(new ChatSimulation())).start();
 	}
 	
 	//LISTENERS
-	private final NetworkNameListener networkListener = new NetworkNameListener(){
-		@Override
-		void callback() {
-			
-		}
-	};
-	private final UserListener userListener = new UserListener(){
-		@Override
-		void callback() {
-			
-		}
-	};
-	private final NodeListener nodeListener = new NodeListener(){
-		@Override
-		void callback(Node affectedNode, NodeCache.SyncType type, Node[] updatedNodes) {
-			
-		}
-	};
-	private final SendListener sendListener = new SendListener(){
-		@Override
-		void callback(int senderID, int recipientID, String mess) {
-			chat.receiveMessage(senderID, recipientID, mess);
-		}
-	};
+	public void updateNetworkName(String newName){
+		txtSubnetName.setText(newName);
+		subnetName = newName;
+	}
+	public void updateUser(){
+		
+	}
+	public void updateNodeCache(Node affectedNode, NodeCache.SyncType type, Node[] updatedNodes){
+		
+	}
+	public void receiveMessage(int senderID, int recipientID, String mess){
+		chat.receiveMessage(senderID, recipientID, mess);
+	}
 	
 	private class ChatSimulation implements Runnable{
 		@Override
