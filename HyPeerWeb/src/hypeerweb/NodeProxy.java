@@ -11,9 +11,38 @@ public class NodeProxy extends Node{
     public NodeProxy(Node node){
 		super(node.webID, node.height);
 		raddr = new RemoteAddress(node.UID);
-		L = new LinksProxy(node.L);
     }
 
+	@Override
+	protected Node addChild(Database db, Node child) {
+		return (Node) request("addChild",new String[] {"hypeerweb.Database", "hypeerweb.Node"}, new Object[] {db, child}, true);
+	}
+
+	@Override
+	protected boolean replaceNode(Database db, Node toReplace) {
+		return (boolean) request("replaceNode", new String[] {"hypeerweb.Database", "hypeerweb.Node"}, new Object[] {db, toReplace}, true);
+	}
+
+	@Override
+	protected Node disconnectNode(Database db) {
+		return (Node) request("disconnectNode", new String[] {"hypeerweb.Database"}, new Object[] {db}, true);
+	}
+
+	@Override
+	protected Node findValidNode(Criteria x) {
+		return (Node) request("findValidNode", new String[] { "hypeerweb.Node.Criteria" }, new Object[] {x}, true);
+	}
+
+	@Override
+	protected Node findInsertionNode() {
+		return (Node) request("findInsertionNode");
+	}
+
+	@Override
+	protected Node findDisconnectNode() {
+		return (Node) request("findDisconnectNode");
+	}
+	
 	@Override
     public void accept(AbstractVisitor p0){
 		request("accept", new String[]{"hypeerweb.visitors.AbstractVisitor"}, new Object[]{p0}, false);
@@ -54,6 +83,41 @@ public class NodeProxy extends Node{
     public Node getInverseSurrogateFold(){
 		return (Node) request("getInverseSurrogateFold");
     }
+
+	@Override
+	public Links getLinks() {
+		return (Links) request("getLinks");
+	}
+
+	@Override
+	public void setWebID(int id) {
+		request("setWebID", new String[] {"int"}, new Object[] {id}, false);
+	}
+
+	@Override
+	protected void setHeight(int h) {
+		request("setHeight", new String[] {"int"}, new Object[] {h}, false);
+	}
+
+	@Override
+	protected void setFoldState(FoldState state) {
+		request("setFoldState", new String[] {"hypeerweb.Node.FoldState"}, new Object[] {state}, false);
+	}
+
+	@Override
+	public void setData(String key, Object val) {
+		request("setData", new String[] {"java.lang.String", "java.lang.Object"}, new Object[] {key, val}, false);
+	}
+
+	@Override
+	public Object getData(String key) {
+		return request("getData", new String[] {"java.lang.String"}, new Object[] {key}, true);
+	}
+
+	@Override
+	protected FoldState getFoldState() {
+		return (FoldState) request("getFoldState");
+	}
 	
 	private Object request(String name){
 		return request(name, null, null, true);

@@ -289,7 +289,7 @@ public class Node implements NodeInterface, Serializable {
 	 * Defines a set of criteria for a valid node point
 	 * (whether that be for an insertionPoint or disconnectPoint)
 	 */
-	private static interface Criteria{
+	protected static interface Criteria{
 		/**
 		 * Checks to see if the "friend" of the "origin" node fits some criteria
 		 * @param origin the originating node
@@ -303,7 +303,7 @@ public class Node implements NodeInterface, Serializable {
 	 * @param x the Criteria that denotes a valid node
 	 * @return a valid node
 	 */
-	private Node findValidNode(Criteria x){
+	protected Node findValidNode(Criteria x){
 		int level = recurseLevel;
 		//Nodes we've checked already
 		TreeSet<Node> visited = new TreeSet<>();
@@ -666,7 +666,7 @@ public class Node implements NodeInterface, Serializable {
 	 * Switches the Fold State pattern state
 	 * @param stable whether or not to switch to the stable state
 	 */
-	private void setFoldState(FoldState state){
+	protected void setFoldState(FoldState state){
 		foldState = state;
 	}
 	/**
@@ -691,10 +691,10 @@ public class Node implements NodeInterface, Serializable {
 	 * Gets this node's fold state
 	 * @return a FoldState
 	 */
-	private FoldState getFoldState(){
+	protected FoldState getFoldState(){
 		return foldState;
 	}
-	private enum FoldState{
+	protected enum FoldState{
 		STABLE{
 			//After running we should be in an unstable state
 			@Override
