@@ -143,16 +143,6 @@ public class ChatClient extends JFrame{
 		txtIP.setBorder(txtPad);
 		txtPort.setBorder(txtPad);
 		
-		//Chat simulation
-		JButton testBtn = new JButton("Run Simulation");
-		testBtn.setPreferredSize(new Dimension(150, 25));
-		testBtn.addActionListener(new ActionListener(){
-			@Override
-			public void actionPerformed(ActionEvent e) {
-				testChatRoom();
-			}
-		});
-		
 		// <editor-fold defaultstate="collapsed" desc="Layout components in grid">
 		JPanel box = new JPanel();
 		box.setLayout(new GridBagLayout());
@@ -181,7 +171,6 @@ public class ChatClient extends JFrame{
 		box.add(txtPort, c);
 		c.gridy++;
 		c.insets.top = 20;
-		box.add(testBtn, c);
 		// </editor-fold>
 		
 		return box;
@@ -348,17 +337,14 @@ public class ChatClient extends JFrame{
 		nodeSelect.setValue(n == null ? -1 : n.getWebId());
 		nodeInfo.updateInfo(n);
 	}
-	protected void testChatRoom(){
-		(new Thread(new ChatSimulation())).start();
-	}
 	
 	//LISTENERS
 	public void updateNetworkName(String newName){
 		txtSubnetName.setText(newName);
 		subnetName = newName;
 	}
-	public void updateUser(){
-		
+	public void updateUser(int userid, String username, int networkid){
+		chat.updateUser(userid, username, networkid);
 	}
 	public void updateNodeCache(Node affectedNode, NodeCache.SyncType type, Node[] updatedNodes){
 		
@@ -367,37 +353,6 @@ public class ChatClient extends JFrame{
 		chat.receiveMessage(senderID, recipientID, mess);
 	}
 	
-	private class ChatSimulation implements Runnable{
-		@Override
-		public void run() {
-			int delay = 3000;
-			try {
-				chat.writeStatus("Beginning chat simulation");
-				chat.updateUser(0, "user90210");
-				sleep(delay);
-				chat.receiveMessage(0, -1, "Hello world");
-				sleep(delay);
-				chat.updateUser(0, "isaac");
-				sleep(delay);
-				chat.receiveMessage(0, -1, "blue babies");
-				sleep(delay);
-				chat.receiveMessage(0, -1, "Someone join me.... I'm getting bored");
-				sleep(delay);
-				chat.updateUser(1, "John");
-				sleep(delay);
-				chat.receiveMessage(0, 1, "Dude what is up");
-				sleep(delay);
-				chat.receiveMessage(1, 0, "Hey, I like your style bro");
-				sleep(delay);
-				chat.updateUser(0, null);
-				sleep(delay);
-				chat.updateUser(1, null);
-				chat.writeStatus("Chat simulation finished");
-			} catch (InterruptedException ex) {
-				System.out.println("Failed to run chat simulation");
-			}
-		}
-	}
 	private class NodeInfo extends AbstractTableModel{
 		ArrayList<String[]> data = new ArrayList();
 		public void updateInfo(Node n){
