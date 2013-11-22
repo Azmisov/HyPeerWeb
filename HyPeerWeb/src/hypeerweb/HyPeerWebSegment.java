@@ -127,6 +127,10 @@ public class HyPeerWebSegment<T extends Node> extends Node implements HyPeerWebI
 		else
 			state.addNode(this, listener);
 	}
+	protected void addDistantChild(Node child)
+	{
+		nodes.put(child.getWebId(), child);
+	}
 	/**
 	 * Holds the state of the entire HyPeerWeb, not just
 	 * this individual segment. Handles special cases for
@@ -216,7 +220,7 @@ public class HyPeerWebSegment<T extends Node> extends Node implements HyPeerWebI
 						else{
 							//Node successfully added!
 							//TODO: might need to change this here
-							web.nodes.put(child.getWebId(), child);
+							web.addDistantChild(child);
 							listener.callback(child);
 						}
 					}
