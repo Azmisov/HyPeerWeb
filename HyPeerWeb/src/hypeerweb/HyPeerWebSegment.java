@@ -9,7 +9,6 @@ import validator.HyPeerWebInterface;
 
 /**
  * The Great HyPeerWeb
- * TODO: isSegmentEmpty check for state HAS_NONE
  * @param <T> The Node type for this HyPeerWeb instance
  * @author isaac
  */
@@ -92,7 +91,6 @@ public class HyPeerWebSegment<T extends Node> extends Node implements HyPeerWebI
 	 * @throws Exception if it fails to remove the node
 	 */
 	public void removeNode(T node, Node.Listener listener){
-		//TODO, this will not work
 		state.removeNode(this, node, listener);
 	}
 	/**
@@ -120,8 +118,6 @@ public class HyPeerWebSegment<T extends Node> extends Node implements HyPeerWebI
 	 * @throws Exception if it fails to add a node
 	 */
 	public void addNode(Node.Listener listener){
-		//TODO: pass in the node to add to .addNode
-		//TODO, only execute addNode on nonempty segment
 		if (isSegmentEmpty())
 			getNonemptySegment().addNode(listener);
 		else
