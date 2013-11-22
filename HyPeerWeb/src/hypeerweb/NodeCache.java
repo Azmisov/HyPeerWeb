@@ -67,6 +67,7 @@ public class NodeCache implements Serializable{
 		
 		//TODO: account for different SyncType's
 		//i.e., replace sync type?
+				//todo remove dirty nodes
 		
 		Integer[] obj = dirty.toArray(new Integer[dirty.size()]);
 		int[] ret = new int[obj.length];
