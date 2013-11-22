@@ -9,10 +9,15 @@ import java.net.UnknownHostException;
  * @author Scott Woodfield
  */
 public class RemoteAddress{
+	//Port number constants
+	public static final int
+		MIN_PORT = 49152,
+		MAX_PORT = 65535,
+		DEFAULT_PORT = 49200;
 	//The machineAddr of the RemoteAddress
 	public final InetAddress ip;
 	//The portNumber of the RemoteAddress
-	public final PortNumber port;
+	public final int port;
 	//The localObjectId of the RemoteAddress
 	public final int UID;
 	
@@ -23,16 +28,18 @@ public class RemoteAddress{
 	 * @param UID the unique ID of the object in the application of the other machine
 	 */
 	public RemoteAddress(int UID) {
-		this(null, PortNumber.getApplicationsPortNumber(), UID);
+		this(null, Communicator.getAddress().port, UID);
 	}
 	/**
 	 * Constructs a RemoteAddress from a given machine name, portNumber, and unique identifier
 	 * @param machineName the name of the machine, may be an IP ip or domain name.
 		pass null to use localhost as the machine ip
 	 * @param portNumber the portNumber of the application the object is in.
+	 *	port must be within MIN_PORT and MAX_PORT constants
 	 * @param UID the unique id of the object in the application of the other machine
 	 */
-	public RemoteAddress(String machineName, PortNumber portNumber, int UID) {
+	public RemoteAddress(String machineName, int portNumber, int UID){
+		assert(portNumber >= MIN_PORT && portNumber <= MAX_PORT);
 		InetAddress address_temp = null;
 		if (machineName != null){
 			try {
@@ -62,19 +69,15 @@ public class RemoteAddress{
 	 * @return true, if the objects are on the same machine
 	 */
 	public boolean onSameMachineAs(RemoteAddress raddr){
-		return raddr.ip.equals(ip) &&
-		       raddr.port.equals(port);
+		return raddr.ip.equals(ip) && raddr.port == port;
 	}
 	
 	//CLASS OVERRIDES
 	@Override
 	public int hashCode(){
-		long result = 0;
+		long result = port + UID;
 		if (ip != null)
 			result += ip.hashCode();
-		if (port != null)
-			result += port.hashCode();
-		result += UID;
 		return (int) result;
 	}
 	@Override
@@ -85,11 +88,8 @@ public class RemoteAddress{
 			
 			result = ((ip == null && raddr.ip == null ) ||
 					  (ip != null && ip.equals(raddr.ip)))
-					 &&
-			         ((port == null && raddr.port == null) ||
-			          (port != null && port.equals(raddr.port)))
-					 &&
-					 (UID == raddr.UID);
+						&& port == raddr.port
+						&& UID == raddr.UID;
 		}
 		return result;                 
 	}

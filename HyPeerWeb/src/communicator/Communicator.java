@@ -11,7 +11,6 @@ import java.net.Socket;
  * The deamon used to both send and receive commands from other applications that may be on this or other machines.
  * The Communicator is a singleton. Communicator must be in the same package of all applications.
  * @author Scott Woodfield
- *
  */
 public class Communicator extends Thread{
 	private static Communicator instance = null;
@@ -27,23 +26,24 @@ public class Communicator extends Thread{
 	/**
 	 * Starts up the communicator
 	 */
-	private Communicator(PortNumber port) {
+	private Communicator(int port) {
 		try{
 	   		address = new RemoteAddress(InetAddress.getLocalHost().getHostAddress(), port, 0);
-	   		socket = new ServerSocket(address.port.getValue());
+	   		socket = new ServerSocket(address.port);
 			this.start();
 		} catch(IOException e){
 			System.err.println(e.getMessage());
 			System.err.println(e.getStackTrace());
 		}
 	}
+	
 	/**
 	 * Creates the single PeerCommunicator listening on the indicated port number.
 	 * Must be invoked before a singleton is retrieved.
-	 * @param portNumber port to listen on; null to use the default port
+	 * @param port port to listen on; must be within RemoteAddress.MAX/MIN_PORT constants
 	 */
-	public static void startup(PortNumber portNumber){
-		instance = new Communicator(portNumber);
+	public static void startup(int port){
+		instance = new Communicator(port);
 	}
 	/**
 	 * Shuts down the communicator thread
@@ -57,7 +57,7 @@ public class Communicator extends Thread{
 			System.err.println("Failed to close socket connection");
 		}
 	}
-	
+
 	/**
 	 * Initializes the server listener thread
 	 * When it receives a command it forks a ServerThread that actually executes
@@ -65,7 +65,7 @@ public class Communicator extends Thread{
 	 * Communicator won't lose a command that comes soon after this current command.
 	 */
 	@Override
-	public void run() {
+	public void run(){
 		while (!stop){
 			try {
 				Socket client = socket.accept();
@@ -91,7 +91,7 @@ public class Communicator extends Thread{
 			command.sync = sync;
 			command.UID = raddr.UID;
 			//open a socket connection
-			Socket ext_socket = new Socket(raddr.ip, raddr.port.getValue());
+			Socket ext_socket = new Socket(raddr.ip, raddr.port);
 			//object streams for java objects
 			ObjectOutputStream oos = new ObjectOutputStream(ext_socket.getOutputStream());
 			ObjectInputStream ois = new ObjectInputStream(ext_socket.getInputStream());
@@ -116,6 +116,7 @@ public class Communicator extends Thread{
 	public static int assignId(){
 		return LOCAL_ID_COUNTER++;
 	}
+	
 	/**
 	 * Retrieve the remote address for this communicator
 	 * @return the RemoteAddress object

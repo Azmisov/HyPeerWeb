@@ -3,8 +3,6 @@ package hypeerweb;
 import communicator.*;
 import hypeerweb.visitors.AbstractVisitor;
 import java.io.ObjectStreamException;
-import java.net.InetAddress;
-import java.net.UnknownHostException;
 import java.util.ArrayList;
 
 public class NodeProxy extends Node{
@@ -13,7 +11,7 @@ public class NodeProxy extends Node{
     public NodeProxy(Node node){
 		super(node.webID, node.height);
 		raddr = new RemoteAddress(node.UID);
-		L = new LinksProxy(raddr);
+		L = new LinksProxy(node.L);
     }
 
 	@Override
@@ -71,8 +69,7 @@ public class NodeProxy extends Node{
 	}
 	@Override
 	public Object readResolve() throws ObjectStreamException {
-		RemoteAddress app = Communicator.getAddress();
-		if (raddr.ip.equals(app.ip) && raddr.port.equals(app.port)){
+		if (raddr.onSameMachineAs(Communicator.getAddress())){
 			for (HyPeerWebSegment segment : HyPeerWebSegment.segmentList) {
 				Node node = segment.getNode(webID, raddr.UID);
 				if (node != null)
