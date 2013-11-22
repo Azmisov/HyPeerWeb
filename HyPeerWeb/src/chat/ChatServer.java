@@ -3,7 +3,6 @@ package chat;
 import hypeerweb.HyPeerWebSegment;
 import hypeerweb.Node;
 import hypeerweb.NodeCache;
-import hypeerweb.visitors.SendVisitor;
 import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Random;
@@ -20,7 +19,7 @@ public class ChatServer{
 	private static final Random randomName = new Random();
 	private final HashMap<Integer, ChatUser> users = new HashMap();
 	//List of all users and their GUI/Clients that are leeching on this network
-	private final HashMap<Integer, Client> clients = new HashMap();
+	private final HashMap<Integer, ChatUser> clients = new HashMap();
 	
 	public ChatServer() throws Exception{
 		segment = new HyPeerWebSegment("InceptionWeb.db", -1);
@@ -42,19 +41,19 @@ public class ChatServer{
 	 * @param ul user update listener
 	 * @return the ChatUser for this GUI/Client
 	 */
-	public ChatUser registerClient(NetworkNameListener nwl, NodeListener nl, SendListener sl, UserListener ul){
-		Client c = new Client(nwl, nl, sl, ul);
+	public ChatUser registerClient(ChatClient client){
 		//Generate a userID that has not been taken already
 		int newUser;
 		do{
 			newUser = randomName.nextInt(9999);
 		} while (users.containsKey(newUser));
-		c.user = new ChatUser(newUser, "user"+newUser, segment.getWebId());
-		users.put(newUser, c.user);
-		clients.put(newUser, c);
+		ChatUser user = new ChatUser(newUser, "user"+newUser, segment.getWebId());
+		user.client = client;
+		users.put(newUser, user);
+		clients.put(newUser, user);
 		//TODO, broadcast this user update to all segments & userListeners
 		//TODO, send the client the nodecache, userlist, etc, through the listeners
-		return c.user;
+		return user;
 	}
 	/**
 	 * Unregisters a GUI/Client from the server
@@ -64,24 +63,6 @@ public class ChatServer{
 		users.remove(userID);
 		clients.remove(userID);
 		//TODO, broadcast this user update to all other segments
-	}
-	/**
-	 * Client object; holds all listeners and a
-	 * reference to the client's ChatUser
-	 */
-	private class Client{
-		public NetworkNameListener networkListener;
-		public NodeListener nodeListener;
-		public SendListener sendListener;
-		public UserListener userListener;
-		public ChatUser user;
-		
-		public Client(NetworkNameListener nwl, NodeListener nl, SendListener sl, UserListener ul){
-			networkListener = nwl;
-			nodeListener = nl;
-			sendListener = sl;
-			userListener = ul;	
-		}
 	}
 	
 	//NETWORK
@@ -160,7 +141,7 @@ public class ChatServer{
 		NodeCache.Node clean[] = new NodeCache.Node[dirty.length];
 		
 		//Notify all listeners that the cache changed
-		for (Client client : clients.values())
+		for (ChatUser client : clients.values())
 			client.nodeListener.callback(cache.nodes.get(n.getWebId()), type, clean);
 	}
 	
@@ -171,13 +152,13 @@ public class ChatServer{
 	 * @param recipientID who should receive the message (-1 to give to everyone)
 	 * @param message the message
 	 */
-	public void sendMessage(int senderID, int recipientID, String message){
-		//todo:this
-		//SendVisitor visitor = new SendVisitor();
+	public void sendMessage(final int senderID, final int recipientID, final String message){
 		segment.getNode(users.get(recipientID).networkID, new Node.Listener(){
 			@Override
 			public void callback(Node n) {
-				((ChatServer) n.getData("ChatServer")).clients.get(recipientID)
+				ChatServer server = (ChatServer) n.getData("ChatServer");
+				ChatClient client = server.clients.get(recipientID).client;
+				client.receiveMessage(senderID, recipientID, message);
 			}
 		});
 	}
@@ -203,6 +184,7 @@ public class ChatServer{
 		public int id;
 		//Server that owns this user
 		public int networkID;
+		public transient ChatClient client;
 		
 		/**
 		 * Create a new chat user
