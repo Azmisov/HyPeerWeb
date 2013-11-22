@@ -408,9 +408,9 @@ public class HyPeerWebSegment<T extends Node> extends Node implements HyPeerWebI
 	 * Get a list of all the nodes in the HyPeerWeb
 	 * @return an array of nodes
 	 */
-	public void getAllNodes(GetAllNodesListener listener) {
-		GetAllNodesVisitor visitor = new GetAllNodesVisitor(listener);
-	}
+//	public void getAllNodes(GetAllNodesListener listener) {
+//		GetAllNodesVisitor visitor = new GetAllNodesVisitor(listener);
+//	}
 	
 	/**
 	 * Retrieve a node with the specified webid
@@ -441,7 +441,7 @@ public class HyPeerWebSegment<T extends Node> extends Node implements HyPeerWebI
 		return state == HyPeerWebState.HAS_NONE;
 	}
 	
-	private class GetAllNodesVisitor extends BroadcastVisitor{
+/*	private class GetAllNodesVisitor extends BroadcastVisitor{
 		GetAllNodesListener l;
 		public GetAllNodesVisitor(GetAllNodesListener listener){
 			super();
@@ -451,7 +451,7 @@ public class HyPeerWebSegment<T extends Node> extends Node implements HyPeerWebI
 		public void performOperation(Node n) {
 			l.callback(((HyPeerWebSegment) n).);
 		}
-	}
+	}*/
 
 	public abstract class GetAllNodesListener{
 			public abstract void callback(NodeCache cache);
