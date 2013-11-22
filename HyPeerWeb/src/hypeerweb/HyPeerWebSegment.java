@@ -371,12 +371,7 @@ public class HyPeerWebSegment<T extends Node> extends Node implements HyPeerWebI
             builder.append(n);
         return builder.toString();
     }
-//	public T getNode(int webId, LocalObjectId id) {
-//		Node node = getNode(webId);
-//		if(node.getLocalObjectId().equals(id))
-//			return (T) node;
-//		return null;
-//	}
+
 	// </editor-fold>
 	
 	// <editor-fold defaultstate="collapsed" desc="HYPEERWEB GETTERS">
