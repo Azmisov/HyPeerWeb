@@ -30,7 +30,7 @@ public class ChatTab extends JPanel{
 	private final DefaultComboBoxModel<ChatUser> chatUsersLst = new DefaultComboBoxModel();
 	//The last user that chatted something
 	//If they send another message, we don't want to display their name twice
-	private ChatUser lastUserTo, lastUserFrom;
+	private int lastUserTo, lastUserFrom;
 	private final JTextArea chatBox;
 	
 	//Editing the chat log display
@@ -186,7 +186,7 @@ public class ChatTab extends JPanel{
 	 * @param userid the ID of the user we want to update
 	 * @param username new chat user alias
 	 */
-	public void updateUser(int userid, String username){
+	public void updateUser(int userid, String username, int networkid){
 		ChatUser cu = container.chatUsers.get(userid);
 		if (cu == null && username == null)
 			return;
@@ -197,29 +197,33 @@ public class ChatTab extends JPanel{
 			chatUsersLst.removeElement(cu);
 		}
 		//Add a new user
-		else if (cu != null){
-			cu = new ChatUser(userid, username, )
-			container.chatUsers.put(user.id, user);
+		else if (cu == null){
+			cu = new ChatUser(userid, username, networkid);
+			container.chatUsers.put(userid, cu);
 			//Can't send messages to yourself
 			if (userid != container.activeUser.id)
 				chatUsersLst.addElement(cu);
-			writeStatus("<b>"+user.name+"</b> is online");
+			writeStatus("<b>"+username+"</b> is online");
 		}
-		//Update existing username
-		else if (!cu.name.equals(username)){
-			writeStatus("<b>"+cu.name+"</b> is now known as <b>"+username+"</b>");
-			cu.name = username;
-			//Notify the user list
-			//Active user won't be in the user list
-			if (userid != container.activeUser.id){
-				int index = chatUsersLst.getIndexOf(cu);
-				//Make sure it exists; shouldn't happen, but just in case
-				if (index != -1){
-					ListDataEvent updateEvt = new ListDataEvent(
-						chatUsersLst, ListDataEvent.CONTENTS_CHANGED, index, index
-					);
-					for (ListDataListener dl: chatUsersLst.getListDataListeners())
-						dl.contentsChanged(updateEvt);
+		else{
+			//Always update the networkid
+			cu.networkID = networkid;
+			//Update existing username
+			if (!cu.name.equals(username)){
+				writeStatus("<b>"+cu.name+"</b> is now known as <b>"+username+"</b>");
+				cu.name = username;
+				//Notify the user list
+				//Active user won't be in the user list
+				if (userid != container.activeUser.id){
+					int index = chatUsersLst.getIndexOf(cu);
+					//Make sure it exists; shouldn't happen, but just in case
+					if (index != -1){
+						ListDataEvent updateEvt = new ListDataEvent(
+							chatUsersLst, ListDataEvent.CONTENTS_CHANGED, index, index
+						);
+						for (ListDataListener dl: chatUsersLst.getListDataListeners())
+							dl.contentsChanged(updateEvt);
+					}
 				}
 			}
 		}
@@ -277,7 +281,7 @@ public class ChatTab extends JPanel{
 		if (userFrom == null)
 			userFrom = new ChatUser(-1, "anonymous", -1);
 		//This person was the last one to chat something
-		if (userFrom == lastUserFrom && userTo == lastUserTo)
+		if (userFrom.id == lastUserFrom && userTo.id == lastUserTo)
 			writePlain(message+"<br/>");
 		else{
 			writeUser(userFrom);
@@ -286,8 +290,8 @@ public class ChatTab extends JPanel{
 				writeUser(userTo);
 			}
 			writePlain(": "+message+"<br/>");
-			lastUserFrom = userFrom;
-			lastUserTo = userTo;
+			lastUserFrom = userFrom.id;
+			lastUserTo = userTo.id;
 		}
 	}
 	/**
@@ -303,7 +307,7 @@ public class ChatTab extends JPanel{
 	 */
 	public void writeStatus(String message){
 		writeHTML(Tag.FONT, "status", message+"<br/>", null, null);
-		lastUserFrom = null;
+		lastUserFrom = -1;
 	}
 	
 	//HTML EDITING
