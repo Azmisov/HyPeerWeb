@@ -205,9 +205,9 @@ public class ChatServer{
 		 * Create a new chat user
 		 * @param id a unique id for this user
 		 * @param name the user's name
-		 * @param networkID the network that contains this user
+		 * @param networkid the network that contains this user
 		 */
-		public ChatUser(int id, String name, int networkID){
+		public ChatUser(int id, String name, int networkid){
 			//Random username color
 			//RGB values between 100-250
 			int delta = maxRGB-minRGB;
@@ -219,7 +219,7 @@ public class ChatServer{
 			);
 			this.name = name;
 			this.id = id;
-			this.networkID = networkID;
+			this.networkID = networkid;
 		}
 		@Override
 		public String toString(){

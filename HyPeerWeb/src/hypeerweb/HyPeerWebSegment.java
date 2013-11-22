@@ -9,7 +9,6 @@ import validator.HyPeerWebInterface;
 
 /**
  * The Great HyPeerWeb
- * TODO: isSegmentEmpty check for state HAS_NONE
  * @param <T> The Node type for this HyPeerWeb instance
  * @author isaac
  */
@@ -92,7 +91,6 @@ public class HyPeerWebSegment<T extends Node> extends Node implements HyPeerWebI
 	 * @throws Exception if it fails to remove the node
 	 */
 	public void removeNode(T node, Node.Listener listener){
-		//TODO, this will not work
 		state.removeNode(this, node, listener);
 	}
 	/**
@@ -120,12 +118,14 @@ public class HyPeerWebSegment<T extends Node> extends Node implements HyPeerWebI
 	 * @throws Exception if it fails to add a node
 	 */
 	public void addNode(Node.Listener listener){
-		//TODO: pass in the node to add to .addNode
-		//TODO, only execute addNode on nonempty segment
 		if (isSegmentEmpty())
 			getNonemptySegment().addNode(listener);
 		else
 			state.addNode(this, listener);
+	}
+	protected void addDistantChild(Node child)
+	{
+		nodes.put(child.getWebId(), child);
 	}
 	/**
 	 * Holds the state of the entire HyPeerWeb, not just
@@ -142,7 +142,7 @@ public class HyPeerWebSegment<T extends Node> extends Node implements HyPeerWebI
 				if (web.db != null && !web.db.addNode(first))
 					web.changeState(CORRUPT);
 				else{
-					web.nodes.put(0, first);
+					web.addDistantChild(first);
 					//broadcast state change to HAS_ONE
 					web.changeState(HAS_ONE);
 					listener.callback(first);
@@ -184,7 +184,7 @@ public class HyPeerWebSegment<T extends Node> extends Node implements HyPeerWebI
 					sec.L.setFold(first);
 					first.L.addNeighbor(sec);
 					sec.L.addNeighbor(first);
-					web.nodes.put(1, sec);
+					web.addDistantChild(sec);
 					web.changeState(HAS_MANY);
 					listener.callback(sec);					
 				}
@@ -216,7 +216,7 @@ public class HyPeerWebSegment<T extends Node> extends Node implements HyPeerWebI
 						else{
 							//Node successfully added!
 							//TODO: might need to change this here
-							web.nodes.put(child.getWebId(), child);
+							web.addDistantChild(child);
 							listener.callback(child);
 						}
 					}
