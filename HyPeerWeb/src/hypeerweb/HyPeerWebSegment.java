@@ -142,7 +142,7 @@ public class HyPeerWebSegment<T extends Node> extends Node implements HyPeerWebI
 				if (web.db != null && !web.db.addNode(first))
 					web.changeState(CORRUPT);
 				else{
-					web.nodes.put(0, first);
+					web.addDistantChild(first);
 					//broadcast state change to HAS_ONE
 					web.changeState(HAS_ONE);
 					listener.callback(first);
@@ -184,7 +184,7 @@ public class HyPeerWebSegment<T extends Node> extends Node implements HyPeerWebI
 					sec.L.setFold(first);
 					first.L.addNeighbor(sec);
 					sec.L.addNeighbor(first);
-					web.nodes.put(1, sec);
+					web.addDistantChild(sec);
 					web.changeState(HAS_MANY);
 					listener.callback(sec);					
 				}
