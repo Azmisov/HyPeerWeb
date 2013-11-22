@@ -3,6 +3,7 @@ package chat;
 import hypeerweb.HyPeerWebSegment;
 import hypeerweb.Node;
 import hypeerweb.NodeCache;
+import hypeerweb.visitors.BroadcastVisitor;
 import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Random;
@@ -139,10 +140,12 @@ public class ChatServer{
 		}
 		//Retrieve all dirty nodes
 		NodeCache.Node clean[] = new NodeCache.Node[dirty.length];
-		
+		//todo populate clean array
+		for(NodeCache.Node node : clean)
+			cache.addNode(node, false);
 		//Notify all listeners that the cache changed
-		for (ChatUser client : clients.values())
-			client.nodeListener.callback(cache.nodes.get(n.getWebId()), type, clean);
+		for(ChatUser user : clients.values())
+			user.client.updateNodeCache(cache.nodes.get(n.getWebId()), type, clean);
 	}
 	
 	//CHAT
@@ -153,14 +156,26 @@ public class ChatServer{
 	 * @param message the message
 	 */
 	public void sendMessage(final int senderID, final int recipientID, final String message){
-		segment.getNode(users.get(recipientID).networkID, new Node.Listener(){
-			@Override
-			public void callback(Node n) {
-				ChatServer server = (ChatServer) n.getData("ChatServer");
-				ChatClient client = server.clients.get(recipientID).client;
-				client.receiveMessage(senderID, recipientID, message);
-			}
-		});
+		if(recipientID == -1){
+			(new BroadcastVisitor(new Node.Listener() {
+				@Override
+				public void callback(Node n) {
+					ChatServer server = (ChatServer) n.getData("ChatServer");
+					for(ChatUser user : clients.values())
+						user.client.receiveMessage(senderID, -1, message);
+				}
+			})).begin(segment);
+		}
+		else{
+			segment.getNode(users.get(recipientID).networkID, new Node.Listener(){
+				@Override
+				public void callback(Node n) {
+					ChatServer server = (ChatServer) n.getData("ChatServer");
+					ChatClient client = server.clients.get(recipientID).client;
+					client.receiveMessage(senderID, recipientID, message);
+				}
+			});
+		}
 	}
 	
 	//USERS

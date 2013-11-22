@@ -4,9 +4,9 @@ import chat.ChatServer.*;
 import com.alee.laf.WebLookAndFeel;
 import hypeerweb.NodeCache.Node;
 import hypeerweb.NodeCache;
+import static hypeerweb.NodeCache.SyncType.*;
 import java.awt.*;
 import java.awt.event.*;
-import static java.lang.Thread.sleep;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -15,8 +15,6 @@ import javax.swing.GroupLayout.ParallelGroup;
 import javax.swing.GroupLayout.SequentialGroup;
 import javax.swing.border.CompoundBorder;
 import javax.swing.border.EmptyBorder;
-import javax.swing.event.DocumentEvent;
-import javax.swing.event.DocumentListener;
 import javax.swing.table.AbstractTableModel;
 
 /**
@@ -347,7 +345,20 @@ public class ChatClient extends JFrame{
 		chat.updateUser(userid, username, networkid);
 	}
 	public void updateNodeCache(Node affectedNode, NodeCache.SyncType type, Node[] updatedNodes){
-		
+		if (nodeCache != null){
+			switch (type){
+				case ADD:
+					nodeCache.addNode(affectedNode, false);
+					break;
+				case REMOVE:
+					nodeCache.removeNode(affectedNode, false);
+					break;
+			}
+			for (NodeCache.Node node : updatedNodes)
+				nodeCache.addNode(node, false);
+			//todo update listtab, graphtab, nodeinfo
+			listTab.draw();
+		}
 	}
 	public void receiveMessage(int senderID, int recipientID, String mess){
 		chat.receiveMessage(senderID, recipientID, mess);
