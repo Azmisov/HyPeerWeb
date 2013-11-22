@@ -147,7 +147,7 @@ public class ChatServer{
 	 */
 	private void resyncCache(Node n, NodeCache.SyncType type){
 		//These are a list of dirty nodes in our cache
-		int[] dirty;
+		int[] dirty = new int[1];
 		switch (type){
 			case ADD:
 				dirty = cache.addNode(n, true);
@@ -160,8 +160,8 @@ public class ChatServer{
 		NodeCache.Node clean[] = new NodeCache.Node[dirty.length];
 		
 		//Notify all listeners that the cache changed
-		for (NodeListener listener : nodeListeners)
-			listener.callback(node, false);
+		for (Client client : clients.values())
+			client.nodeListener.callback(cache.nodes.get(n.getWebId()), type, clean);
 	}
 	
 	//CHAT
@@ -172,6 +172,7 @@ public class ChatServer{
 	 * @param message the message
 	 */
 	public void sendMessage(int senderID, int recipientID, String message){
+		//todo:this
 		//SendVisitor visitor = new SendVisitor();
 		segment.getNode(users.get(recipientID).networkID, new Node.Listener(){
 			@Override
