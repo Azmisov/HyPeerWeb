@@ -41,7 +41,7 @@ public class ChatClient extends JFrame{
 	private ChatServer server;							//Server reference
 	protected HashMap<Integer, ChatUser> chatUsers;		//List of all chat users
 	protected ChatUser activeUser;						//The user associated with this client
-	protected NodeCache nodeCache = new NodeCache();	//List of all nodes in HyPeerWeb
+	protected NodeCache nodeCache = null;				//List of all nodes in HyPeerWeb
 	private Node selected;								//The selected node
 	
 	//GUI components
