@@ -1,6 +1,6 @@
 package hypeerweb;
 
-import communicator.LocalObjectId;
+import communicator.Communicator;
 import hypeerweb.visitors.AbstractVisitor;
 import java.io.ObjectStreamException;
 import java.io.Serializable;
@@ -14,11 +14,9 @@ import validator.NodeInterface;
  *  - make sure we can use == or .equals when we get to proxies
  * @author Guy
  */
-
 public class Node implements NodeInterface, Serializable {
 	//Serialization
-	private static final long serialVersionUID = 314159265L;
-	private LocalObjectId localObjectId;
+	public final int UID = Communicator.assignId();
 	//Node Attributes
 	protected int webID, height;
 	public Attributes data = new Attributes();
@@ -41,13 +39,13 @@ public class Node implements NodeInterface, Serializable {
 		this.webID = id;
 		this.height = height;
 		L = new Links();
-		localObjectId = new LocalObjectId(id);
 	}
 
 	//ADD OR REMOVE NODES
 	/**
 	 * Adds a child node to the current one
 	 * @param db the Database associated with the HyPeerWeb
+	 * @param child the Node to add as a child
 	 * @return the new child node; null if the node couldn't be added
 	 * @author Guy, Isaac, Brian
 	 */
@@ -64,7 +62,7 @@ public class Node implements NodeInterface, Serializable {
 		//child neighbors
 		ndc.updateDirect(this, child);
 		ndc.updateDirect(child, this);
-		for (Node n: L.getInverseSurrogateNeighborsSet()){
+		for (Node n: L.getInverseSurrogateNeighbors()){
 			ndc.updateDirect(child, n);
 			ndc.updateDirect(n, child);
 			//Remove surrogate reference to parent
@@ -73,7 +71,7 @@ public class Node implements NodeInterface, Serializable {
 		}
 		//adds a neighbor of parent as a surrogate neighbor of child if neighbor is childless
 		//and makes child an isn of neighbor
-		for (Node n: L.getNeighborsSet()){
+		for (Node n: L.getNeighbors()){
 			if (n.getHeight() < childHeight){
 				ndc.updateSurrogate(child, n);
 				ndc.updateInverse(n, child);
@@ -150,7 +148,7 @@ public class Node implements NodeInterface, Serializable {
 
 		//all of the neighbors of this except parent will have parent as surrogateNeighbor instead of neighbor, and
 		//parent will have all neighbors of this except itself as inverse surrogate neighbor
-		for (Node neighbor: L.getNeighborsSet()){
+		for (Node neighbor: L.getNeighbors()){
 			if(neighbor != parent){
 				ndc.updateSurrogate(neighbor, parent);
 				ndc.updateInverse(parent, neighbor);
@@ -160,7 +158,7 @@ public class Node implements NodeInterface, Serializable {
 		//remove this from parent neighbor list
 		ndc.removeDirect(parent, this);
 		//all SNs of this will have this removed from their ISN list
-		for (Node sn : L.getSurrogateNeighborsSet())
+		for (Node sn : L.getSurrogateNeighbors())
 			ndc.removeInverse(sn, this);
 
 		//Reverse the fold state; we will always have a fold - guaranteed
@@ -215,7 +213,7 @@ public class Node implements NodeInterface, Serializable {
 			return closest;
 		//If none are closer, get a SNeighbor
 		if (!mustBeCloser){
-			for (Node sn: L.getSurrogateNeighborsSet()){
+			for (Node sn: L.getSurrogateNeighbors()){
 				if (sn.scoreWebIdMatch(target) == base)
 					return sn;
 			}
@@ -252,12 +250,12 @@ public class Node implements NodeInterface, Serializable {
 			bitShifter <<= 1;
 		}
 		//If any of the neighbors match these webId's, we should broadcast to them
-		for(Node node : L.getNeighborsSet()){
+		for(Node node : L.getNeighbors()){
 			if (generatedNeighbors.contains(node.getWebId()))
 				found.add(node);
 		}
 		//Broadcast to any of our neighbor's children, if we have links to them
-		for(Node node : L.getInverseSurrogateNeighborsSet()){
+		for(Node node : L.getInverseSurrogateNeighbors()){
 			if (generatedInverseSurrogates.contains(node.getWebId()))
 				found.add(node);
 		}
@@ -272,12 +270,12 @@ public class Node implements NodeInterface, Serializable {
 		//This algorithm is just the reverse of getTreeChildren()
 		//First check for a neighbor with the correct ID
 		int neighborID = webID & ~Integer.lowestOneBit(webID);
-		for (Node n: L.getNeighborsSet()){
+		for (Node n: L.getNeighbors()){
 			if (n.getWebId() == neighborID)
 				return n;
 		}
 		//Otherwise, there must be a surrogate tree parent
-		for (Node sn: L.getSurrogateNeighborsSet()){
+		for (Node sn: L.getSurrogateNeighbors()){
 			if (sn.getWebId() == (neighborID & ~((1 << (sn.getHeight() - 1)) << 1)))
 				return sn;
 		}
@@ -328,7 +326,7 @@ public class Node implements NodeInterface, Serializable {
 				//Get a list of neighbors (friends)
 				friends = new ArrayList<>();
 				for (Node parent: parents)
-					friends.addAll(parent.L.getNeighborsSet());
+					friends.addAll(Arrays.asList(parent.L.getNeighbors()));
 				//Set non-visited friends as the new parents
 				parents = new ArrayList<>();
 				for (Node friend: friends){
@@ -359,8 +357,8 @@ public class Node implements NodeInterface, Serializable {
 	};
 	/**
 	 * Finds the closest valid insertion point (the parent
-	 * of the child to add) from a starting node, automatically deals with
-	 * the node's holes and insertable state
+ of the child to add) from a startuping node, automatically deals with
+ the node's holes and insertable state
 	 * @return the parent of the child to add
 	 * @author josh
 	 */
@@ -583,7 +581,7 @@ public class Node implements NodeInterface, Serializable {
 		if (webID == 0)
 			return null;
 		int parID = webID & ~Integer.highestOneBit(webID);
-		for (Node n : L.getNeighborsSet()) {
+		for (Node n : L.getNeighbors()) {
 			if (parID == n.getWebId())
 				return n;
 		}
@@ -787,62 +785,14 @@ public class Node implements NodeInterface, Serializable {
 			return false;
 		return this.webID == ((Node) obj).getWebId();
 	}
-	@Override
-	public String toString(){
-		StringBuilder builder = new StringBuilder();
-		builder.append("\nNode: ").append(webID).append("(").append(height).append(")");
-		Node f;
-		//Folds
-		//builder.append("\n\tFold State: ").append(foldState instanceof FoldStateStable ? "Stable" : "Unstable");
-		/*
-		ArrayList<Node> childs = getTreeChildren();
-		builder.append("\n\tTree Children: ");
-		for (Node c: childs)
-			builder.append(c.getWebId()).append(", ");
-		Node par = getTreeParent();
-		builder.append("\n\tTree Parent: ").append(par == null ? null : par.getWebId());
-		//*/
-		if ((f = L.getFold()) != null)
-			builder.append("\n\tFold: ").append(f.getWebId()).
-					append("(").append(f.getHeight()).append(")");
-		if ((f = L.getSurrogateFold()) != null)
-			builder.append("\n\tSFold: ").append(f.getWebId()).
-					append("(").append(f.getHeight()).append(")");
-		if ((f = L.getInverseSurrogateFold()) != null)
-			builder.append("\n\tISFold: ").append(f.getWebId()).
-					append("(").append(f.getHeight()).append(")");
-		//Neighbors
-		TreeSet<Node> temp;
-		if (!(temp = L.getNeighborsSet()).isEmpty()){
-			builder.append("\n\tNeighbors: ");
-			for (Node n : temp)
-				builder.append(n.getWebId()).append("(").append(n.getHeight()).append("), ");
-		}
-		if (!(temp = L.getSurrogateNeighborsSet()).isEmpty()){
-			builder.append("\n\tSNeighbors: ");
-			for (Node n : temp)
-				builder.append(n.getWebId()).append("(").append(n.getHeight()).append("), ");
-		}
-		if (!(temp = L.getInverseSurrogateNeighborsSet()).isEmpty()){
-			builder.append("\n\tISNeighbors: ");
-			for (Node n : temp)
-				builder.append(n.getWebId()).append("(").append(n.getHeight()).append("), ");
-		}
-		return builder.toString();
-	}
 	
+	//NETWORKING
 	public Object writeReplace() throws ObjectStreamException {
 		return new NodeProxy(this);
 	}
-	
 	public Object readResolve() throws ObjectStreamException {
 		return this;
 	}
-	
-	public LocalObjectId getLocalObjectId(){
-		return localObjectId;
-	}
-	
 	public static abstract class Listener {
 		public abstract void callback(Node n);
 	}

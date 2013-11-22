@@ -16,27 +16,35 @@ import java.net.Socket;
 public class Communicator extends Thread{
 	private static Communicator instance = null;
 	//Connection info for this server
-	private static GlobalObjectId myGlobalObjectId;
+	private static RemoteAddress address;
 	//The socket this Communicator is listening on.
 	private static ServerSocket socket;
 	//The variable indicating whether this PeerCommunicator (a long running process) should stop.
 	private static boolean stop = false;
+	//Counter for local object ids
+	private static int LOCAL_ID_COUNTER = Integer.MIN_VALUE;
 	
 	/**
 	 * Starts up the communicator
 	 */
 	private Communicator(PortNumber port) {
 		try{
-			String myIPAddress = InetAddress.getLocalHost().getHostAddress();
-	   		myGlobalObjectId = new GlobalObjectId(myIPAddress, port, null);
-	   		socket = new ServerSocket(myGlobalObjectId.getPortNumber().getValue());
+	   		address = new RemoteAddress(InetAddress.getLocalHost().getHostAddress(), port, 0);
+	   		socket = new ServerSocket(address.port.getValue());
 			this.start();
 		} catch(IOException e){
 			System.err.println(e.getMessage());
 			System.err.println(e.getStackTrace());
 		}
 	}
-
+	/**
+	 * Creates the single PeerCommunicator listening on the indicated port number.
+	 * Must be invoked before a singleton is retrieved.
+	 * @param portNumber port to listen on; null to use the default port
+	 */
+	public static void startup(PortNumber portNumber){
+		instance = new Communicator(portNumber);
+	}
 	/**
 	 * Shuts down the communicator thread
 	 * Also saves all Objects in the object database
@@ -68,32 +76,22 @@ public class Communicator extends Thread{
 				System.err.println(e.getStackTrace());
 			}
 		}
-		ObjectDB.getSingleton().save(null);
-	}
-	
-	/**
-	 * Creates the single PeerCommunicator listening on the indicated port number.
-	 * Must be invoked before a singleton is retrieved.
-	 * @param portNumber port to listen on; null to use the default port
-	 */
-	public static void createPeerCommunicator(PortNumber portNumber){
-		instance = new Communicator(portNumber);
 	}
 	
 	/**
 	 * Sends the indicated command to the target object indicated by the globalObjectId
-	 * @param globalObjectId the identifier of the remote object
+	 * @param raddr the identifier of the remote object
 	 * @param command the command to be sent to the remote object
 	 * @param sync should we wait for a response? (is this a synchronous command)
 	 * @return the results of the command, if sync is true
 	 */
-	public static Object request(GlobalObjectId globalObjectId, Command command, boolean sync){
+	public static Object request(RemoteAddress raddr, Command command, boolean sync){
 		Object result = null;
 		try {
 			command.sync = sync;
-			command.localObjectId = globalObjectId.getLocalObjectId();
+			command.UID = raddr.UID;
 			//open a socket connection
-			Socket ext_socket = new Socket(globalObjectId.getMachineAddr(), globalObjectId.getPortNumber().getValue());
+			Socket ext_socket = new Socket(raddr.ip, raddr.port.getValue());
 			//object streams for java objects
 			ObjectOutputStream oos = new ObjectOutputStream(ext_socket.getOutputStream());
 			ObjectInputStream ois = new ObjectInputStream(ext_socket.getInputStream());
@@ -109,5 +107,20 @@ public class Communicator extends Thread{
 			System.err.println(e.getStackTrace());
 		}  
 		return result;
+	}
+	
+	/**
+	 * Assigns a unique local object id
+	 * @return the unique id
+	 */
+	public static int assignId(){
+		return LOCAL_ID_COUNTER++;
+	}
+	/**
+	 * Retrieve the remote address for this communicator
+	 * @return the RemoteAddress object
+	 */
+	public static RemoteAddress getAddress(){
+		return address;
 	}
 }

@@ -1,142 +1,68 @@
 package hypeerweb;
 
 import communicator.*;
+import hypeerweb.visitors.AbstractVisitor;
 import java.io.ObjectStreamException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import java.util.ArrayList;
 
-public class NodeProxy
-    extends Node
-{
-    private GlobalObjectId globalObjectId;
+public class NodeProxy extends Node{
+    private final RemoteAddress raddr;
 
     public NodeProxy(Node node){
-		super(node.getWebId(), 0);
-		try {
-			this.globalObjectId = new GlobalObjectId(PortNumber.getApplicationsPortNumber(), node.getLocalObjectId());
-			L = new LinksProxy(PortNumber.getApplicationsPortNumber(), node.L.getLocalObjectId()));
-		} catch (UnknownHostException ex) {
-			Logger.getLogger(NodeProxy.class.getName()).log(Level.SEVERE, null, ex);
-		}
+		super(node.webID, node.height);
+		raddr = new RemoteAddress(node.UID);
+		L = new LinksProxy(raddr);
     }
 
 	@Override
-    public java.lang.String toString(){
-        String[] parameterTypeNames = new String[0];
-        Object[] actualParameters = new Object[0];
-        Command command = new Command(globalObjectId.getLocalObjectId(), "hypeerweb.Node", "toString", parameterTypeNames, actualParameters, true);
-        Object result = Communicator.getSingleton().sendSynchronous(globalObjectId, command);
-        return (java.lang.String)result;
+    public void accept(AbstractVisitor p0){
+		request("accept", new String[]{"hypeerweb.visitors.AbstractVisitor"}, new Object[]{p0}, false);
     }
-
-	@Override
-    public void accept(hypeerweb.visitors.AbstractVisitor p0){
-        String[] parameterTypeNames = new String[1];
-        parameterTypeNames[0] = "hypeerweb.visitors.AbstractVisitor";
-        Object[] actualParameters = new Object[1];
-        actualParameters[0] = p0;
-        Command command = new Command(globalObjectId.getLocalObjectId(), "hypeerweb.Node", "accept", parameterTypeNames, actualParameters, false);
-        Communicator.getSingleton().sendASynchronous(globalObjectId, command);
-    }
-
 	@Override
     public hypeerweb.Node[] getNeighbors(){
-        String[] parameterTypeNames = new String[0];
-        Object[] actualParameters = new Object[0];
-        Command command = new Command(globalObjectId.getLocalObjectId(), "hypeerweb.Node", "getNeighbors", parameterTypeNames, actualParameters, true);
-        Object result = Communicator.getSingleton().sendSynchronous(globalObjectId, command);
-        return (hypeerweb.Node[])result;
+		return (Node[]) request("getNeighbors");
     }
-
 	@Override
-    public hypeerweb.Node getFold(){
-        String[] parameterTypeNames = new String[0];
-        Object[] actualParameters = new Object[0];
-        Command command = new Command(globalObjectId.getLocalObjectId(), "hypeerweb.Node", "getFold", parameterTypeNames, actualParameters, true);
-        Object result = Communicator.getSingleton().sendSynchronous(globalObjectId, command);
-        return (hypeerweb.Node)result;
+    public Node getFold(){
+		return (Node) request("getFold");
     }
-
 	@Override
-    public int getHeight(){
-        String[] parameterTypeNames = new String[0];
-        Object[] actualParameters = new Object[0];
-        Command command = new Command(globalObjectId.getLocalObjectId(), "hypeerweb.Node", "getHeight", parameterTypeNames, actualParameters, true);
-        Object result = Communicator.getSingleton().sendSynchronous(globalObjectId, command);
-        return (Integer)result;
+    public ArrayList getTreeChildren(){
+		return (ArrayList<Node>) request("getTreeChildren");
     }
-
 	@Override
-    public java.util.ArrayList getTreeChildren(){
-        String[] parameterTypeNames = new String[0];
-        Object[] actualParameters = new Object[0];
-        Command command = new Command(globalObjectId.getLocalObjectId(), "hypeerweb.Node", "getTreeChildren", parameterTypeNames, actualParameters, true);
-        Object result = Communicator.getSingleton().sendSynchronous(globalObjectId, command);
-        return (java.util.ArrayList)result;
+    public Node getTreeParent(){
+		return (Node) request("getTreeParent");
     }
-
 	@Override
-    public hypeerweb.Node getTreeParent(){
-        String[] parameterTypeNames = new String[0];
-        Object[] actualParameters = new Object[0];
-        Command command = new Command(globalObjectId.getLocalObjectId(), "hypeerweb.Node", "getTreeParent", parameterTypeNames, actualParameters, true);
-        Object result = Communicator.getSingleton().sendSynchronous(globalObjectId, command);
-        return (hypeerweb.Node)result;
+    public Node[] getSurrogateNeighbors(){
+		return (Node[]) request("getSurrogateNeighbors");
     }
-
 	@Override
-    public hypeerweb.Node[] getSurrogateNeighbors(){
-        String[] parameterTypeNames = new String[0];
-        Object[] actualParameters = new Object[0];
-        Command command = new Command(globalObjectId.getLocalObjectId(), "hypeerweb.Node", "getSurrogateNeighbors", parameterTypeNames, actualParameters, true);
-        Object result = Communicator.getSingleton().sendSynchronous(globalObjectId, command);
-        return (hypeerweb.Node[])result;
+    public Node getCloserNode(int p0, boolean p1){
+		return (Node) request("getCloserNode", new String[]{"int", "boolean"}, new Object[]{p0, p1}, true);
     }
-
 	@Override
-    public hypeerweb.Node getCloserNode(int p0, boolean p1){
-        String[] parameterTypeNames = new String[2];
-        parameterTypeNames[0] = "int";
-        parameterTypeNames[1] = "boolean";
-        Object[] actualParameters = new Object[2];
-        actualParameters[0] = p0;
-        actualParameters[1] = p1;
-        Command command = new Command(globalObjectId.getLocalObjectId(), "hypeerweb.Node", "getCloserNode", parameterTypeNames, actualParameters, true);
-        Object result = Communicator.getSingleton().sendSynchronous(globalObjectId, command);
-        return (hypeerweb.Node)result;
+    public Node[] getInverseSurrogateNeighbors(){
+		return (Node[]) request("getInverseSurrogateNeighbors");
+	}
+	@Override
+    public Node getSurrogateFold(){
+        return (Node) request("getSurrogateFold");
     }
-
 	@Override
-    public hypeerweb.Node[] getInverseSurrogateNeighbors(){
-        String[] parameterTypeNames = new String[0];
-        Object[] actualParameters = new Object[0];
-        Command command = new Command(globalObjectId.getLocalObjectId(), "hypeerweb.Node", "getInverseSurrogateNeighbors", parameterTypeNames, actualParameters, true);
-        Object result = Communicator.getSingleton().sendSynchronous(globalObjectId, command);
-        return (hypeerweb.Node[])result;
-    }
-
-	@Override
-    public hypeerweb.Node getSurrogateFold(){
-        String[] parameterTypeNames = new String[0];
-        Object[] actualParameters = new Object[0];
-        Command command = new Command(globalObjectId.getLocalObjectId(), "hypeerweb.Node", "getSurrogateFold", parameterTypeNames, actualParameters, true);
-        Object result = Communicator.getSingleton().sendSynchronous(globalObjectId, command);
-        return (hypeerweb.Node)result;
-    }
-
-	@Override
-    public hypeerweb.Node getInverseSurrogateFold(){
-        String[] parameterTypeNames = new String[0];
-        Object[] actualParameters = new Object[0];
-        Object result = Communicator.getSingleton().sendSynchronous(globalObjectId, command);
-        return (hypeerweb.Node)result;
+    public Node getInverseSurrogateFold(){
+		return (Node) request("getInverseSurrogateFold");
     }
 	
-	private Object request(String name, String[] paramTypes, String[] paramVals, boolean sync){
-		Command command = new Command("hypeerweb.Node", "getInverseSurrogateFold", paramTypes, paramVals, sync);
-		return Communicator.request(globalObjectId, null, sync);
+	private Object request(String name){
+		return request(name, null, null, true);
+	}
+	private Object request(String name, String[] paramTypes, Object[] paramVals, boolean sync){
+		Command command = new Command("hypeerweb.Node", name, paramTypes, paramVals);
+		return Communicator.request(raddr, command, sync);
 	}
 	
 	@Override
@@ -145,21 +71,14 @@ public class NodeProxy
 	}
 	@Override
 	public Object readResolve() throws ObjectStreamException {
-			
-		try {
-			if(globalObjectId.getMachineAddr().equals(InetAddress.getLocalHost().getHostAddress())
-					&& globalObjectId.getPortNumber().equals(PortNumber.getApplicationsPortNumber()))
-				
-				for(HyPeerWebSegment segment : HyPeerWebSegment.segmentList) {
-					Node node = segment.getNode(webID, globalObjectId.getLocalObjectId());
-					if (node != null)
-						return node;
-				}
-				return null;
-		} catch (UnknownHostException ex) {
-			Logger.getLogger(NodeProxy.class.getName()).log(Level.SEVERE, null, ex);
+		RemoteAddress app = Communicator.getAddress();
+		if (raddr.ip.equals(app.ip) && raddr.port.equals(app.port)){
+			for (HyPeerWebSegment segment : HyPeerWebSegment.segmentList) {
+				Node node = segment.getNode(webID, raddr.UID);
+				if (node != null)
+					return node;
+			}
 		}
-		
 		return this;
 	}
 }

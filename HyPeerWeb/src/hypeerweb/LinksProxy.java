@@ -2,174 +2,80 @@ package hypeerweb;
 
 import communicator.*;
 
-public class LinksProxy
-    extends Links
-{
-    private GlobalObjectId globalObjectId;
+public class LinksProxy extends Links{
+    private final RemoteAddress raddr;
 
-    public LinksProxy(GlobalObjectId globalObjectId){
-        this.globalObjectId = globalObjectId;
+    public LinksProxy(Links real){
+		raddr = new RemoteAddress(real.UID);
     }
 
+	//GETTERS
 	@Override
-    public hypeerweb.Node getHighestLink(){
-        String[] parameterTypeNames = new String[0];
-        Object[] actualParameters = new Object[0];
-        Command command = new Command(globalObjectId.getLocalObjectId(), "hypeerweb.Links", "getHighestLink", parameterTypeNames, actualParameters, true);
-        Object result = Communicator.getSingleton().sendSynchronous(globalObjectId, command);
-        return (hypeerweb.Node)result;
+	public Node[] getAllLinks(){
+		return (Node[]) request("getAllLinks");
+	}
+	@Override
+    public Node getHighestLink(){
+		return (Node) request("getHighestLink");
+    }
+	@Override
+    public Node getLowestLink(){
+		return (Node) request("getLowestLink");
+    }
+	@Override
+    public Node getFold(){
+		return (Node) request("getFold");
+    }
+	@Override
+    public Node getSurrogateFold(){
+        return (Node) request("getSurrogateFold");
+    }
+	@Override
+    public Node getInverseSurrogateFold(){
+        return (Node) request("getInverseSurrogateFold");
+    }
+	@Override
+    public Node[] getNeighbors(){
+        return (Node[]) request("getNeighbors");
+    }
+	@Override
+    public Node getHighestNeighbor(){
+		return (Node) request("getHighestNeighbor");
+    }
+	@Override
+    public Node getLowestNeighbor(){
+        return (Node) request("getLowestNeighbor");
+    }
+	@Override
+    public Node[] getSurrogateNeighbors(){
+        return (Node[]) request("getSurrogateNeighbors");
+    }
+	@Override
+    public Node getHighestSurrogateNeighbor(){
+        return (Node) request("getHighestSurrogateNeighbor");
+	}
+	@Override
+    public Node getLowestSurrogateNeighbor(){
+        return (Node) request("getLowestSurrogateNeighbor");
+    }
+	@Override
+    public Node[] getInverseSurrogateNeighbors(){
+        return (Node[]) request("getInverseSurrogateNeighbors");
+    }
+	@Override
+    public Node getHighestInverseSurrogateNeighbor(){
+        return (Node) request("getHighestInverseSurrogateNeighbor");
+    }
+	@Override
+    public Node getLowestInverseSurrogateNeighbor(){
+		return (Node) request("getLowestInverseSurrogateNeighbor");
     }
 
-	@Override
-    public hypeerweb.Node getLowestLink(){
-        String[] parameterTypeNames = new String[0];
-        Object[] actualParameters = new Object[0];
-        Command command = new Command(globalObjectId.getLocalObjectId(), "hypeerweb.Links", "getLowestLink", parameterTypeNames, actualParameters, true);
-        Object result = Communicator.getSingleton().sendSynchronous(globalObjectId, command);
-        return (hypeerweb.Node)result;
-    }
-
-	@Override
-    public hypeerweb.Node getFold(){
-        String[] parameterTypeNames = new String[0];
-        Object[] actualParameters = new Object[0];
-        Command command = new Command(globalObjectId.getLocalObjectId(), "hypeerweb.Links", "getFold", parameterTypeNames, actualParameters, true);
-        Object result = Communicator.getSingleton().sendSynchronous(globalObjectId, command);
-        return (hypeerweb.Node)result;
-    }
-
-	@Override
-    public hypeerweb.Node getSurrogateFold(){
-        String[] parameterTypeNames = new String[0];
-        Object[] actualParameters = new Object[0];
-        Command command = new Command(globalObjectId.getLocalObjectId(), "hypeerweb.Links", "getSurrogateFold", parameterTypeNames, actualParameters, true);
-        Object result = Communicator.getSingleton().sendSynchronous(globalObjectId, command);
-        return (hypeerweb.Node)result;
-    }
-
-	@Override
-    public hypeerweb.Node getInverseSurrogateFold(){
-        String[] parameterTypeNames = new String[0];
-        Object[] actualParameters = new Object[0];
-        Command command = new Command(globalObjectId.getLocalObjectId(), "hypeerweb.Links", "getInverseSurrogateFold", parameterTypeNames, actualParameters, true);
-        Object result = Communicator.getSingleton().sendSynchronous(globalObjectId, command);
-        return (hypeerweb.Node)result;
-    }
-
-	@Override
-    public hypeerweb.Node[] getNeighbors(){
-        String[] parameterTypeNames = new String[0];
-        Object[] actualParameters = new Object[0];
-        Command command = new Command(globalObjectId.getLocalObjectId(), "hypeerweb.Links", "getNeighbors", parameterTypeNames, actualParameters, true);
-        Object result = Communicator.getSingleton().sendSynchronous(globalObjectId, command);
-        return (hypeerweb.Node[])result;
-    }
-
-	@Override
-    public hypeerweb.Node getHighestNeighbor(){
-        String[] parameterTypeNames = new String[0];
-        Object[] actualParameters = new Object[0];
-        Command command = new Command(globalObjectId.getLocalObjectId(), "hypeerweb.Links", "getHighestNeighbor", parameterTypeNames, actualParameters, true);
-        Object result = Communicator.getSingleton().sendSynchronous(globalObjectId, command);
-        return (hypeerweb.Node)result;
-    }
-
-	@Override
-    public hypeerweb.Node getLowestNeighbor(){
-        String[] parameterTypeNames = new String[0];
-        Object[] actualParameters = new Object[0];
-        Command command = new Command(globalObjectId.getLocalObjectId(), "hypeerweb.Links", "getLowestNeighbor", parameterTypeNames, actualParameters, true);
-        Object result = Communicator.getSingleton().sendSynchronous(globalObjectId, command);
-        return (hypeerweb.Node)result;
-    }
-
-	@Override
-    public hypeerweb.Node[] getSurrogateNeighbors(){
-        String[] parameterTypeNames = new String[0];
-        Object[] actualParameters = new Object[0];
-        Command command = new Command(globalObjectId.getLocalObjectId(), "hypeerweb.Links", "getSurrogateNeighbors", parameterTypeNames, actualParameters, true);
-        Object result = Communicator.getSingleton().sendSynchronous(globalObjectId, command);
-        return (hypeerweb.Node[])result;
-    }
-
-	@Override
-    public hypeerweb.Node getHighestSurrogateNeighbor(){
-        String[] parameterTypeNames = new String[0];
-        Object[] actualParameters = new Object[0];
-        Command command = new Command(globalObjectId.getLocalObjectId(), "hypeerweb.Links", "getHighestSurrogateNeighbor", parameterTypeNames, actualParameters, true);
-        Object result = Communicator.getSingleton().sendSynchronous(globalObjectId, command);
-        return (hypeerweb.Node)result;
-    }
-
-	@Override
-    public hypeerweb.Node getLowestSurrogateNeighbor(){
-        String[] parameterTypeNames = new String[0];
-        Object[] actualParameters = new Object[0];
-        Command command = new Command(globalObjectId.getLocalObjectId(), "hypeerweb.Links", "getLowestSurrogateNeighbor", parameterTypeNames, actualParameters, true);
-        Object result = Communicator.getSingleton().sendSynchronous(globalObjectId, command);
-        return (hypeerweb.Node)result;
-    }
-
-	@Override
-    public hypeerweb.Node[] getInverseSurrogateNeighbors(){
-        String[] parameterTypeNames = new String[0];
-        Object[] actualParameters = new Object[0];
-        Command command = new Command(globalObjectId.getLocalObjectId(), "hypeerweb.Links", "getInverseSurrogateNeighbors", parameterTypeNames, actualParameters, true);
-        Object result = Communicator.getSingleton().sendSynchronous(globalObjectId, command);
-        return (hypeerweb.Node[])result;
-    }
-
-	@Override
-    public hypeerweb.Node getHighestInverseSurrogateNeighbor(){
-        String[] parameterTypeNames = new String[0];
-        Object[] actualParameters = new Object[0];
-        Command command = new Command(globalObjectId.getLocalObjectId(), "hypeerweb.Links", "getHighestInverseSurrogateNeighbor", parameterTypeNames, actualParameters, true);
-        Object result = Communicator.getSingleton().sendSynchronous(globalObjectId, command);
-        return (hypeerweb.Node)result;
-    }
-
-	@Override
-    public hypeerweb.Node getLowestInverseSurrogateNeighbor(){
-        String[] parameterTypeNames = new String[0];
-        Object[] actualParameters = new Object[0];
-        Command command = new Command(globalObjectId.getLocalObjectId(), "hypeerweb.Links", "getLowestInverseSurrogateNeighbor", parameterTypeNames, actualParameters, true);
-        Object result = Communicator.getSingleton().sendSynchronous(globalObjectId, command);
-        return (hypeerweb.Node)result;
-    }
-
-	@Override
-    public java.util.TreeSet getNeighborsSet(){
-        String[] parameterTypeNames = new String[0];
-        Object[] actualParameters = new Object[0];
-        Command command = new Command(globalObjectId.getLocalObjectId(), "hypeerweb.Links", "getNeighborsSet", parameterTypeNames, actualParameters, true);
-        Object result = Communicator.getSingleton().sendSynchronous(globalObjectId, command);
-        return (java.util.TreeSet)result;
-    }
-
-	@Override
-    public java.util.TreeSet getSurrogateNeighborsSet(){
-        String[] parameterTypeNames = new String[0];
-        Object[] actualParameters = new Object[0];
-        Command command = new Command(globalObjectId.getLocalObjectId(), "hypeerweb.Links", "getSurrogateNeighborsSet", parameterTypeNames, actualParameters, true);
-        Object result = Communicator.getSingleton().sendSynchronous(globalObjectId, command);
-        return (java.util.TreeSet)result;
-    }
-
-	@Override
-    public java.util.TreeSet getInverseSurrogateNeighborsSet(){
-        String[] parameterTypeNames = new String[0];
-        Object[] actualParameters = new Object[0];
-        Command command = new Command(globalObjectId.getLocalObjectId(), "hypeerweb.Links", "getInverseSurrogateNeighborsSet", parameterTypeNames, actualParameters, true);
-        Object result = Communicator.getSingleton().sendSynchronous(globalObjectId, command);
-        return (java.util.TreeSet)result;
-    }
-
-	@Override
-    public java.util.TreeSet getAllLinks(){
-        String[] parameterTypeNames = new String[0];
-        Object[] actualParameters = new Object[0];
-        Command command = new Command(globalObjectId.getLocalObjectId(), "hypeerweb.Links", "getAllLinks", parameterTypeNames, actualParameters, true);
-        Object result = Communicator.getSingleton().sendSynchronous(globalObjectId, command);
-        return (java.util.TreeSet)result;
-    }
+	private Object request(String name){
+		return request(name, null, null, true);
+	}
+	private Object request(String name, String[] paramTypes, Object[] paramVals, boolean sync){
+		Command command = new Command("hypeerweb.Links", name, paramTypes, paramVals);
+		return Communicator.request(raddr, command, sync);
+	}
 }

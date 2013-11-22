@@ -1,6 +1,6 @@
 package hypeerweb;
 
-import communicator.LocalObjectId;
+import communicator.Communicator;
 import java.util.ArrayList;
 import java.util.TreeSet;
 
@@ -9,12 +9,13 @@ import java.util.TreeSet;
  * @author isaac
  */
 public class Links{
-	/**
-	 * All the possible node link/connection types
-	 */
+	//All the possible node link/connection types
 	public static enum Type {
 		FOLD, SFOLD, ISFOLD, NEIGHBOR, SNEIGHBOR, ISNEIGHBOR
 	}
+	//Serialization
+	public final int UID = Communicator.assignId();
+	//Link data
 	private Node fold;
 	private Node surrogateFold;
 	private Node inverseSurrogateFold;
@@ -22,7 +23,6 @@ public class Links{
 	private TreeSet<Node> surrogateNeighbors;
 	private TreeSet<Node> inverseSurrogateNeighbors;
 	private TreeSet<Node> highest;
-	private LocalObjectId localObjectId;
 	
 	/**
 	 * Creates an empty links object
@@ -32,7 +32,6 @@ public class Links{
 		surrogateNeighbors = new TreeSet<>();
 		inverseSurrogateNeighbors = new TreeSet<>();
 		highest = new TreeSet<>();
-		localObjectId = new LocalObjectId();
 	}
 	/**
 	 * Creates a links object with predefined connections
@@ -226,6 +225,13 @@ public class Links{
 	
 	//GETTERS
 	/**
+	 * Get a sorted array of all Node links
+	 * @return an array of all connections
+	 */
+	public Node[] getAllLinks(){
+		return highest.toArray(new Node[highest.size()]);
+	}
+	/**
 	 * Gets the highest node out of all the connections
 	 * @return a node
 	 */
@@ -334,43 +340,5 @@ public class Links{
 		if (inverseSurrogateNeighbors.isEmpty())
 			return null;
 		return inverseSurrogateNeighbors.first();
-	}
-	
-	//PROTECTED GETTERS (WARNING, DO NOT MODIFY RETURNED VALUES)
-	/**
-	 * Gets neighbors as a collection
-	 * Implementor must not modify the values
-	 * @return a set of neighbors
-	 */
-	public TreeSet<Node> getNeighborsSet(){
-		return neighbors;
-	}
-	/**
-	 * Gets surrogate neighbors as a collection
-	 * Implementor must not modify the values
-	 * @return a set of surrogate neighbors
-	 */
-	public TreeSet<Node> getSurrogateNeighborsSet(){
-		return surrogateNeighbors;
-	}
-	/**
-	 * Gets inverse surrogate neighbors as a collection
-	 * Implementor must not modify the values
-	 * @return a set of inverse surrogate neighbors
-	 */
-	public TreeSet<Node> getInverseSurrogateNeighborsSet(){
-		return inverseSurrogateNeighbors;
-	}
-	/**
-	 * Gets the highest node set as a collection
-	 * Implementor must not modify the values
-	 * @return a set of all connections
-	 */
-	public TreeSet<Node> getAllLinks(){
-		return highest;
-	}
-	
-	public LocalObjectId getLocalObjectId() {
-		return localObjectId;
 	}
 }
