@@ -78,6 +78,7 @@ public class ListTab extends JPanel{
 	
 	public void draw(){
 		table.repaint();
+		segModel.updateSegments();
 		segmentBox.repaint();
 	}
 
@@ -96,7 +97,10 @@ public class ListTab extends JPanel{
 		
 		@Override
 		public int getRowCount() {
-			return container.nodeCache.nodes.size();
+			if(container.nodeCache == null)
+				return 0;
+			else
+				return container.nodeCache.nodes.size();
 		}
 
 		@Override
@@ -121,6 +125,9 @@ public class ListTab extends JPanel{
 
 		@Override
 		public Object getValueAt(int rowIndex, int columnIndex) {
+			if(container.nodeCache == null)
+				return null;
+			
 			String result = "";
 			Node node = (Node) container.nodeCache.nodes.values().toArray()[rowIndex];
 			int selection = segModel.getSelection();
@@ -179,18 +186,22 @@ public class ListTab extends JPanel{
 		//temporary
 		
 		int selection = -1;//-1 for all segments
+		String[] segments = {"All"};
 		
-		private String[] getSegments(){
+		private void updateSegments(){
+			if(container.nodeCache == null)
+				return;
+			
 			int size = container.nodeCache.segments.size();
 			int index = 1;
-			Integer[] segments = container.nodeCache.segments.toArray(new Integer[size]);
+			Integer[] seg = container.nodeCache.segments.toArray(new Integer[size]);
 			size++;//All goes first
-			String[] toReturn = new String[size];
-			toReturn[0] = "All";
-			for(Integer i : segments){
-				toReturn[index++] = i.toString();
+			segments = new String[size];
+			segments[0] = "All";
+			for(Integer i : seg){
+				segments[index++] = i.toString();
 			}
-			return toReturn;
+			
 		}
 		
 		@Override
@@ -216,12 +227,14 @@ public class ListTab extends JPanel{
 		@Override
 		public int getSize() {
 			//get number of segments
-			return getSegments().length;
+			return segments.length;
 		}
 
 		@Override
 		public Object getElementAt(int index) {
-			return getSegments()[index];
+			if(index < 0 || index >= getSize())
+				return null;
+			return segments[index];
 		}
 
 		@Override
@@ -235,7 +248,7 @@ public class ListTab extends JPanel{
 	}
 	
 	private static class selectionHandler implements ListSelectionListener{
-
+		//changes selected node if there is a click in the table
 		@Override
 		public void valueChanged(ListSelectionEvent e) {
 			ListSelectionModel lsm = (ListSelectionModel)e.getSource();
