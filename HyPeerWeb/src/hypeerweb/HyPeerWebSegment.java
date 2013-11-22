@@ -69,7 +69,21 @@ public class HyPeerWebSegment<T extends Node> extends Node implements HyPeerWebI
 	 */
 	public void removeNode(int webid, Node.Listener listener){
 		//TODO, make get node take in a listener
-		removeNode((T) getNode(webid, listener), listener);
+		HyPeerWebSegment seg = getNonemptySegment();
+		if (seg == null)
+			return;
+		if (isSegmentEmpty())
+			seg.removeNode(webid, listener);
+		else{
+			Node n = nodes.get(webid);
+			if(n != null)
+				listener.callback(n);
+			else{
+				removeNode((T)n, listener);
+				SendVisitor visitor = new SendVisitor(webid, listener);
+				visitor.visit(getFirstSegmentNode());
+			}
+		}
 	}
 	/**
 	 * Removes the node
@@ -79,7 +93,7 @@ public class HyPeerWebSegment<T extends Node> extends Node implements HyPeerWebI
 	 */
 	public void removeNode(T node, Node.Listener listener){
 		//TODO, this will not work
-		getNonemptySegment().state.removeNode(this, node, listener);
+		state.removeNode(this, node, listener);
 	}
 	/**
 	 * Removes all nodes from HyPeerWeb
@@ -355,6 +369,8 @@ public class HyPeerWebSegment<T extends Node> extends Node implements HyPeerWebI
 	 * @return the segment found
 	 */
 	public HyPeerWebSegment getNonemptySegment(){
+		if (HyPeerWebState.HAS_NONE == state)
+			return null;
 		if (!isSegmentEmpty())
 				return this;
 		else
@@ -392,9 +408,9 @@ public class HyPeerWebSegment<T extends Node> extends Node implements HyPeerWebI
 	 * Get a list of all the nodes in the HyPeerWeb
 	 * @return an array of nodes
 	 */
-	public void getAllNodes(GetAllNodesListener listener) {
-		GetAllNodesVisitor visitor = new GetAllNodesVisitor(listener);
-	}
+//	public void getAllNodes(GetAllNodesListener listener) {
+//		GetAllNodesVisitor visitor = new GetAllNodesVisitor(listener);
+//	}
 	
 	/**
 	 * Retrieve a node with the specified webid
@@ -403,6 +419,8 @@ public class HyPeerWebSegment<T extends Node> extends Node implements HyPeerWebI
 	 */
 	@Override
 	public void getNode(int webId, Node.Listener listener){
+		if (HyPeerWebState.HAS_NONE == state)
+			return;
 		if (isSegmentEmpty())
 			getNonemptySegment().getNode(webId, listener);
 		else{
@@ -423,7 +441,7 @@ public class HyPeerWebSegment<T extends Node> extends Node implements HyPeerWebI
 		return state == HyPeerWebState.HAS_NONE;
 	}
 	
-	private class GetAllNodesVisitor extends BroadcastVisitor{
+/*	private class GetAllNodesVisitor extends BroadcastVisitor{
 		GetAllNodesListener l;
 		public GetAllNodesVisitor(GetAllNodesListener listener){
 			super();
@@ -433,7 +451,7 @@ public class HyPeerWebSegment<T extends Node> extends Node implements HyPeerWebI
 		public void performOperation(Node n) {
 			l.callback(((HyPeerWebSegment) n).);
 		}
-	}
+	}*/
 
 	public abstract class GetAllNodesListener{
 			public abstract void callback(NodeCache cache);
