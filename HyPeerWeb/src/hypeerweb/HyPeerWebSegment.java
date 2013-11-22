@@ -1,7 +1,5 @@
 package hypeerweb;
 
-import chat.ChatServer;
-import communicator.LocalObjectId;
 import hypeerweb.visitors.SendVisitor;
 import hypeerweb.visitors.BroadcastVisitor;
 import java.util.ArrayList;
@@ -11,6 +9,7 @@ import validator.HyPeerWebInterface;
 
 /**
  * The Great HyPeerWeb
+ * TODO: isSegmentEmpty check for state HAS_NONE
  * @param <T> The Node type for this HyPeerWeb instance
  * @author isaac
  */
@@ -70,7 +69,7 @@ public class HyPeerWebSegment<T extends Node> extends Node implements HyPeerWebI
 	 */
 	public void removeNode(int webid, Node.Listener listener){
 		//TODO, make get node take in a listener
-		return removeNode(getNode(webid));
+		removeNode((T) getNode(webid, listener), listener);
 	}
 	/**
 	 * Removes the node
@@ -372,12 +371,12 @@ public class HyPeerWebSegment<T extends Node> extends Node implements HyPeerWebI
             builder.append(n);
         return builder.toString();
     }
-	public T getNode(int webId, LocalObjectId id) {
-		Node node = getNode(webId);
-		if(node.getLocalObjectId().equals(id))
-			return (T) node;
-		return null;
-	}
+//	public T getNode(int webId, LocalObjectId id) {
+//		Node node = getNode(webId);
+//		if(node.getLocalObjectId().equals(id))
+//			return (T) node;
+//		return null;
+//	}
 	// </editor-fold>
 	
 	// <editor-fold defaultstate="collapsed" desc="HYPEERWEB GETTERS">
@@ -408,9 +407,18 @@ public class HyPeerWebSegment<T extends Node> extends Node implements HyPeerWebI
 	 * @author isaac
 	 */
 	@Override
-	public T getNode(int webId){
-		//TODO, use sendvisitor to get actual node
-		return (T) getNonemptySegment().nodes.get(webId);
+	public void getNode(int webId, Node.Listener listener){
+		if (isSegmentEmpty())
+			getNonemptySegment().getNode(webId, listener);
+		else{
+			Node n = nodes.get(webId);
+			if(n != null)
+				listener.callback(n);
+			else{
+				SendVisitor visitor = new SendVisitor(webId, listener);
+				visitor.visit(getFirstSegmentNode());
+			}
+		}
 	}
 	/**
 	 * Is the HyPeerWeb empty?

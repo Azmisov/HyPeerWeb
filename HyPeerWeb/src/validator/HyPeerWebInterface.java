@@ -1,5 +1,7 @@
 package validator;
 
+import hypeerweb.Node;
+
 /**
  * The methods required to use the Validator.
  * 
@@ -23,7 +25,7 @@ public interface HyPeerWebInterface {
      * @pre none
      * @post If there is a node n in the HyPeerWeb such that n.webId = webId then result = n, otherwise, result = null
      */
-    NodeInterface getNode(int webId);
+    void getNode(int webId, Node.Listener listener);
 
 //Commands
     
