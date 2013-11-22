@@ -1,17 +1,17 @@
 Done(No)	ChatClient (GUI) 
 Done(No)		ChatTab 
 Done(No)			store active user; don't show active user in Send-To box 
-Done(No)			interface with the ChatServer
-Done(Yes)			NodeCache to hold all node information; have cache handle all selection handling
+Done(Yes)			interface with the ChatServer
+Done(No)			NodeCache to hold all node information; have cache handle all selection handling
 	
 Done(Yes)		GraphTab 
 Done(Yes)			Convert HyPeerWebGraph code to new GUI 
 Done(Yes)			implement Graph drawing modes (Default, Tree, Petrie)
 
-Done(No)		ListTab 
-Done(No)			Toolbar at top has combo box to select which segment's node's to view 
+Done(Yes)		ListTab 
+Done(Yes)			Toolbar at top has combo box to select which segment's node's to view 
 Done(Yes)			Show a list of nodes in a table; include info like: parent, neighbors, folds, height, webid, etc 
-Done(No)			Have option to show all nodes, with added table column for segment
+Done(Yes)			Have option to show all nodes, with added table column for segment
 
 Done(No)		Action bar 
 Done(No)			NetworkingBox: UI, talk to ChatServer
@@ -19,8 +19,8 @@ Done(No)			ConnectionBox: UI, talk to ChatServer
 Done(No)			NodeBox: UI, talk to GraphTab/ListTab and ChatServer
 
 Done(No)	HyPeerWeb Segments 
-Done(No)		Change state to "corrupt" if we ever encounter an exception
-Done(No)		Fix these methods (these all need to use some variation of Visitor pattern to get working)
+Done(Yes)		Change state to "corrupt" if we ever encounter an exception
+Done(Yes)		Fix these methods (these all need to use some variation of Visitor pattern to get working)
 Done(Yes)			getNode: get any node in the HyPeerWeb, not just on current segment 
 Done(Yes)			getAllNodes: get an ordered list of nodes from every segment in the web 
 Done(Yes)			getRandomNode: won't work for distributed system 
@@ -32,7 +32,7 @@ Done(No)			block/pause/shutdown entire HyPeerWeb
 
 Done(No)	InceptionWeb/ChatServer 
 Done(Yes)		finish writing skeleton 
-Done(No)		username's, network name, generation etc.
+Done(Yes)		username's, network name, generation etc.
 Done(No)		implement skeleton methods (i.e. talk to ChatClient and HWSegments)
 
 Done(No)	Proxies & Networking 
