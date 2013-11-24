@@ -148,11 +148,11 @@ public class ListTab extends JPanel{
 							result += n.getWebId() + " ";
 						break;
 					case 4:
-						for(Node n : node.getSNeighbors())
+						for(Node n : node.getSurrogateNeighbors())
 							result += n.getWebId() + " ";
 						break;
 					case 5:
-						for(Node n : node.getISNeighbors())
+						for(Node n : node.getInverseSurrogateNeighbors())
 							result += n.getWebId() + " ";
 						break;
 					case 6:
@@ -160,12 +160,12 @@ public class ListTab extends JPanel{
 							result += node.getFold().getWebId();
 						break;
 					case 7:
-						if(node.getSFold() != null)
-							result += node.getSFold().getWebId();
+						if(node.getSurrogateFold() != null)
+							result += node.getSurrogateFold().getWebId();
 						break;
 					case 8:
-						if(node.getISFold() != null)
-							result += node.getISFold().getWebId();
+						if(node.getInverseSurrogateFold() != null)
+							result += node.getInverseSurrogateFold().getWebId();
 						break;
 				}
 			}	

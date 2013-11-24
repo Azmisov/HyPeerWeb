@@ -5,13 +5,15 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.TreeMap;
+import validator.HyPeerWebInterface;
+import validator.NodeInterface;
 
 /**
  * Lightweight cache of a HyPeerWeb's nodes
  * Node objects may not reflect what the actual values are
  * @author inygaard
  */
-public class NodeCache implements Serializable{
+public class NodeCache implements HyPeerWebInterface, Serializable{
 	public enum SyncType {ADD, REMOVE, REPLACE}
 	public TreeMap<Integer, Node> nodes = new TreeMap();
 	public HashSet<Integer> segments = new HashSet();
@@ -101,7 +103,7 @@ public class NodeCache implements Serializable{
 		return dirty;
 	}
 	
-	public class Node implements Serializable{
+	public class Node implements NodeInterface, Serializable{
 		//Network id
 		private int networkID;
 		//Node attributes
@@ -131,32 +133,41 @@ public class NodeCache implements Serializable{
 		public int getNetworkId(){
 			return networkID;
 		}
+		@Override
 		public int getWebId(){
 			return webID;
 		}
+		@Override
 		public int getHeight(){
 			return height;
 		}
+		@Override
 		public Node getFold(){
 			return nodes.get(f);
 		}
-		public Node getSFold(){
+		@Override
+		public Node getSurrogateFold(){
 			return nodes.get(sf);
 		}
-		public Node getISFold(){
+		@Override
+		public Node getInverseSurrogateFold(){
 			return nodes.get(isf);
 		}
+		@Override
 		public Node[] getNeighbors(){
 			return mapToCached(n);
 		}
-		public Node[] getSNeighbors(){
+		@Override
+		public Node[] getSurrogateNeighbors(){
 			return mapToCached(sn);
 		}
-		public Node[] getISNeighbors(){
+		@Override
+		public Node[] getInverseSurrogateNeighbors(){
 			return mapToCached(isn);
 		}
 		
 		//SPECIALIZED GETTERS
+		@Override
 		public Node getParent(){
 			//See comments in hypeerweb.Node class for documentation
 			if (webID == 0) return null;
@@ -218,6 +229,24 @@ public class NodeCache implements Serializable{
 				isn[i] = realList[i].getWebId();
 			return temp;
 		}
+
+		@Override
+		public int compareTo(NodeInterface node) {
+			int id = node.getWebId();
+			if (webID == id)
+				return 0;
+			int nh = node.getHeight();
+			return (height == nh ? webID < id : height < nh) ? -1 : 1;
+		}
 	}
 
+	//VALIDATOR
+	@Override
+	public NodeInterface[] getOrderedListOfNodes() {
+		return nodes.values().toArray(new Node[nodes.size()]);
+	}
+	@Override
+	public NodeInterface getNode(int webId) {
+		throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+	}
 }

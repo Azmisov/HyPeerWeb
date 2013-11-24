@@ -1,6 +1,5 @@
 package validator;
 
-import java.util.Arrays;
 import java.util.HashSet;
 
 /**
@@ -42,7 +41,7 @@ public class Validator {
      */
     public Validator(HyPeerWebInterface hypeerWeb) {
         this.hypeerWeb = hypeerWeb;
-        this.nodes = hypeerWeb.getAllSegmentNodes();
+        this.nodes = hypeerWeb.getOrderedListOfNodes();
     }
     
 //Queries
@@ -59,12 +58,13 @@ public class Validator {
             valid = valid && validateNode(node);
         }
         
-		/*
-        if (!valid) {
-            System.out.println("\nNodes in HyPeerWeb of size " + nodes.length + ":");
-            System.out.println(hypeerWeb.toString());
+        if(!valid) {
+            System.err.println("\nNodes in HyPeerWeb of size " + nodes.length + ":");
+            for(NodeInterface node : nodes) {
+                System.err.print(node.getWebId() + "(" + node.getHeight() + "), ");
+            }
+            System.err.println();
         }
-		//*/
 
         return valid;
     }
@@ -361,7 +361,7 @@ public class Validator {
                 } else if(node.getHeight() == fold.getHeight() + 1) {
                     if(node.getWebId() != hypeerWeb.getNode(getComplement(fold, fold.getHeight() + 1)).getWebId()) {
                         validationFailed = printErrorMessage(validationFailed, node,
-                            "    Node " + node.getWebId() + "(" + Long.toBinaryString(node.getWebId()) + ") with height " + node.getHeight() + " has the fold " + fold.getWebId() +
+                            "    Node " + node.getWebId() + " with height " + node.getHeight() + " has the fold " + fold.getWebId() +
                             " with a height that is one lower(" + Long.toBinaryString(fold.getWebId()) + "). The fold should be the complement of the node");
                     }
                     
@@ -370,7 +370,7 @@ public class Validator {
                 } else if(node.getHeight() + 1 == fold.getHeight()) {
                     if(hypeerWeb.getNode(getComplement(node,node.getHeight() + 1)).getWebId() != fold.getWebId()) {
                         validationFailed = printErrorMessage(validationFailed, node,
-                                "    Node " + node.getWebId() + "(00" + Long.toBinaryString(node.getWebId()) + ") with height " + node.getHeight() + " has the fold " + fold + " with a height that is one higher(" + Long.toBinaryString(fold.getWebId()) +
+                                "    Node " + node.getWebId() + " with height " + node.getHeight() + " has the fold " + fold + " with a height that is one higher(" + Long.toBinaryString(fold.getWebId()) +
                                 "). The fold should be the complement of the node");
                     }
                 } else {

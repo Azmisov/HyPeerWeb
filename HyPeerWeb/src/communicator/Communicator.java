@@ -1,11 +1,13 @@
 package communicator;
 
+import hypeerweb.*;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.HashMap;
 
 /**
  * The deamon used to both send and receive commands from other applications that may be on this or other machines.
@@ -22,6 +24,15 @@ public class Communicator extends Thread{
 	private static boolean stop = false;
 	//Counter for local object ids
 	private static int LOCAL_ID_COUNTER = Integer.MIN_VALUE;
+	//Proxies that have been registered with the communicator
+	private static enum ProxyType{NODE, LINKS, SEGMENT, CLIENT, SERVER};
+	private static final HashMap<Class<?>, ProxyType> validProxies = new HashMap(){{
+		put(Node.class, ProxyType.NODE);
+		//put(Links.class, 1);
+		//put(HyPeerWebSegment.class, 2);
+		//put(ChatClient.class, 3);
+		//put(ChatServer.class, 4);
+	}};
 	
 	/**
 	 * Starts up the communicator
@@ -115,6 +126,26 @@ public class Communicator extends Thread{
 	 */
 	public static int assignId(){
 		return LOCAL_ID_COUNTER++;
+	}
+	/**
+	 * Resolve a UID to it's local object/proxy
+	 * @param class_type the class of the object to resolve
+	 * @param raw_uid the UID of the object to resolve
+	 * @return the local object with matching class type and UID; otherwise, a proxy
+	 **/
+	public static Object resolveId(Class<?> class_type, int raw_uid){
+		ProxyType type = validProxies.get(class_type);
+		if (type == null)
+			return null;
+		switch (type){
+			case NODE:
+			case LINKS:
+			case SEGMENT:
+			case CLIENT:
+			case SERVER:
+			default:
+				return null;
+		}
 	}
 	
 	/**

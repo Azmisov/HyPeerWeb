@@ -372,16 +372,16 @@ public class ChatClient extends JFrame{
 				Node temp;
 				if ((temp = n.getFold()) != null)
 					addInfo("F:",temp);
-				if ((temp = n.getSFold()) != null)
+				if ((temp = n.getSurrogateFold()) != null)
 					addInfo("SF:",temp);
-				if ((temp = n.getISFold()) != null)
+				if ((temp = n.getInverseSurrogateFold()) != null)
 					addInfo("ISF:",temp);
 				Node[] temp2;
 				if ((temp2 = n.getNeighbors()).length > 0)
 					addInfo("Ns:",temp2);
-				if ((temp2 = n.getSNeighbors()).length > 0)
+				if ((temp2 = n.getSurrogateNeighbors()).length > 0)
 					addInfo("SNs:",temp2);
-				if ((temp2 = n.getISNeighbors()).length > 0)
+				if ((temp2 = n.getInverseSurrogateNeighbors()).length > 0)
 					addInfo("ISNs:",temp2);
 			}
 			fireTableStructureChanged();
