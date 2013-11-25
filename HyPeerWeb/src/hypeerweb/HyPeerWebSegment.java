@@ -5,7 +5,6 @@ import hypeerweb.visitors.BroadcastVisitor;
 import java.util.ArrayList;
 import java.util.Random;
 import java.util.TreeMap;
-import validator.HyPeerWebInterface;
 
 /**
  * The Great HyPeerWeb
@@ -18,7 +17,6 @@ public class HyPeerWebSegment<T extends Node> extends Node{
 	private HyPeerWebState state;
 	//Random number generator for getting random nodes
 	private static final Random rand = new Random();
-	private static SendVisitor randVisitor;
 	//Static list of all HWSegments in this process; they may not correspond to the same HyPeerWeb
 	//This is used by NodeProxy to read-resolve
 	public static ArrayList<HyPeerWebSegment> segmentList = new ArrayList();
@@ -32,8 +30,8 @@ public class HyPeerWebSegment<T extends Node> extends Node{
 	 * @throws Exception if there was a database error
 	 * @author isaac
 	 */
-	public HyPeerWebSegment(String dbName, long seed) throws Exception{
-		this(dbName, seed, 0, 0);
+	public HyPeerWebSegment(long seed) throws Exception{
+		this(seed, 0, 0);
 	}
 	/**
 	 * Constructor for initializing the HyPeerWeb with defined Node values
@@ -46,13 +44,9 @@ public class HyPeerWebSegment<T extends Node> extends Node{
 	 * @throws Exception if there was a database error
 	 * @author isaac
 	 */
-	public HyPeerWebSegment(String dbName, long seed, int webID, int height) throws Exception{
+	public HyPeerWebSegment(long seed, int webID, int height) throws Exception{
 		super(0, 0);
-		if (dbName != null){
-			db = Database.getInstance(dbName);
-			nodes = db.getAllNodes();
-		}
-		else nodes = new TreeMap();
+		nodes = new TreeMap();
 		if (seed != -1)
 			rand.setSeed(seed);
 		segmentList.add(this);
@@ -66,8 +60,7 @@ public class HyPeerWebSegment<T extends Node> extends Node{
 	public void removeNode(int webid, Node.Listener listener){
 		//TODO, make get node take in a listener
 		HyPeerWebSegment seg = getNonemptySegment();
-		if (seg == null)
-			return;
+		if (seg == null) return;
 		if (isSegmentEmpty())
 			seg.removeNode(webid, listener);
 		else{
@@ -314,12 +307,11 @@ public class HyPeerWebSegment<T extends Node> extends Node{
 	}
 	
 	// <editor-fold defaultstate="collapsed" desc="SEGMENT GETTERS">
-	public Node[] getAllSegmentNodes() {
-		return (Node[]) nodes.values().toArray();
-	}
-	public TreeMap<Integer, Node> getTreeMapOfAllSegmentNodes(){
-		return nodes;
-	}
+	/**
+	 * Get a cached version of this HyPeerWeb segment
+	 * @param networkID the ID for the new cache
+	 * @return a node cache object
+	 */
 	public NodeCache getNodeCache(int networkID){
 		NodeCache c = new NodeCache();
 		for (Node n: nodes.values())
@@ -331,28 +323,26 @@ public class HyPeerWebSegment<T extends Node> extends Node{
 	 * @return node with webID = 0
 	 */
 	public T getFirstSegmentNode(){
-		if (nodes.isEmpty())
-			return null;
+		if (isSegmentEmpty()) return null;
 		return (T) nodes.firstEntry().getValue();
 	}
 	/**
 	 * Gets the last node in the HyPeerWeb
-	 * @return 
+	 * @return node with greatest webID
 	 */
 	public T getLastSegmentNode(){
-		if (nodes.isEmpty())
-			return null;
+		if (isSegmentEmpty()) return null;
 		return (T) nodes.lastEntry().getValue();
 	}
 	/**
-	 * Get the size of the HyPeerWeb
-	 * @return the number of nodes in the web
+	 * Get the size of the HyPeerWeb Segment
+	 * @return the number of nodes in this particular segment
 	 */
 	public int getSegmentSize(){
 		return nodes.size();
 	}
 	/**
-	 * Is the HyPeerWeb empty?
+	 * Is the HyPeerWeb segment empty? (not the entire HyPeerWeb, per se)
 	 * @return true if it is empty
 	 */
 	public boolean isSegmentEmpty(){
@@ -363,25 +353,17 @@ public class HyPeerWebSegment<T extends Node> extends Node{
 	 * @return the segment found
 	 */
 	public HyPeerWebSegment getNonemptySegment(){
-		if (HyPeerWebState.HAS_NONE == state)
-			return null;
-		if (!isSegmentEmpty())
-				return this;
-		else
+		if (isEmpty()) return null;
+		if (!isSegmentEmpty()) return this;
+		else{
+			//TODO: don't think this is going to work here
 			for (Node neighbor: L.getNeighbors())
-			return ((HyPeerWebSegment)neighbor).getNonemptySegment();
+				return ((HyPeerWebSegment)neighbor).getNonemptySegment();
+		}
 		//For Add Node method. If no segments are nonempty, 
 		//this segment is as good a place to start as any.
 		return this;
 	}
-    @Override
-    public String toString() {
-        StringBuilder builder = new StringBuilder();
-        for (Node n : nodes.values())
-            builder.append(n);
-        return builder.toString();
-    }
-
 	// </editor-fold>
 	
 	// <editor-fold defaultstate="collapsed" desc="HYPEERWEB GETTERS">
@@ -390,65 +372,40 @@ public class HyPeerWebSegment<T extends Node> extends Node{
 	 * @return a random node; null, if there are no nodes
 	 */
 	public void getRandomNode(Node.Listener listener){
-		//Always start at Node with WebID = 0
-		if (state == HyPeerWebState.HAS_NONE)
-			listener.callback(null);
-		
-		Node first = (Node) getNonemptySegment().nodes.firstEntry().getValue();
-		randVisitor = new SendVisitor(rand.nextInt(Integer.MAX_VALUE), true, listener);
-		randVisitor.visit(first);
+		getNode(rand.nextInt(Integer.MAX_VALUE), true, listener);
 	}
 	/**
-	 * Get a list of all the nodes in the HyPeerWeb
-	 * @return an array of nodes
-	 */
-//	public void getAllNodes(GetAllNodesListener listener) {
-//		GetAllNodesVisitor visitor = new GetAllNodesVisitor(listener);
-//	}
-	
-	/**
 	 * Retrieve a node with the specified webid
-	 * @return the node with the specified webid; otherwise null
+	 * @param webId the id of the node to retrieve
+	 * @param approximate should we get the exact node with webID, or just the
+	 * closest node to that webID
+	 * @param listener retrieval callback
 	 * @author isaac
 	 */
-		public void getNode(int webId, Node.Listener listener){
-		if (HyPeerWebState.HAS_NONE == state)
-			return;
+	public void getNode(int webId, boolean approximate, Node.Listener listener){
+		//There are no nodes; stop execution
+		if (isEmpty()) listener.callback(null);
+		//Delegate this method to a segment that actually has nodes
 		if (isSegmentEmpty())
-			getNonemptySegment().getNode(webId, listener);
+			getNonemptySegment().getNode(webId, approximate, listener);
 		else{
 			Node n = nodes.get(webId);
-			if(n != null)
+			//If this segment has this node
+			if (n != null)
 				listener.callback(n);
+			//Otherwise, use send-visitor to get the node
 			else{
-				SendVisitor visitor = new SendVisitor(webId, listener);
+				SendVisitor visitor = new SendVisitor(webId, approximate, listener);
 				visitor.visit(getFirstSegmentNode());
 			}
 		}
 	}
 	/**
-	 * Is the HyPeerWeb empty?
+	 * Is the HyPeerWeb empty? (the entire HyPeerWeb, not just a segment)
 	 * @return true if it is empty
 	 */
 	public boolean isEmpty(){
 		return state == HyPeerWebState.HAS_NONE;
 	}
-	
-/*	private class GetAllNodesVisitor extends BroadcastVisitor{
-		GetAllNodesListener l;
-		public GetAllNodesVisitor(GetAllNodesListener listener){
-			super();
-			l = listener;
-		}
-		@Override
-		public void performOperation(Node n) {
-			l.callback(((HyPeerWebSegment) n).);
-		}
-	}*/
-
-	public abstract class GetAllNodesListener{
-			public abstract void callback(NodeCache cache);
-		}
-
 	// </editor-fold>
 }

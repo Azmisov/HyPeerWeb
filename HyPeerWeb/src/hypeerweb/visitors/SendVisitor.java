@@ -51,8 +51,11 @@ public class SendVisitor extends AbstractVisitor{
 			Node next = n.getCloserNode(targetID, approxMatch);
 			if (next != null)
 				next.accept(this);
-			else if (approxMatch)
-				((Node.Listener) data.getAttribute(listen)).callback(n);
+			else{
+				Node.Listener cbk = (Node.Listener) data.getAttribute(listen);
+				//Pass null, if we couldn't find the node
+				cbk.callback(approxMatch ? n : null);
+			}
 		}
 	}
 }
