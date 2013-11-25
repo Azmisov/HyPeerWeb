@@ -20,6 +20,7 @@ public class HyPeerWebSegment<T extends Node> extends Node{
 	//Static list of all HWSegments in this process; they may not correspond to the same HyPeerWeb
 	//This is used by NodeProxy to read-resolve
 	public static ArrayList<HyPeerWebSegment> segmentList = new ArrayList();
+	private TreeMap<Integer, Node> nodesByUID;
 	
 	/**
 	 * Constructor for initializing the HyPeerWeb with default Node values
@@ -50,6 +51,7 @@ public class HyPeerWebSegment<T extends Node> extends Node{
 		if (seed != -1)
 			rand.setSeed(seed);
 		segmentList.add(this);
+		nodesByUID = new TreeMap<>();
 	}
 	
 	/**
@@ -114,6 +116,7 @@ public class HyPeerWebSegment<T extends Node> extends Node{
 	protected void addDistantChild(Node child)
 	{
 		nodes.put(child.getWebId(), child);
+		nodesByUID.put(child.UID, child);
 	}
 	/**
 	 * Holds the state of the entire HyPeerWeb, not just
@@ -304,6 +307,10 @@ public class HyPeerWebSegment<T extends Node> extends Node{
 				((HyPeerWebSegment) n).state = state;
 			}
 		})).visit(this);
+	}
+	
+	public Node getNodeByUID(int UID) {
+		return nodesByUID.get(UID);
 	}
 	
 	// <editor-fold defaultstate="collapsed" desc="SEGMENT GETTERS">

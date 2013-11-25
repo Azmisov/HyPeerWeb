@@ -10,6 +10,7 @@ public class NodeProxy extends Node{
 
     public NodeProxy(Node node){
 		super(node.webID, node.height);
+		L = new LinksProxy(node.getLinks());
 		raddr = new RemoteAddress(node.UID);
     }
 
@@ -81,10 +82,6 @@ public class NodeProxy extends Node{
 		return (Node) request("getInverseSurrogateFold");
     }
 	@Override
-	public Links getLinks() {
-		return (Links) request("getLinks");
-	}
-	@Override
 	public Object getData(String key) {
 		return request("getData", new String[] {"java.lang.String"}, new Object[] {key}, true);
 	}
@@ -126,7 +123,7 @@ public class NodeProxy extends Node{
 	@Override
 	public Object readResolve() throws ObjectStreamException {
 		if (raddr.onSameMachineAs(Communicator.getAddress()))
-			Communicator.resolveId(Node.class, raddr.UID);
+			return Communicator.resolveId(Node.class, raddr.UID);
 		return this;
 	}
 }

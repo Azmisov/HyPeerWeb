@@ -1,9 +1,11 @@
 package chat;
 
+import communicator.Communicator;
 import hypeerweb.HyPeerWebSegment;
 import hypeerweb.Node;
 import hypeerweb.NodeCache;
 import hypeerweb.visitors.BroadcastVisitor;
+import java.io.ObjectStreamException;
 import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Random;
@@ -11,7 +13,8 @@ import java.util.Random;
 /**
  * Handles communications in the chat network
  */
-public class ChatServer{
+public class ChatServer implements Serializable{
+	public final int UID = Communicator.assignId();
 	private final HyPeerWebSegment<HyPeerWebSegment<Node>> segment;
 	private String networkName = "";
 	//Node cache for the entire HyPeerWeb
@@ -52,8 +55,10 @@ public class ChatServer{
 		user.client = client;
 		users.put(newUser, user);
 		clients.put(newUser, user);
-		//TODO, broadcast this user update to all segments & userListeners
+		//broadcast this user update to all segments & userListeners
+		updateUser(user.id, user.name, user.networkID);
 		//TODO, send the client the nodecache, userlist, etc, through the listeners
+		
 		return user;
 	}
 	/**
@@ -140,7 +145,7 @@ public class ChatServer{
 		}
 		//Retrieve all dirty nodes
 		NodeCache.Node clean[] = new NodeCache.Node[dirty.length];
-		//todo populate clean array
+		//populate clean array
 		for(NodeCache.Node node : clean)
 			cache.addNode(node, false);
 		//Notify all listeners that the cache changed
@@ -161,7 +166,7 @@ public class ChatServer{
 				@Override
 				public void callback(Node n) {
 					ChatServer server = (ChatServer) n.getData("ChatServer");
-					for(ChatUser user : clients.values())
+					for(ChatUser user : server.clients.values())
 						user.client.receiveMessage(senderID, -1, message);
 				}
 			})).begin(segment);
@@ -184,10 +189,18 @@ public class ChatServer{
 	 * @param userID the user's id we want to update
 	 * @param name new name for this user
 	 */
-	public void changeUserName(int userID, String name){
-		if (name != null && users.containsKey(userID)){
-			users.get(userID).name = name;
-			//TODO, broadcast name change
+	public void updateUser(final int userid, String username, final int networkid){
+		if (username != null && users.containsKey(userid)){
+			users.get(userid).name = username;
+			//broadcast name change
+			new BroadcastVisitor(new Node.Listener() {
+				@Override
+				public void callback(Node n) {
+					ChatServer server = (ChatServer) n.getData("ChatServer");
+					for(ChatUser user : server.clients.values())
+						user.client.updateUser(userid, networkName, networkid);
+				}
+			}).begin(segment);
 		}
 	}
 	public static class ChatUser implements Serializable{
@@ -225,5 +238,17 @@ public class ChatServer{
 		public String toString(){
 			return name;
 		}
+	}
+	
+	/**
+	 *
+	 * @return
+	 * @throws Exception
+	 */
+	public Object writeReplace() throws Exception {
+		return new ChatServerProxy(this);
+	}
+	public Object readResolve() throws ObjectStreamException {
+		return this;
 	}
 }
