@@ -7,7 +7,6 @@ package chat;
 import communicator.Command;
 import communicator.Communicator;
 import communicator.RemoteAddress;
-import hypeerweb.Node;
 import hypeerweb.NodeCache;
 import java.io.ObjectStreamException;
 
