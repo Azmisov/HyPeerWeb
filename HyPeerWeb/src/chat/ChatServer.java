@@ -53,7 +53,9 @@ public class ChatServer{
 		users.put(newUser, user);
 		clients.put(newUser, user);
 		//TODO, broadcast this user update to all segments & userListeners
+		
 		//TODO, send the client the nodecache, userlist, etc, through the listeners
+		
 		return user;
 	}
 	/**
@@ -140,7 +142,7 @@ public class ChatServer{
 		}
 		//Retrieve all dirty nodes
 		NodeCache.Node clean[] = new NodeCache.Node[dirty.length];
-		//todo populate clean array
+		//populate clean array
 		for(NodeCache.Node node : clean)
 			cache.addNode(node, false);
 		//Notify all listeners that the cache changed
