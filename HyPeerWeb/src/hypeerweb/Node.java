@@ -37,7 +37,7 @@ public class Node implements Serializable {
 		assert(id >= 0 && height >= 0);
 		this.webID = id;
 		this.height = height;
-		L = new Links();
+		L = new Links(UID);
 	}
 
 	//ADD OR REMOVE NODES
@@ -121,6 +121,7 @@ public class Node implements Serializable {
 		//Swap out connections
 		//We're probably going to have to modify this so it works with proxies.
 		L = toReplace.getLinks();
+		L.UID = UID;
 		//Inherit the node's fold state
 		foldState = toReplace.getFoldState();
 		//Change WebID/Height, this must come before updating connections
