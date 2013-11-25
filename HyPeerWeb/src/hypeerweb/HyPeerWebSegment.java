@@ -12,7 +12,7 @@ import validator.HyPeerWebInterface;
  * @param <T> The Node type for this HyPeerWeb instance
  * @author isaac
  */
-public class HyPeerWebSegment<T extends Node> extends Node implements HyPeerWebInterface{
+public class HyPeerWebSegment<T extends Node> extends Node{
 	private Database db = null;
 	private TreeMap<Integer, Node> nodes;
 	private HyPeerWebState state;
@@ -22,6 +22,7 @@ public class HyPeerWebSegment<T extends Node> extends Node implements HyPeerWebI
 	//Static list of all HWSegments in this process; they may not correspond to the same HyPeerWeb
 	//This is used by NodeProxy to read-resolve
 	public static ArrayList<HyPeerWebSegment> segmentList = new ArrayList();
+	private TreeMap<Integer, Node> nodesByUID;
 	
 	/**
 	 * Constructor for initializing the HyPeerWeb with default Node values
@@ -29,7 +30,6 @@ public class HyPeerWebSegment<T extends Node> extends Node implements HyPeerWebI
 	 *	Warning! Database access can be very slow (e.g. "HyPeerWeb.sqlite")
 	 * @param seed the random seed number for getting random nodes; use -1
 	 *	to get a pseudo-random seed
-	 * @param cs the ChatServer that this segment belongs to
 	 * @throws Exception if there was a database error
 	 * @author isaac
 	 */
@@ -44,7 +44,6 @@ public class HyPeerWebSegment<T extends Node> extends Node implements HyPeerWebI
 	 *	to get a pseudo-random seed
 	 * @param webID the node webID, if it has one
 	 * @param height the node height, if it has one
-	 * @param cs the ChatServer that this segment belongs to
 	 * @throws Exception if there was a database error
 	 * @author isaac
 	 */
@@ -58,13 +57,13 @@ public class HyPeerWebSegment<T extends Node> extends Node implements HyPeerWebI
 		if (seed != -1)
 			rand.setSeed(seed);
 		segmentList.add(this);
+		nodesByUID = new TreeMap<>();
 	}
 	
 	/**
 	 * Removes the node of specified webid
 	 * @param webid the webid of the node to remove
-	 * @return the removed node, or null if it doesn't exist
-	 * @throws Exception if it fails to remove the node
+	 * @param listener event callback
 	 */
 	public void removeNode(int webid, Node.Listener listener){
 		//TODO, make get node take in a listener
@@ -86,16 +85,15 @@ public class HyPeerWebSegment<T extends Node> extends Node implements HyPeerWebI
 	}
 	/**
 	 * Removes the node
-	 * @param n the node to remove
-	 * @return the removed node, or null if it doesn't exist in the HyPeerWeb
-	 * @throws Exception if it fails to remove the node
+	 * @param node the node to remove
+	 * @param listener event callback
 	 */
 	public void removeNode(T node, Node.Listener listener){
 		state.removeNode(this, node, listener);
 	}
 	/**
 	 * Removes all nodes from HyPeerWeb
-	 * @throws Exception if it fails to clear the HyPeerWeb
+	 * @param listener event callback
 	 */
 	public void removeAllNodes(final Node.Listener listener){
 		(new BroadcastVisitor(new Node.Listener() {
@@ -114,8 +112,7 @@ public class HyPeerWebSegment<T extends Node> extends Node implements HyPeerWebI
 	
 	/**
 	 * Adds a new node to the HyPeerWeb
-	 * @return the new node
-	 * @throws Exception if it fails to add a node
+	 * @param listener event callback
 	 */
 	public void addNode(Node.Listener listener){
 		if (isSegmentEmpty())
@@ -126,6 +123,7 @@ public class HyPeerWebSegment<T extends Node> extends Node implements HyPeerWebI
 	protected void addDistantChild(Node child)
 	{
 		nodes.put(child.getWebId(), child);
+		nodesByUID.put(child.UID, child);
 	}
 	/**
 	 * Holds the state of the entire HyPeerWeb, not just
@@ -318,8 +316,11 @@ public class HyPeerWebSegment<T extends Node> extends Node implements HyPeerWebI
 		})).visit(this);
 	}
 	
+	public Node getNodeByUID(int UID) {
+		return nodesByUID.get(UID);
+	}
+	
 	// <editor-fold defaultstate="collapsed" desc="SEGMENT GETTERS">
-	@Override
 	public Node[] getAllSegmentNodes() {
 		return (Node[]) nodes.values().toArray();
 	}
@@ -417,8 +418,7 @@ public class HyPeerWebSegment<T extends Node> extends Node implements HyPeerWebI
 	 * @return the node with the specified webid; otherwise null
 	 * @author isaac
 	 */
-	@Override
-	public void getNode(int webId, Node.Listener listener){
+		public void getNode(int webId, Node.Listener listener){
 		if (HyPeerWebState.HAS_NONE == state)
 			return;
 		if (isSegmentEmpty())

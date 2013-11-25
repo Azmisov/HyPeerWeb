@@ -23,8 +23,6 @@ public class Command implements Serializable{
 	
 	/**
 	 * Create a command object
-	 * @param lobj the localObjectId of the object on which the command is to be invoked.  The value null
-	 * indicates the method is a static method of the class.
 	 * @param cname the class in which the method is defined.
 	 * @param mname the name of the method to be invoked.
 	 * @param paramTypes the names of parameter types in the method specification.  Used to uniquely distinguish
@@ -49,9 +47,7 @@ public class Command implements Serializable{
 			for (int i = 0; i < paramTypes.length; i++)
 				parameterTypes[i] = getClass(paramTypes[i]);
 			Method method = targetClass.getDeclaredMethod(methodName, parameterTypes);
-			Object target = null;
-			if (localObjectId != null)
-				target = ObjectDB.getSingleton().getValue(localObjectId);
+			Object target = Communicator.resolveId(targetClass, UID);
 			return method.invoke(target, paramVals);
 		} catch (Exception e){
 			return e;

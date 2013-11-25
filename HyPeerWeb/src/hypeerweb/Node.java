@@ -5,7 +5,6 @@ import hypeerweb.visitors.AbstractVisitor;
 import java.io.ObjectStreamException;
 import java.io.Serializable;
 import java.util.*;
-import validator.NodeInterface;
 
 /**
  * The Node class
@@ -14,7 +13,7 @@ import validator.NodeInterface;
  *  - make sure we can use == or .equals when we get to proxies
  * @author Guy
  */
-public class Node implements NodeInterface, Serializable {
+public class Node implements Serializable {
 	//Serialization
 	public final int UID = Communicator.assignId();
 	//Node Attributes
@@ -38,7 +37,7 @@ public class Node implements NodeInterface, Serializable {
 		assert(id >= 0 && height >= 0);
 		this.webID = id;
 		this.height = height;
-		L = new Links();
+		L = new Links(UID);
 	}
 
 	//ADD OR REMOVE NODES
@@ -122,6 +121,7 @@ public class Node implements NodeInterface, Serializable {
 		//Swap out connections
 		//We're probably going to have to modify this so it works with proxies.
 		L = toReplace.getLinks();
+		L.UID = UID;
 		//Inherit the node's fold state
 		foldState = toReplace.getFoldState();
 		//Change WebID/Height, this must come before updating connections
@@ -559,7 +559,6 @@ public class Node implements NodeInterface, Serializable {
 	 *
 	 * @return The WebID of the Node
 	 */
-	@Override
 	public int getWebId() {
 		return webID;
 	}
@@ -568,7 +567,6 @@ public class Node implements NodeInterface, Serializable {
 	 *
 	 * @return The Height of the Node
 	 */
-	@Override
 	public int getHeight() {
 		return height;
 	}
@@ -576,7 +574,6 @@ public class Node implements NodeInterface, Serializable {
 	 * Gets this node's parent
 	 * @return the neighbor with webID lower than this node
 	 */
-	@Override
 	public Node getParent() {
 		if (webID == 0)
 			return null;
@@ -591,7 +588,6 @@ public class Node implements NodeInterface, Serializable {
 	 * Get the node's neighbors
 	 * @return a list of nodes
 	 */
-	@Override
 	public Node[] getNeighbors() {
 		return L.getNeighbors();
 	}
@@ -599,7 +595,6 @@ public class Node implements NodeInterface, Serializable {
 	 * Get this node's surrogate neighbors
 	 * @return a list of nodes
 	 */
-	@Override
 	public Node[] getSurrogateNeighbors() {
 		return L.getSurrogateNeighbors();
 	}
@@ -607,7 +602,6 @@ public class Node implements NodeInterface, Serializable {
 	 * Get this node's inverse surrogate neighbors
 	 * @return a list of nodes
 	 */
-	@Override
 	public Node[] getInverseSurrogateNeighbors() {
 		return L.getInverseSurrogateNeighbors();
 	}
@@ -615,7 +609,6 @@ public class Node implements NodeInterface, Serializable {
 	 * Get this node's fold
 	 * @return a single node
 	 */
-	@Override
 	public Node getFold() {
 		return L.getFold();
 	}
@@ -623,7 +616,6 @@ public class Node implements NodeInterface, Serializable {
 	 * Get this node's surrogate fold
 	 * @return a single node
 	 */
-	@Override
 	public Node getSurrogateFold() {
 		return L.getSurrogateFold();
 	}
@@ -631,7 +623,6 @@ public class Node implements NodeInterface, Serializable {
 	 * Get this node's inverse surrogate fold
 	 * @return a single node
 	 */
-	@Override
 	public Node getInverseSurrogateFold() {
 		return L.getInverseSurrogateFold();
 	}
@@ -641,6 +632,14 @@ public class Node implements NodeInterface, Serializable {
 	 */
 	public Links getLinks(){
 		return L;
+	}
+	/**
+	 * Gets stored data in this node
+	 * @param key key for this data
+	 * @return data associated with this key
+	 */
+	public Object getData(String key){
+		return data.getAttribute(key);
 	}
 	
 	//SETTERS
@@ -664,7 +663,7 @@ public class Node implements NodeInterface, Serializable {
 	}
 	/**
 	 * Switches the Fold State pattern state
-	 * @param stable whether or not to switch to the stable state
+	 * @param state whether or not to switch to the stable state
 	 */
 	protected void setFoldState(FoldState state){
 		foldState = state;
@@ -676,14 +675,6 @@ public class Node implements NodeInterface, Serializable {
 	 */
 	public void setData(String key, Object val){
 		data.setAttribute(key, val);
-	}
-	/**
-	 * Gets stored data in this node
-	 * @param key key for this data
-	 * @return data associated with this key
-	 */
-	public Object getData(String key){
-		return data.getAttribute(key);
 	}
 	
 	//FOLD STATE PATTERN
@@ -764,11 +755,7 @@ public class Node implements NodeInterface, Serializable {
 	}
 	
 	//CLASS OVERRIDES
-	@Override
-	public int compareTo(NodeInterface node) {
-		//If we're trying to remove the key in an ordered collection, changingKey = true
-		//In that case, check the old key value, before it was changed
-		//Currently, we only cache the old height, but we may cache old webId in the future
+	public int compareTo(Node node) {
 		int id = node.getWebId();
 		if (webID == id)
 			return 0;

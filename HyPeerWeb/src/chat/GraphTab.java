@@ -214,9 +214,9 @@ public class GraphTab extends JPanel{
 							potential.add(node);
 						for (Node x: p.n.getNeighbors())
 							linksPot.add(new DrawLink(p.n, x));
-						for(Node node : p.n.getSNeighbors())
+						for(Node node : p.n.getSurrogateNeighbors())
 							potential.add(node);
-						for (Node x: p.n.getSNeighbors())
+						for (Node x: p.n.getSurrogateNeighbors())
 							linksPot.add(new DrawLink(p.n, x, DrawLink.Type.DOTTED));
 
 						//Only add potential children if they are a direct child
@@ -460,7 +460,7 @@ public class GraphTab extends JPanel{
 							Node val = vals[index];
 							for (Node x: val.getNeighbors())
 								linksPot.add(new DrawLink(val, x, DrawLink.Type.SOLID, linkCol));
-							for (Node x: val.getSNeighbors())
+							for (Node x: val.getSurrogateNeighbors())
 								linksPot.add(new DrawLink(val, x, DrawLink.Type.DOTTED, linkCol));
 							//Compute location
 							double angle = (maxDID-keys[index])*delta;

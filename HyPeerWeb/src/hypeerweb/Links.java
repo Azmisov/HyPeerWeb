@@ -1,6 +1,8 @@
 package hypeerweb;
 
 import communicator.Communicator;
+import java.io.ObjectStreamException;
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.TreeSet;
 
@@ -8,13 +10,13 @@ import java.util.TreeSet;
  * Maintains all node connections
  * @author isaac
  */
-public class Links{
+public class Links implements Serializable {
 	//All the possible node link/connection types
 	public static enum Type {
 		FOLD, SFOLD, ISFOLD, NEIGHBOR, SNEIGHBOR, ISNEIGHBOR
 	}
 	//Serialization
-	public final int UID = Communicator.assignId();
+	public int UID;
 	//Link data
 	private Node fold;
 	private Node surrogateFold;
@@ -27,7 +29,8 @@ public class Links{
 	/**
 	 * Creates an empty links object
 	 */
-	public Links(){
+	public Links(int UID){
+		this.UID = UID;
 		neighbors = new TreeSet<>();
 		surrogateNeighbors = new TreeSet<>();
 		inverseSurrogateNeighbors = new TreeSet<>();
@@ -340,5 +343,14 @@ public class Links{
 		if (inverseSurrogateNeighbors.isEmpty())
 			return null;
 		return inverseSurrogateNeighbors.first();
+	}
+	
+	//NETWORKING
+	public Object writeReplace() throws ObjectStreamException {
+		//TODO: Figure out how to send real links in case of replacing node
+		return new LinksProxy(this);
+	}
+	public Object readResolve() throws ObjectStreamException {
+		return this;
 	}
 }
