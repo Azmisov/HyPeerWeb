@@ -57,7 +57,7 @@ public class ChatClientProxy extends ChatClient{
 	
 	public Object readResolve() throws ObjectStreamException {
 		if (raddr.onSameMachineAs(Communicator.getAddress()))
-			Communicator.resolveId(Node.class, raddr.UID);
+			Communicator.resolveId(ChatClient.class, raddr.UID);
 		return this;
 	}
 }
