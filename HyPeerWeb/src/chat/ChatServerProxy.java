@@ -41,8 +41,8 @@ public class ChatServerProxy extends ChatServer{
 		request("sendMessage", new String[]{"int", "int", "java.lang.String"}, new Object[]{senderID, recipientID, message}, false);
 	}
 	@Override
-	public void changeUserName(int userID, String name){
-		request("changeUserName", new String[]{"int", "java.lang.String"}, new Object[]{userID, name}, false);
+	public void updateUser(int userID, String username, final int networkid){
+		request("changeUserName", new String[]{"int", "java.lang.String", "int"}, new Object[]{userID, username, networkid}, false);
 	}
 	
 	private Object request(String name){
