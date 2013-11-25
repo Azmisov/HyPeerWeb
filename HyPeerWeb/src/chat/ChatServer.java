@@ -1,9 +1,11 @@
 package chat;
 
+import communicator.Communicator;
 import hypeerweb.HyPeerWebSegment;
 import hypeerweb.Node;
 import hypeerweb.NodeCache;
 import hypeerweb.visitors.BroadcastVisitor;
+import java.io.ObjectStreamException;
 import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Random;
@@ -11,7 +13,8 @@ import java.util.Random;
 /**
  * Handles communications in the chat network
  */
-public class ChatServer{
+public class ChatServer implements Serializable{
+	public final int UID = Communicator.assignId();
 	private final HyPeerWebSegment<HyPeerWebSegment<Node>> segment;
 	private String networkName = "";
 	//Node cache for the entire HyPeerWeb
@@ -225,5 +228,20 @@ public class ChatServer{
 		public String toString(){
 			return name;
 		}
+	}
+	
+	public Object writeReplace() throws ObjectStreamException {
+		return this;
+	}
+	
+	public Object readResolve() throws ObjectStreamException {
+		if (raddr.onSameMachineAs(Communicator.getAddress())){
+			for (HyPeerWebSegment segment : HyPeerWebSegment.segmentList) {
+				Node node = segment.getNode(webID, raddr.UID);
+				if (node != null)
+					return node;
+			}
+		}
+		return this;
 	}
 }
