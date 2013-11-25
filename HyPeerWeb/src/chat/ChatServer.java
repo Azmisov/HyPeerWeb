@@ -230,18 +230,15 @@ public class ChatServer implements Serializable{
 		}
 	}
 	
-	public Object writeReplace() throws ObjectStreamException {
-		return this;
+	/**
+	 *
+	 * @return
+	 * @throws Exception
+	 */
+	public Object writeReplace() throws Exception {
+		return new ChatServerProxy(this);
 	}
-	
 	public Object readResolve() throws ObjectStreamException {
-		if (raddr.onSameMachineAs(Communicator.getAddress())){
-			for (HyPeerWebSegment segment : HyPeerWebSegment.segmentList) {
-				Node node = segment.getNode(webID, raddr.UID);
-				if (node != null)
-					return node;
-			}
-		}
 		return this;
 	}
 }

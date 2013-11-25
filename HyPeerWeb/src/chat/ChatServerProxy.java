@@ -7,8 +7,6 @@ package chat;
 import communicator.Command;
 import communicator.Communicator;
 import communicator.RemoteAddress;
-import hypeerweb.HyPeerWebSegment;
-import hypeerweb.Node;
 import java.io.ObjectStreamException;
 
 /**
@@ -19,9 +17,33 @@ public class ChatServerProxy extends ChatServer{
 	private final RemoteAddress raddr;
 	
 	public ChatServerProxy(ChatServer server) throws Exception{
-		super();
 		raddr = new RemoteAddress(server.UID);
     }
+	
+	@Override
+	public ChatUser registerClient(ChatClient client){
+		return (ChatUser) request("registerClient", new String[]{"chat.ChatClient"}, new Object[]{client}, true);
+	}
+	@Override
+	public void unregisterClient(int userID){
+		request("unregisterClient", new String[]{"int"}, new Object[]{userID}, false);
+	}
+	@Override
+	public void addNode(){
+		request("addNode", null, null, false);
+	}
+	@Override
+	public void removeNode(int webID){
+		request("removeNode", new String[]{"int"}, new Object[]{webID}, false);
+	}
+	@Override
+	public void sendMessage(final int senderID, final int recipientID, final String message){
+		request("sendMessage", new String[]{"int", "int", "java.lang.String"}, new Object[]{senderID, recipientID, message}, false);
+	}
+	@Override
+	public void changeUserName(int userID, String name){
+		request("changeUserName", new String[]{"int", "java.lang.String"}, new Object[]{userID, name}, false);
+	}
 	
 	private Object request(String name){
 		return request(name, null, null, true);
@@ -37,13 +59,8 @@ public class ChatServerProxy extends ChatServer{
 	}
 	@Override
 	public Object readResolve() throws ObjectStreamException {
-		if (raddr.onSameMachineAs(Communicator.getAddress())){
-			for (HyPeerWebSegment segment : HyPeerWebSegment.segmentList) {
-				Node node = segment.getNode(webID, raddr.UID);
-				if (node != null)
-					return node;
-			}
-		}
+		if (raddr.onSameMachineAs(Communicator.getAddress()))
+			return Communicator.resolveId(ChatServer.class, raddr.UID);
 		return this;
 	}
 }
