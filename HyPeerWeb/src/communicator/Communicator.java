@@ -139,6 +139,12 @@ public class Communicator extends Thread{
 			return null;
 		switch (type){
 			case NODE:
+				for(HyPeerWebSegment segment : HyPeerWebSegment.segmentList) {
+					Node node = segment.getNodeByUID(raw_uid);
+					if(node != null)
+						return node;
+				}
+				return null;
 			case LINKS:
 			case SEGMENT:
 			case CLIENT:
