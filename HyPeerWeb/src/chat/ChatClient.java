@@ -2,6 +2,7 @@ package chat;
 
 import chat.ChatServer.*;
 import com.alee.laf.WebLookAndFeel;
+import communicator.Communicator;
 import hypeerweb.NodeCache.Node;
 import hypeerweb.NodeCache;
 import static hypeerweb.NodeCache.SyncType.*;
@@ -26,6 +27,8 @@ import javax.swing.table.AbstractTableModel;
  * @author isaac
  */
 public class ChatClient extends JFrame{
+	//Serialization
+	public final int UID = Communicator.assignId();
 	//Window title
 	private static final String title = "HyPeerWeb Chat v0.2a";
 	//Window dimensions
@@ -358,6 +361,7 @@ public class ChatClient extends JFrame{
 				nodeCache.addNode(node, false);
 			//todo update listtab, graphtab, nodeinfo
 			listTab.draw();
+			
 		}
 	}
 	public void receiveMessage(int senderID, int recipientID, String mess){

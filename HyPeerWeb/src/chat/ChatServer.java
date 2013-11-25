@@ -55,8 +55,10 @@ public class ChatServer implements Serializable{
 		user.client = client;
 		users.put(newUser, user);
 		clients.put(newUser, user);
-		//TODO, broadcast this user update to all segments & userListeners
+		//broadcast this user update to all segments & userListeners
+		updateUser(user.id, user.name, user.networkID);
 		//TODO, send the client the nodecache, userlist, etc, through the listeners
+		
 		return user;
 	}
 	/**
@@ -143,7 +145,7 @@ public class ChatServer implements Serializable{
 		}
 		//Retrieve all dirty nodes
 		NodeCache.Node clean[] = new NodeCache.Node[dirty.length];
-		//todo populate clean array
+		//populate clean array
 		for(NodeCache.Node node : clean)
 			cache.addNode(node, false);
 		//Notify all listeners that the cache changed
@@ -164,7 +166,7 @@ public class ChatServer implements Serializable{
 				@Override
 				public void callback(Node n) {
 					ChatServer server = (ChatServer) n.getData("ChatServer");
-					for(ChatUser user : clients.values())
+					for(ChatUser user : server.clients.values())
 						user.client.receiveMessage(senderID, -1, message);
 				}
 			})).begin(segment);
@@ -187,10 +189,18 @@ public class ChatServer implements Serializable{
 	 * @param userID the user's id we want to update
 	 * @param name new name for this user
 	 */
-	public void changeUserName(int userID, String name){
-		if (name != null && users.containsKey(userID)){
-			users.get(userID).name = name;
-			//TODO, broadcast name change
+	public void updateUser(final int userid, String username, final int networkid){
+		if (username != null && users.containsKey(userid)){
+			users.get(userid).name = username;
+			//broadcast name change
+			new BroadcastVisitor(new Node.Listener() {
+				@Override
+				public void callback(Node n) {
+					ChatServer server = (ChatServer) n.getData("ChatServer");
+					for(ChatUser user : server.clients.values())
+						user.client.updateUser(userid, networkName, networkid);
+				}
+			}).begin(segment);
 		}
 	}
 	public static class ChatUser implements Serializable{
