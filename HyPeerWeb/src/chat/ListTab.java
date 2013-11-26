@@ -12,6 +12,7 @@ import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
+import javax.swing.JTextField;
 import javax.swing.ListSelectionModel;
 import javax.swing.SwingConstants;
 import javax.swing.border.EmptyBorder;
@@ -49,14 +50,22 @@ public class ListTab extends JPanel{
 		segmentBox.setBorder(new EmptyBorder(4, 8, 4, 4));
 		segmentPanel.add(label);
 		segmentPanel.add(segmentBox);
-		 JButton validateButton = new JButton("Validate");
+		final JTextField validationResult = new JTextField();
+		validationResult.setPreferredSize(new Dimension(120,25));
+		JButton validateButton = new JButton("Validate");
         validateButton.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
 				JUnitCore junit = new JUnitCore();
-				Result result = junit.run(hypeerweb.HyPeerWEbTest);
+				Result result = junit.run(hypeerweb.HyPeerWebTest.class);
+				if(result.wasSuccessful())
+					validationResult.setText("Validation Passed!");
+				else
+					validationResult.setText("Validation Failed!");
 			}
-        });     
+        });
+		segmentPanel.add(validateButton);
+		segmentPanel.add(validationResult);
 		this.add(segmentPanel, BorderLayout.NORTH);
 		
         table = new JTable(tabModel);

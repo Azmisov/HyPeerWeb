@@ -1,5 +1,6 @@
 package hypeerweb;
 
+import hypeerweb.Node;
 import hypeerweb.visitors.BroadcastVisitor;
 import java.util.ArrayList;
 import java.util.List;
