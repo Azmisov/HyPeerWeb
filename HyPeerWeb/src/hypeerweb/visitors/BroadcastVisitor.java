@@ -15,21 +15,12 @@ public class BroadcastVisitor extends AbstractVisitor{
 	public BroadcastVisitor(Node.Listener command){
 		data.setAttribute(listen, command);
 		hasListener = command == null;
-	}
-	
-	/**
-	 * Begin broadcasting from this node
-	 * @param n a node to begin broadcasting from
-	 */
-	public final void begin(Node n){
-		if (!hasListener) return;
 		//Set the blacklist attribute to -1 to kick of the broadcast
 		data.setAttribute(childOrigin, -1);
-		visit(n);
 	}
 	
 	/**
-	 * DO NOT CALL THIS METHOD!!! use begin(Node n) instead
+	 * Visit a node
 	 * @param n a node to begin broadcasting from
 	 */
 	@Override

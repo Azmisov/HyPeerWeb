@@ -3,8 +3,6 @@ package hypeerweb;
 import hypeerweb.visitors.SendVisitor;
 import hypeerweb.visitors.BroadcastVisitor;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashSet;
 import java.util.Random;
 import java.util.TreeMap;
 
@@ -21,24 +19,29 @@ public class HyPeerWebSegment<T extends Node> extends Node{
 	//This is used by NodeProxy to read-resolve
 	public static ArrayList<HyPeerWebSegment> segmentList = new ArrayList();
 	private TreeMap<Integer, Node> nodesByUID;
+	//Database name
+	private final String dbname;
 	
 	/**
 	 * Constructor for initializing the HyPeerWeb with default Node values
+	 * @param dbname filename for the database/node-cache
 	 * @param seed the random seed number for getting random nodes; use -1
 	 *	to get a pseudo-random seed
 	 */
-	public HyPeerWebSegment(long seed){
-		this(seed, 0, 0);
+	public HyPeerWebSegment(String dbname, long seed){
+		this(dbname, seed, 0, 0);
 	}
 	/**
 	 * Constructor for initializing the HyPeerWeb with defined Node values
+	 * @param dbname filename for the database/node-cache
 	 * @param seed the random seed number for getting random nodes; use -1
 	 *	to get a pseudo-random seed
 	 * @param webID the node webID, if it has one
 	 * @param height the node height, if it has one
 	 */
-	public HyPeerWebSegment(long seed, int webID, int height){
+	public HyPeerWebSegment(String dbname, long seed, int webID, int height){
 		super(0, 0);
+		this.dbname = dbname;
 		nodes = new TreeMap();
 		nodesByUID = new TreeMap();
 		if (seed != -1)
@@ -51,25 +54,21 @@ public class HyPeerWebSegment<T extends Node> extends Node{
 	 * @param webid the webid of the node to remove
 	 * @param listener event callback
 	 */
-	public void removeNode(int webid, Node.Listener listener){
-		//Don't do anything, if there are no nodes
-		if (isEmpty())
-			listener.callback(null);
-		//If this segment is empty, execute method on non-empty segment
-		else if (isSegmentEmpty())
-			getNonemptySegment().removeNode(webid, listener);
-		//If this segment has nodes, go find the node "webid"
-		else{
-			//TODO, fix this here
-			Node n = nodes.get(webid);
-			if (n != null)
-				listener.callback(n);
-			else{
-				removeNode((T)n, listener);
-				SendVisitor visitor = new SendVisitor(webid, listener);
-				visitor.visit(getFirstSegmentNode());
+	public void removeNode(int webid, final Node.Listener listener){
+		//Execute removeNode on the segment that contains "webid"
+		getNode(webid, false, new Node.Listener(){
+			@Override
+			public void callback(Node n) {
+				//This node doesn't exist
+				if (n == null)
+					listener.callback(null);
+				//Get the host segment to run removeNode on
+				else{
+					HyPeerWebSegment host = n.getHostSegment();
+					host.state.removeNode(host, n, listener);
+				}
 			}
-		}
+		});
 	}
 	/**
 	 * Removes the node
@@ -77,30 +76,33 @@ public class HyPeerWebSegment<T extends Node> extends Node{
 	 * @param listener event callback
 	 */
 	public void removeNode(T node, Node.Listener listener){
-		//TODO, if node is a proxy, execute this method on the proxy's host segment
-		state.removeNode(this, node, listener);
+		//Get the segment that has this node
+		HyPeerWebSegment host = node.getHostSegment();
+		//Current segment has this node; we're free to remove
+		if (host == this)
+			state.removeNode(this, node, listener);
+		else{
+			//If the segment is remote, delegate removal to that segment
+			host.removeNode(node, listener);
+		}
 	}
 	/**
 	 * Removes all nodes from HyPeerWeb
+	 * Warning! This may leave the HyPeerWeb corrupt, if
+	 * all segments are not cleared together
 	 * @param listener event callback
 	 */
 	public void removeAllNodes(final Node.Listener listener){
-		(new BroadcastVisitor(new Node.Listener() {
+		(new BroadcastVisitor(new Node.Listener(){
 			@Override
-			public void callback(Node n) {
-				((HyPeerWebSegment) n).removeAllSegmentNodes();
+			public void callback(Node n){
+				HyPeerWebSegment seg = (HyPeerWebSegment) n;
+				//Clear node lists
+				seg.nodes.clear();
+				seg.nodesByUID.clear();
 				listener.callback(n);
 			}
 		})).visit(this);
-	}
-	/**
-	 * Remove all node's from this particular segment
-	 * Warning! This may leave the HyPeerWeb corrupt, if
-	 * all segments are not cleared together
-	 */
-	protected void removeAllSegmentNodes(){
-		nodes.clear();
-		nodesByUID.clear();
 	}
 	
 	/**
@@ -108,45 +110,61 @@ public class HyPeerWebSegment<T extends Node> extends Node{
 	 * @param listener event callback
 	 */
 	public void addNode(Node.Listener listener){
+		//We want the node to be added to this segment.
+		//Since we might not have nodes ourselves, we may not be able
+		//to compute links/connections; so we'll give the remote segment a
+		//node-proxy to update for us
+		Node proxy = new Node(0, 0);
+		addNode(proxy, listener);
+	}
+	/**
+	 * Adds a node to the HyPeerWeb, using a pre-initialized Node;
+	 * Note: webID, height, and Links (L) will be altered; all other
+	 * attributes will remain the same, however
+	 * @param proxy a pre-initialized Node
+	 * @param listener add node callback
+	 */
+	public void addNode(Node proxy, Node.Listener listener){
+		//Add node to UID list, so the proxy can be resolved
+		nodesByUID.put(proxy.UID, proxy);
 		//If there is a nonempty segment somewhere, go to it
 		if (!isEmpty() && isSegmentEmpty())
-			getNonemptySegment().addNode(listener);
+			getNonemptySegment().addNode(proxy, listener);
 		//Otherwise, run on this machine
-		else state.addNode(this, listener);
-	}
-	protected void addDistantChild(Node child){
-		nodes.put(child.getWebId(), child);
-		nodesByUID.put(child.UID, child);
+		else state.addNode(this, proxy, listener);
 	}
 	/**
 	 * Holds the state of the entire HyPeerWeb, not just
 	 * this individual segment. Handles special cases for
 	 * add and remove node, as well as a corrupt HyPeerWeb.
 	 */
-	protected enum HyPeerWebState{
+	private enum HyPeerWebState{
 		//No nodes
 		HAS_NONE {
 			@Override
-			public void addNode(final HyPeerWebSegment web, Node.Listener listener){
-				//Use a proxy, if the request came from another segment
-				Node first = new Node(0, 0);
-				web.addDistantChild(first);
+			public void addNode(HyPeerWebSegment web, Node n, Node.Listener listener){
+				//When the entire HyPeerWeb is empty, we can guarantee that
+				//we will be executing on n's machine (e.g. web is not a proxy)
+				n = new Node(0, 0);
+				web.nodes.put(0, n);
 				//broadcast state change to HAS_ONE
 				web.changeState(HAS_ONE);
-				listener.callback(first);
+				//run callback
+				listener.callback(n);
 			}
 			@Override
-			public void removeNode(final HyPeerWebSegment web, Node n, Node.Listener listener){
+			public void removeNode(HyPeerWebSegment web, Node n, Node.Listener listener){
 				//Throw an error; this shouldn't happen
 				web.changeState(CORRUPT);
+				listener.callback(null);
 			}
 		},
 		//Only one node
 		HAS_ONE {
 			@Override
-			public void addNode(final HyPeerWebSegment web, Node.Listener listener){
+			public void addNode(HyPeerWebSegment web, Node n, Node.Listener listener){
 				Node sec = new Node(1, 1),
-					first = (Node) web.nodes.firstEntry().getValue();
+					 first = (Node) web.nodes.firstEntry().getValue();
 				//Handle special case
 				first.setHeight(1);
 				first.L.setFold(sec);
@@ -159,11 +177,11 @@ public class HyPeerWebSegment<T extends Node> extends Node{
 				listener.callback(sec);
 			}
 			@Override
-			public void removeNode(final HyPeerWebSegment web, Node n, Node.Listener listener){
+			public void removeNode(HyPeerWebSegment web, Node n, Node.Listener listener){
+				//only node left; both n and web will be on this machine
+				web.nodes.clear();
+				web.nodesByUID.clear();
 				//broadcast state change to HAS_NONE
-				//handle special case
-				web.removeAllSegmentNodes();
-				web.nodes = new TreeMap<>();
 				web.changeState(HAS_NONE);
 				listener.callback(n);
 			}
@@ -171,12 +189,12 @@ public class HyPeerWebSegment<T extends Node> extends Node{
 		//More than one node
 		HAS_MANY {
 			@Override
-			public void addNode(final HyPeerWebSegment web, final Node.Listener listener){
+			public void addNode(HyPeerWebSegment web, Node n, Node.Listener listener){
 				//Use a proxy, if the request came from another segment
 				web.getRandomNode(new Node.Listener() {
 					@Override
 					public void callback(Node n) {
-						Node child = n.findInsertionNode().addChild(web.db, new Node(0,0));
+						Node child = n.findInsertionNode().addChild(new Node(0,0));
 						if (child == null)
 							web.changeState(CORRUPT);
 						else{
@@ -189,7 +207,7 @@ public class HyPeerWebSegment<T extends Node> extends Node{
 				});
 			}
 			@Override
-			public void removeNode(final HyPeerWebSegment web, Node n, final Node.Listener listener){
+			public void removeNode(HyPeerWebSegment web, Node n, Node.Listener listener){
 				//If the HyPeerWeb has more than two nodes, remove normally
 				int size = web.nodes.size();
 				Node last, first = null;
@@ -208,7 +226,7 @@ public class HyPeerWebSegment<T extends Node> extends Node{
 					web.getRandomNode(new Node.Listener(){
 						@Override
 						public void callback(Node n) {
-							Node replace = n.findDisconnectNode().disconnectNode(web.db);
+							Node replace = n.findDisconnectNode().disconnectNode();
 							if (replace == null)
 								web.changeState(CORRUPT);
 							else{
@@ -219,7 +237,7 @@ public class HyPeerWebSegment<T extends Node> extends Node{
 									int newWebID = n.getWebId();
 									web.nodes.remove(newWebID);
 									web.nodes.put(newWebID, replace);
-									if (!replace.replaceNode(web.db, n))
+									if (!replace.replaceNode(n))
 										web.changeState(CORRUPT);
 								}
 								web.changeState(HAS_MANY);
@@ -260,7 +278,7 @@ public class HyPeerWebSegment<T extends Node> extends Node{
 		//Network is corrupt; a segment failed to perform an operation
 		CORRUPT {
 			@Override
-			public void addNode(HyPeerWebSegment web, Node.Listener listener){
+			public void addNode(HyPeerWebSegment web, Node n, Node.Listener listener){
 				System.err.println("CORRUPT HYPEERWEB");
 			}
 			@Override
@@ -268,34 +286,23 @@ public class HyPeerWebSegment<T extends Node> extends Node{
 				System.err.println("CORRUPT HYPEERWEB");
 			}
 		};
-		public abstract void addNode(final HyPeerWebSegment web, Node.Listener listener);
-		public abstract void removeNode(final HyPeerWebSegment web, Node n, Node.Listener listener);
+		public abstract void addNode(HyPeerWebSegment web, Node n, Node.Listener listener);
+		public abstract void removeNode(HyPeerWebSegment web, Node n, Node.Listener listener);
 	}
 	/**
 	 * Change the state of the HyPeerWeb
 	 * @param state the new state
 	 */
-	protected void changeState(final HyPeerWebState state){
+	private void changeState(final HyPeerWebState state){
 		(new BroadcastVisitor(new Node.Listener(){
 			@Override
 			public void callback(Node n){
 				((HyPeerWebSegment) n).state = state;
 			}
-		})).begin(this);
+		})).visit(this);
 	}
 	
-	// <editor-fold defaultstate="collapsed" desc="SEGMENT GETTERS">
-	/**
-	 * Get a cached version of this HyPeerWeb segment
-	 * @param networkID the ID for the new cache
-	 * @return a node cache object
-	 */
-	public NodeCache getSegmentNodeCache(int networkID){
-		NodeCache c = new NodeCache();
-		for (Node n: nodes.values())
-			c.addNode(n, false);
-		return c;
-	}
+	//SEGMENT GETTERS
 	/**
 	 * Gets the first node in the HyPeerWeb
 	 * @return node with webID = 0
@@ -327,43 +334,39 @@ public class HyPeerWebSegment<T extends Node> extends Node{
 		return nodes.isEmpty();
 	}
 	/**
+	 * Criteria for a non-empty HyPeerWeb segment
+	 */
+	private static final Criteria nonemptyCriteria = new Criteria(){
+		@Override
+		public Node check(Node origin, Node friend) {
+			return ((HyPeerWebSegment) friend).isSegmentEmpty() ? null : friend;
+		}
+	};
+	/**
 	 * Looks for a HyPeerWebSegment that is not empty
 	 * @return the segment found
 	 */
 	public HyPeerWebSegment getNonemptySegment(){
 		//There are no non-empty segments
 		if (isEmpty()) return null;
-		//Hooray, this is a non-empty segment
-		if (!isSegmentEmpty()) return this;
 		else{
 			//Recursively look through all neighbors, searching for a node
 			//that is not empty; this is terribly inefficient, but we don't
 			//know a better way to do it (at least not yet)
-			HashSet<Node> visited = new HashSet();
-			ArrayList<Node> parents = new ArrayList();
-			HashSet<Node> friends = new HashSet();
-			parents.add(this);
-			visited.add(this);
-			for (Node p: parents){
-				friends.addAll(Arrays.asList(p.getNeighbors()));
-				for (Node f: friends){
-					if (!visited.c)
-						//TODO, finish writing this method
-				}
-			}
-		}		
+			//findValidNode will always check current node first
+			return (HyPeerWebSegment) findValidNode(nonemptyCriteria, -1, false);
+		}
 	}
 	/**
 	 * Looks for a node with this UID in this segment
 	 * @param UID the UID of the node to search for
 	 * @return the node with this UID; null, if it doesn't exist
 	 */
-	public T getSegmentNodeByUID(int UID) {
+	protected T getSegmentNodeByUID(int UID) {
 		return (T) nodesByUID.get(UID);
 	}
-	// </editor-fold>
 	
-	// <editor-fold defaultstate="collapsed" desc="HYPEERWEB GETTERS">
+	//HYPEERWEB GETTERS
 	/**
 	 * Retrieves a random node in the HyPeerWeb
 	 * @param listener retrieval callback
@@ -377,7 +380,6 @@ public class HyPeerWebSegment<T extends Node> extends Node{
 	 * @param approximate should we get the exact node with webID, or just the
 	 * closest node to that webID
 	 * @param listener retrieval callback
-	 * @author isaac
 	 */
 	public void getNode(int webId, boolean approximate, Node.Listener listener){
 		//There are no nodes; stop execution
@@ -404,5 +406,32 @@ public class HyPeerWebSegment<T extends Node> extends Node{
 	public boolean isEmpty(){
 		return state == HyPeerWebState.HAS_NONE;
 	}
-	// </editor-fold>
+	
+	//CACHE & DATABASE
+	/**
+	 * Get a cached version of this HyPeerWeb segment
+	 * @param networkID the ID for the new cache
+	 * @return a node cache object
+	 */
+	public NodeCache getCache(int networkID){
+		NodeCache c = new NodeCache();
+		for (Node n: nodes.values())
+			c.addNode(n, false);
+		return c;
+	}
+	public void storeCache() throws Exception{
+		//NOT IMPLEMENTED
+	}
+	public void restoreCache() throws Exception{
+		//NOT IMPLEMENTED
+	}
+	
+	//NETWORKING
+	/**
+	 * Executes a callback on the machine this segment is on
+	 * @param listener a command/callback to execute
+	 */
+	public void executeRemotely(Node.Listener listener){
+		listener.callback(this);
+	}
 }

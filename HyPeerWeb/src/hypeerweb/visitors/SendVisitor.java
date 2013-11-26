@@ -38,7 +38,6 @@ public class SendVisitor extends AbstractVisitor{
 	/**
 	 * Visit a node
 	 * @param n the node to visit
-	 * @param o data to pass along
 	 */
 	@Override
 	public final void visit(Node n) {

@@ -16,20 +16,20 @@ public class NodeProxy extends Node{
 
 	//NODE OPERATIONS
 	@Override
-	protected Node addChild(Database db, Node child) {
-		return (Node) request("addChild",new String[] {"hypeerweb.Database", "hypeerweb.Node"}, new Object[] {db, child}, true);
+	protected Node addChild(Node child) {
+		return (Node) request("addChild",new String[] {"hypeerweb.Node"}, new Object[] {child}, true);
 	}
 	@Override
-	protected boolean replaceNode(Database db, Node toReplace) {
-		return (boolean) request("replaceNode", new String[] {"hypeerweb.Database", "hypeerweb.Node"}, new Object[] {db, toReplace}, true);
+	protected boolean replaceNode(Node toReplace) {
+		return (boolean) request("replaceNode", new String[] {"hypeerweb.Node"}, new Object[] {toReplace}, true);
 	}
 	@Override
-	protected Node disconnectNode(Database db) {
-		return (Node) request("disconnectNode", new String[] {"hypeerweb.Database"}, new Object[] {db}, true);
+	protected Node disconnectNode() {
+		return (Node) request("disconnectNode", null, null, true);
 	}
 	@Override
-	protected Node findValidNode(Criteria x) {
-		return (Node) request("findValidNode", new String[] { "hypeerweb.Node.Criteria" }, new Object[] {x}, true);
+	protected Node findValidNode(Criteria x, int levels, boolean recursive) {
+		return (Node) request("findValidNode", new String[] {"hypeerweb.Node.Criteria","int","boolean"}, new Object[]{x, levels, recursive}, true);
 	}
 	@Override
 	protected Node findInsertionNode() {
@@ -88,6 +88,10 @@ public class NodeProxy extends Node{
 	@Override
 	protected FoldState getFoldState() {
 		return (FoldState) request("getFoldState");
+	}
+	@Override
+	public HyPeerWebSegment getHostSegment(){
+		return (HyPeerWebSegment) request("getHostSegment");
 	}
 	
 	//SETTERS

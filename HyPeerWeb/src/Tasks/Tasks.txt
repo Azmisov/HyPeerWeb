@@ -51,7 +51,8 @@ Done(No)	Multi-threading/Concurrency
 Done(No)		??? see if Woodfield knows any good ways to implement this
 
 Done(No)	Other 
-Done(Yes)		make Node's fold state pattern use enums 
+Done(Yes)		make Node's fold state pattern use enums
+Done(No)		add assert statements before all methods?
 Done(No)		remove all unused code 
 Done(No)		write any missing JavaDoc 
 Done(No)		RSA signing of ChatServer requests? that might be kind of fun
@@ -60,30 +61,44 @@ Done(No)		celebration + pizza party!
 QUALITY CHECKING:
 ===================
 HyPeerWebSegment:
-	- constructor 1
+	x constructor 1
 	- constructor 3
-	- removeNode(int)
-	- removeNode(Node)
-	- removeAllNodes
-	- removeAllSegmentNodes
-	- addNode
+	x removeNode(int)
+	x removeNode(Node)
+	x removeAllNodes
+	x addNode
+	x addNode (proxy)
 	- addDistantChild
 	- HyPeerWebState
 		- HAS_NONE
+			x addNode
+			x removeNode
 		- HAS_ONE
+			- addNode
+			x removeNode
 		- HAS_MANY
-	- getSegmentNodeCache
+			- addNode
+			- removeNode
+	- changeState
 	x getFirstSegmentNode
 	x getLastSegmentNode
 	x getSegmentSize
 	x isSegmentEmpty
-	- getNonemptySegment
+	x getNonemptySegment
 	x getSegmentNodeByUID
 	x getRandomNode
 	x getNode
 	x isEmpty
+	- getCache
+	- storeCache
+	- restoreCache
+	x executeRemotely
 
 Questions:
 - are anonymous inner classes serializable
 - is an extended class of a serializable object automatically serializable?
+- will AbstractVisitor listeners execute on machine that contains node? We're
+	banking on the fact that this is possible
+- should we allow null listeners in HyPeerWebSegment
+- do proxies need UID? is there any case we reference node.UID when it would be a proxy
 

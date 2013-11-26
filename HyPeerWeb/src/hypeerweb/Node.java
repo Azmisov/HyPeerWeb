@@ -250,14 +250,18 @@ public class Node implements Serializable {
 	/**
 	 * Finds a valid node, given a set of criteria
 	 * @param x the Criteria that denotes a valid node
+	 * @param levels how many neighbor levels out to search;
+	 *	a value less than zero will search forever until there are no more nodes to search
+	 * @param recursive should this be run recursively, once a valid node is found?
+	 *	Warning! depending on how you implement Criteria, if levels < 0 you may enter an infinite loop
 	 * @return a valid node
 	 */
-	protected Node findValidNode(Criteria x){
-		int level = recurseLevel;
+	protected Node findValidNode(Criteria x, int levels, boolean recursive){
+		int level = levels;
 		//Nodes we've checked already
-		TreeSet<Node> visited = new TreeSet<>();
+		TreeSet<Node> visited = new TreeSet();
 		//Nodes we are currently checking
-		ArrayList<Node> parents = new ArrayList<>();
+		ArrayList<Node> parents = new ArrayList();
 		//Neighbors of the parents
 		ArrayList<Node> friends;
 		//Start by checking the current node
@@ -268,7 +272,7 @@ public class Node implements Serializable {
 			//Check for valid nodes
 			for (Node parent: parents){
 				if ((temp = x.check(this, parent)) != null)
-					return temp.findValidNode(x);
+					return recursive ? temp.findValidNode(x, levels, recursive) : temp;
 			}
 			//If this was the last level, don't go down any further
 			if (level-- != 0){
@@ -312,7 +316,7 @@ public class Node implements Serializable {
 	 * @author josh
 	 */
 	protected Node findInsertionNode() {
-		return findValidNode(insertCriteria);
+		return findValidNode(insertCriteria, recurseLevel, true);
 	}
 	/**
 	 * Criteria for a valid disconnect node
@@ -346,7 +350,7 @@ public class Node implements Serializable {
 	 * @author Josh
 	 */
 	protected Node findDisconnectNode(){
-		return findValidNode(disconnectCriteria);
+		return findValidNode(disconnectCriteria, recurseLevel, true);
 	}
 	
 	//GETTERS
@@ -472,6 +476,15 @@ public class Node implements Serializable {
 	public void setData(String key, Object val){
 		data.setAttribute(key, val);
 	}
+	/**
+	 * Resets links so we can assure we're working
+	 * with a clean copy of the Node; this is used when
+	 * we pass in a NodeProxy to addChild/replaceNode etc to
+	 * assure the NodeProxy doesn't have any pre-existing links
+	 */
+	protected void resetLinks(){
+		L = new Links(UID);
+	}
 	
 	//FOLD STATE PATTERN
 	/**
@@ -574,6 +587,17 @@ public class Node implements Serializable {
 	}
 	
 	//NETWORKING
+	/**
+	 * Get the segment that holds this node, if any
+	 * @return a HyPeerWebSegment containing this node
+	 */
+	public HyPeerWebSegment getHostSegment(){
+		for (HyPeerWebSegment s: HyPeerWebSegment.segmentList){
+			if (s.getSegmentNodeByUID(UID) != null)
+				return s;
+		}
+		return null;
+	}
 	public Object writeReplace() throws ObjectStreamException {
 		return new NodeProxy(this);
 	}
