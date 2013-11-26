@@ -24,8 +24,6 @@ public class Node implements Serializable {
 	//State machines
 	private static final int recurseLevel = 2; //2 = neighbor's neighbors
 	private FoldState foldState = FoldState.STABLE; 
-	//Hash code prime
-	private static long prime = 2654435761L;
 	
 	//CONSTRUCTORS
 	/**
@@ -565,14 +563,14 @@ public class Node implements Serializable {
 		return (height == nh ? webID < id : height < nh) ? -1 : 1;
 	}
 	@Override
-	public int hashCode(){
-		return (int) ((this.webID * prime) % Integer.MAX_VALUE);
-	}
-	@Override
 	public boolean equals(Object obj) {
 		if (obj == null || getClass() != obj.getClass())
 			return false;
 		return this.webID == ((Node) obj).getWebId();
+	}
+	@Override
+	public int hashCode() {
+		return 51 + this.webID;
 	}
 	
 	//NETWORKING

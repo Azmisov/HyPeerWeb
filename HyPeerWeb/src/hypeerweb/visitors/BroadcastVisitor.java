@@ -29,7 +29,7 @@ public class BroadcastVisitor extends AbstractVisitor{
 	}
 	
 	/**
-	 * Do not call this method! use begin(Node n) instead
+	 * DO NOT CALL THIS METHOD!!! use begin(Node n) instead
 	 * @param n a node to begin broadcasting from
 	 */
 	@Override

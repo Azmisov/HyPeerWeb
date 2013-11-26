@@ -73,13 +73,17 @@ HyPeerWebSegment:
 		- HAS_ONE
 		- HAS_MANY
 	- getSegmentNodeCache
-	- getFirstSegmentNode
-	- getLastSegmentNode
-	- getSegmentSize
-	- isSegmentEmpty
+	x getFirstSegmentNode
+	x getLastSegmentNode
+	x getSegmentSize
+	x isSegmentEmpty
 	- getNonemptySegment
-	- getSegmentNodeByUID
-	- getRandomNode
-	- getNode
-	- isEmpty
+	x getSegmentNodeByUID
+	x getRandomNode
+	x getNode
+	x isEmpty
+
+Questions:
+- are anonymous inner classes serializable
+- is an extended class of a serializable object automatically serializable?
 

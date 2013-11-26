@@ -3,6 +3,8 @@ package hypeerweb;
 import hypeerweb.visitors.SendVisitor;
 import hypeerweb.visitors.BroadcastVisitor;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.Random;
 import java.util.TreeMap;
 
@@ -276,10 +278,10 @@ public class HyPeerWebSegment<T extends Node> extends Node{
 	protected void changeState(final HyPeerWebState state){
 		(new BroadcastVisitor(new Node.Listener(){
 			@Override
-			public void callback(Node n) {
+			public void callback(Node n){
 				((HyPeerWebSegment) n).state = state;
 			}
-		})).visit(this);
+		})).begin(this);
 	}
 	
 	// <editor-fold defaultstate="collapsed" desc="SEGMENT GETTERS">
@@ -329,31 +331,42 @@ public class HyPeerWebSegment<T extends Node> extends Node{
 	 * @return the segment found
 	 */
 	public HyPeerWebSegment getNonemptySegment(){
+		//There are no non-empty segments
 		if (isEmpty()) return null;
+		//Hooray, this is a non-empty segment
 		if (!isSegmentEmpty()) return this;
 		else{
-			//TODO: don't think this is going to work here
-			for (Node neighbor: L.getNeighbors())
-				return ((HyPeerWebSegment)neighbor).getNonemptySegment();
-		}
-		//For Add Node method. If no segments are nonempty, 
-		//this segment is as good a place to start as any.
-		return this;
+			//Recursively look through all neighbors, searching for a node
+			//that is not empty; this is terribly inefficient, but we don't
+			//know a better way to do it (at least not yet)
+			HashSet<Node> visited = new HashSet();
+			ArrayList<Node> parents = new ArrayList();
+			HashSet<Node> friends = new HashSet();
+			parents.add(this);
+			visited.add(this);
+			for (Node p: parents){
+				friends.addAll(Arrays.asList(p.getNeighbors()));
+				for (Node f: friends){
+					if (!visited.c)
+						//TODO, finish writing this method
+				}
+			}
+		}		
 	}
 	/**
 	 * Looks for a node with this UID in this segment
 	 * @param UID the UID of the node to search for
 	 * @return the node with this UID; null, if it doesn't exist
 	 */
-	public Node getSegmentNodeByUID(int UID) {
-		return nodesByUID.get(UID);
+	public T getSegmentNodeByUID(int UID) {
+		return (T) nodesByUID.get(UID);
 	}
 	// </editor-fold>
 	
 	// <editor-fold defaultstate="collapsed" desc="HYPEERWEB GETTERS">
 	/**
 	 * Retrieves a random node in the HyPeerWeb
-	 * @return a random node; null, if there are no nodes
+	 * @param listener retrieval callback
 	 */
 	public void getRandomNode(Node.Listener listener){
 		getNode(rand.nextInt(Integer.MAX_VALUE), true, listener);
