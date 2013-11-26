@@ -66,23 +66,23 @@ public class HyPeerWebTest {
 	
 	public int getSize()
 	{
-		return web.getNodeCache(1).nodes.size();
+		return web.getSegmentNodeCache(1).nodes.size();
 	}
 	public NodeCache.Node getRandom()
 	{
-		NodeInterface[] nodeList = web.getNodeCache(1).getOrderedListOfNodes();
+		NodeInterface[] nodeList = web.getSegmentNodeCache(1).getOrderedListOfNodes();
 		Random random = new Random();
 		return (NodeCache.Node) nodeList[random.nextInt()];
 	}
 	public NodeCache.Node getFirst()
 	{
-		return (NodeCache.Node) web.getNodeCache(1).getOrderedListOfNodes()[0];
+		return (NodeCache.Node) web.getSegmentNodeCache(1).getOrderedListOfNodes()[0];
 	}
 	public NodeCache.Node getAddedNode()
 	{
-		NodeInterface[] nodeList = web.getNodeCache(1).getOrderedListOfNodes();
+		NodeInterface[] nodeList = web.getSegmentNodeCache(1).getOrderedListOfNodes();
 		web.addNode(AddListener);
-		NodeInterface[] nodeList2 = web.getNodeCache(1).getOrderedListOfNodes();
+		NodeInterface[] nodeList2 = web.getSegmentNodeCache(1).getOrderedListOfNodes();
 		for (int i=0; i < nodeList2.length ; i++)
 		{
 			NodeInterface other = null;
@@ -105,7 +105,7 @@ public class HyPeerWebTest {
 		if (DB_NAME != null){
 			System.out.println("Restoring...");
 			try{
-				if (!(new Validator(web.getNodeCache(0))).validate())
+				if (!(new Validator(web.getSegmentNodeCache(0))).validate())
 					throw new Exception("FATAL ERROR: Could not restore the old database");
 			} catch (Exception e){
 				System.out.println("The database <"+DB_NAME+"> must be corrupt. Did you previously force execution to stop?");
@@ -130,7 +130,7 @@ public class HyPeerWebTest {
 				if (getSize() != ++old_size)
 					throw new Exception("HyPeerWeb is not the correct size");
 				if (i % TEST_EVERY == 0)
-					assertTrue((new Validator(web.getNodeCache(0))).validate());
+					assertTrue((new Validator(web.getSegmentNodeCache(0))).validate());
 			}
 		}
 	}
@@ -171,7 +171,7 @@ public class HyPeerWebTest {
 			if (getSize() != --old_size)
 				throw new Exception("HyPeerWeb is not the correct size");
 			if (i % TEST_EVERY == 0)
-				assertTrue((new Validator(web.getNodeCache(0))).validate());
+				assertTrue((new Validator(web.getSegmentNodeCache(0))).validate());
 		}
 	}
 	
@@ -189,7 +189,7 @@ public class HyPeerWebTest {
 			if (getSize() != --old_size)
 				throw new Exception("HyPeerWeb is not the correct size");
 			if (i % TEST_EVERY == 0)
-				assertTrue((new Validator(web.getNodeCache(0))).validate());
+				assertTrue((new Validator(web.getSegmentNodeCache(0))).validate());
 		}
 	}
 	
@@ -228,7 +228,7 @@ public class HyPeerWebTest {
 		Random r = new Random();
 		for (int i=0; i<SEND_TESTS; i++){
 			int bad_id = r.nextInt();
-			while (web.getNodeCache(0).getNode(bad_id) != null)
+			while (web.getSegmentNodeCache(0).getNode(bad_id) != null)
 				bad_id *= 3;
 			SendVisitor x = new SendVisitor(bad_id, SendVisitorListener);
 			//TODO: Figure out how to get a node

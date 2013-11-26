@@ -26,7 +26,7 @@ public class ChatServer implements Serializable{
 	private final HashMap<Integer, ChatUser> clients = new HashMap();
 	
 	public ChatServer() throws Exception{
-		segment = new HyPeerWebSegment("InceptionWeb.db", -1);
+		segment = new HyPeerWebSegment(-1);
 		segment.setData("ChatServer", this);
 		/* TODO:
 			Join the network by creating another node in "segment"
@@ -39,10 +39,7 @@ public class ChatServer implements Serializable{
 	//GUI
 	/**
 	 * Register a GUI/Client with this server (Watch/Leech)
-	 * @param nwl network name listener
-	 * @param nl node change listener
-	 * @param sl send chat message listener
-	 * @param ul user update listener
+	 * @param client the ChatClient to register with this server
 	 * @return the ChatUser for this GUI/Client
 	 */
 	public ChatUser registerClient(ChatClient client){

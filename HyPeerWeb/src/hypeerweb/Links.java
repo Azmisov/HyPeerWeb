@@ -31,10 +31,10 @@ public class Links implements Serializable {
 	 */
 	public Links(int UID){
 		this.UID = UID;
-		neighbors = new TreeSet<>();
-		surrogateNeighbors = new TreeSet<>();
-		inverseSurrogateNeighbors = new TreeSet<>();
-		highest = new TreeSet<>();
+		neighbors = new TreeSet();
+		surrogateNeighbors = new TreeSet();
+		inverseSurrogateNeighbors = new TreeSet();
+		highest = new TreeSet();
 	}
 	/**
 	 * Creates a links object with predefined connections

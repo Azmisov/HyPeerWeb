@@ -3,8 +3,8 @@ package hypeerweb.visitors;
 import hypeerweb.Node;
 
 /**
- * Broadcast Visitor
- * @author Josh
+ * Broadcast Visitor; listener callback is guaranteed
+ * to run on the same machine the node is on
  */
 public class BroadcastVisitor extends AbstractVisitor{
 	private static final String
@@ -29,7 +29,7 @@ public class BroadcastVisitor extends AbstractVisitor{
 	}
 	
 	/**
-	 * Do not call this method! use visit(Node n) instead
+	 * Do not call this method! use begin(Node n) instead
 	 * @param n a node to begin broadcasting from
 	 */
 	@Override

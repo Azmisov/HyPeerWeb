@@ -8,11 +8,9 @@ import java.util.TreeMap;
 
 /**
  * The Great HyPeerWeb
- * @param <T> The Node type for this HyPeerWeb instance
- * @author isaac
+ * @param <>> The Node type for this HyPeerWeb instance
  */
 public class HyPeerWebSegment<T extends Node> extends Node{
-	private Database db = null;
 	private TreeMap<Integer, Node> nodes;
 	private HyPeerWebState state;
 	//Random number generator for getting random nodes
@@ -24,34 +22,26 @@ public class HyPeerWebSegment<T extends Node> extends Node{
 	
 	/**
 	 * Constructor for initializing the HyPeerWeb with default Node values
-	 * @param dbName should we sync our HyPeerWeb to a database;
-	 *	Warning! Database access can be very slow (e.g. "HyPeerWeb.sqlite")
 	 * @param seed the random seed number for getting random nodes; use -1
 	 *	to get a pseudo-random seed
-	 * @throws Exception if there was a database error
-	 * @author isaac
 	 */
-	public HyPeerWebSegment(long seed) throws Exception{
+	public HyPeerWebSegment(long seed){
 		this(seed, 0, 0);
 	}
 	/**
 	 * Constructor for initializing the HyPeerWeb with defined Node values
-	 * @param dbName should we sync our HyPeerWeb to a database;
-	 *	Warning! Database access can be very slow (e.g. "HyPeerWeb.sqlite")
 	 * @param seed the random seed number for getting random nodes; use -1
 	 *	to get a pseudo-random seed
 	 * @param webID the node webID, if it has one
 	 * @param height the node height, if it has one
-	 * @throws Exception if there was a database error
-	 * @author isaac
 	 */
-	public HyPeerWebSegment(long seed, int webID, int height) throws Exception{
+	public HyPeerWebSegment(long seed, int webID, int height){
 		super(0, 0);
 		nodes = new TreeMap();
+		nodesByUID = new TreeMap();
 		if (seed != -1)
 			rand.setSeed(seed);
 		segmentList.add(this);
-		nodesByUID = new TreeMap<>();
 	}
 	
 	/**
@@ -60,14 +50,17 @@ public class HyPeerWebSegment<T extends Node> extends Node{
 	 * @param listener event callback
 	 */
 	public void removeNode(int webid, Node.Listener listener){
-		//TODO, make get node take in a listener
-		HyPeerWebSegment seg = getNonemptySegment();
-		if (seg == null) return;
-		if (isSegmentEmpty())
-			seg.removeNode(webid, listener);
+		//Don't do anything, if there are no nodes
+		if (isEmpty())
+			listener.callback(null);
+		//If this segment is empty, execute method on non-empty segment
+		else if (isSegmentEmpty())
+			getNonemptySegment().removeNode(webid, listener);
+		//If this segment has nodes, go find the node "webid"
 		else{
+			//TODO, fix this here
 			Node n = nodes.get(webid);
-			if(n != null)
+			if (n != null)
 				listener.callback(n);
 			else{
 				removeNode((T)n, listener);
@@ -82,6 +75,7 @@ public class HyPeerWebSegment<T extends Node> extends Node{
 	 * @param listener event callback
 	 */
 	public void removeNode(T node, Node.Listener listener){
+		//TODO, if node is a proxy, execute this method on the proxy's host segment
 		state.removeNode(this, node, listener);
 	}
 	/**
@@ -92,15 +86,19 @@ public class HyPeerWebSegment<T extends Node> extends Node{
 		(new BroadcastVisitor(new Node.Listener() {
 			@Override
 			public void callback(Node n) {
-				HyPeerWebSegment seg = (HyPeerWebSegment) n;
-				//If we can't remove all nodes, HyPeerWeb is corrupt
-				if (seg.db != null && !seg.db.clear())
-					seg.changeState(HyPeerWebState.CORRUPT);
-				seg.nodes = new TreeMap();
-				//Call listener
+				((HyPeerWebSegment) n).removeAllSegmentNodes();
 				listener.callback(n);
 			}
 		})).visit(this);
+	}
+	/**
+	 * Remove all node's from this particular segment
+	 * Warning! This may leave the HyPeerWeb corrupt, if
+	 * all segments are not cleared together
+	 */
+	protected void removeAllSegmentNodes(){
+		nodes.clear();
+		nodesByUID.clear();
 	}
 	
 	/**
@@ -108,13 +106,13 @@ public class HyPeerWebSegment<T extends Node> extends Node{
 	 * @param listener event callback
 	 */
 	public void addNode(Node.Listener listener){
-		if (isSegmentEmpty())
+		//If there is a nonempty segment somewhere, go to it
+		if (!isEmpty() && isSegmentEmpty())
 			getNonemptySegment().addNode(listener);
-		else
-			state.addNode(this, listener);
+		//Otherwise, run on this machine
+		else state.addNode(this, listener);
 	}
-	protected void addDistantChild(Node child)
-	{
+	protected void addDistantChild(Node child){
 		nodes.put(child.getWebId(), child);
 		nodesByUID.put(child.UID, child);
 	}
@@ -123,21 +121,17 @@ public class HyPeerWebSegment<T extends Node> extends Node{
 	 * this individual segment. Handles special cases for
 	 * add and remove node, as well as a corrupt HyPeerWeb.
 	 */
-	private enum HyPeerWebState{
+	protected enum HyPeerWebState{
 		//No nodes
 		HAS_NONE {
 			@Override
 			public void addNode(final HyPeerWebSegment web, Node.Listener listener){
 				//Use a proxy, if the request came from another segment
 				Node first = new Node(0, 0);
-				if (web.db != null && !web.db.addNode(first))
-					web.changeState(CORRUPT);
-				else{
-					web.addDistantChild(first);
-					//broadcast state change to HAS_ONE
-					web.changeState(HAS_ONE);
-					listener.callback(first);
-				}
+				web.addDistantChild(first);
+				//broadcast state change to HAS_ONE
+				web.changeState(HAS_ONE);
+				listener.callback(first);
 			}
 			@Override
 			public void removeNode(final HyPeerWebSegment web, Node n, Node.Listener listener){
@@ -149,48 +143,27 @@ public class HyPeerWebSegment<T extends Node> extends Node{
 		HAS_ONE {
 			@Override
 			public void addNode(final HyPeerWebSegment web, Node.Listener listener){
-				//Use a proxy, if the request came from another segment
-				//broadcast state change to HAS_MANY
-				//handle special case
 				Node sec = new Node(1, 1),
 					first = (Node) web.nodes.firstEntry().getValue();
-				//Update the database first
-				if (web.db != null) {
-					web.db.beginCommit();
-					web.db.addNode(sec);
-					web.db.setHeight(0, 1);
-					//reflexive folds
-					web.db.setFold(0, 1);
-					web.db.setFold(1, 0);
-					//reflexive neighbors
-					web.db.addNeighbor(0, 1);
-					web.db.addNeighbor(1, 0);
-					if (!web.db.endCommit())
-						web.changeState(CORRUPT);
-				}
-				//Update java struct
-				{
-					first.setHeight(1);
-					first.L.setFold(sec);
-					sec.L.setFold(first);
-					first.L.addNeighbor(sec);
-					sec.L.addNeighbor(first);
-					web.addDistantChild(sec);
-					web.changeState(HAS_MANY);
-					listener.callback(sec);					
-				}
+				//Handle special case
+				first.setHeight(1);
+				first.L.setFold(sec);
+				sec.L.setFold(first);
+				first.L.addNeighbor(sec);
+				sec.L.addNeighbor(first);
+				web.addDistantChild(sec);
+				//Broadcast state change
+				web.changeState(HAS_MANY);
+				listener.callback(sec);
 			}
 			@Override
 			public void removeNode(final HyPeerWebSegment web, Node n, Node.Listener listener){
 				//broadcast state change to HAS_NONE
 				//handle special case
-				if (web.db != null && !web.db.clear())
-					web.changeState(CORRUPT);
-				else{
-					web.nodes = new TreeMap<>();
-					web.changeState(HAS_NONE);
-					listener.callback(n);
-				}
+				web.removeAllSegmentNodes();
+				web.nodes = new TreeMap<>();
+				web.changeState(HAS_NONE);
+				listener.callback(n);
 			}
 		},
 		//More than one node
@@ -300,7 +273,7 @@ public class HyPeerWebSegment<T extends Node> extends Node{
 	 * Change the state of the HyPeerWeb
 	 * @param state the new state
 	 */
-	private void changeState(final HyPeerWebState state){
+	protected void changeState(final HyPeerWebState state){
 		(new BroadcastVisitor(new Node.Listener(){
 			@Override
 			public void callback(Node n) {
@@ -309,17 +282,13 @@ public class HyPeerWebSegment<T extends Node> extends Node{
 		})).visit(this);
 	}
 	
-	public Node getNodeByUID(int UID) {
-		return nodesByUID.get(UID);
-	}
-	
 	// <editor-fold defaultstate="collapsed" desc="SEGMENT GETTERS">
 	/**
 	 * Get a cached version of this HyPeerWeb segment
 	 * @param networkID the ID for the new cache
 	 * @return a node cache object
 	 */
-	public NodeCache getNodeCache(int networkID){
+	public NodeCache getSegmentNodeCache(int networkID){
 		NodeCache c = new NodeCache();
 		for (Node n: nodes.values())
 			c.addNode(n, false);
@@ -370,6 +339,14 @@ public class HyPeerWebSegment<T extends Node> extends Node{
 		//For Add Node method. If no segments are nonempty, 
 		//this segment is as good a place to start as any.
 		return this;
+	}
+	/**
+	 * Looks for a node with this UID in this segment
+	 * @param UID the UID of the node to search for
+	 * @return the node with this UID; null, if it doesn't exist
+	 */
+	public Node getSegmentNodeByUID(int UID) {
+		return nodesByUID.get(UID);
 	}
 	// </editor-fold>
 	

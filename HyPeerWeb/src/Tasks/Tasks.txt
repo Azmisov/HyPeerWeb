@@ -30,21 +30,21 @@ Done(No)		Create these methods
 Done(No)			disconnect from HyPeerWeb 
 Done(No)			block/pause/shutdown entire HyPeerWeb 
 
-Done(No)	InceptionWeb/ChatServer 
+Done(Yes)	InceptionWeb/ChatServer 
 Done(Yes)		finish writing skeleton 
 Done(Yes)		username's, network name, generation etc.
-Done(No)		implement skeleton methods (i.e. talk to ChatClient and HWSegments)
+Done(Yes)		implement skeleton methods (i.e. talk to ChatClient and HWSegments)
 
 Done(No)	Proxies & Networking 
 Done(Yes)		Implement Woodfield's proxy stuff 
-Done(No)		Optimize NodeProxy to hold stuff like height/webID by default 
+Done(Yes)		Optimize NodeProxy to hold stuff like height/webID by default 
 Done(No)		MockConnections class for testing purposes 
 Done(No)		make add/removeNode add to the segment that made the request
 Done(No)		Allow multiple segments per machine (different ports), to allow multiple HyPeerWeb processes
 Done(No)		Testing & Optimization: minimize network communications as much as possible 
 
 Done(No)	Database 
-Done(No)		distributed database; current commit system will not work anymore
+Done(No)		distributed database; current commit system will not work anymore (store NodeCache in file???)
 Done(No)		write better recovery unit tests 
 
 Done(No)	Multi-threading/Concurrency 
@@ -56,4 +56,30 @@ Done(No)		remove all unused code
 Done(No)		write any missing JavaDoc 
 Done(No)		RSA signing of ChatServer requests? that might be kind of fun
 Done(No)		celebration + pizza party!
+
+QUALITY CHECKING:
+===================
+HyPeerWebSegment:
+	- constructor 1
+	- constructor 3
+	- removeNode(int)
+	- removeNode(Node)
+	- removeAllNodes
+	- removeAllSegmentNodes
+	- addNode
+	- addDistantChild
+	- HyPeerWebState
+		- HAS_NONE
+		- HAS_ONE
+		- HAS_MANY
+	- getSegmentNodeCache
+	- getFirstSegmentNode
+	- getLastSegmentNode
+	- getSegmentSize
+	- isSegmentEmpty
+	- getNonemptySegment
+	- getSegmentNodeByUID
+	- getRandomNode
+	- getNode
+	- isEmpty
 

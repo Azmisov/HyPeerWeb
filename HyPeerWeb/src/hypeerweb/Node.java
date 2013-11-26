@@ -48,66 +48,38 @@ public class Node implements Serializable {
 	 * @return the new child node; null if the node couldn't be added
 	 * @author Guy, Isaac, Brian
 	 */
-	protected Node addChild(Database db, Node child){
+	protected Node addChild(Node child){
 		//Get new height and child's WebID
 		int childHeight = height+1,
 			childWebID = (1 << height) | webID;
-		
+		setHeight(childHeight);
 		child.setHeight(childHeight);
 		child.setWebID(childWebID);
 				
 		//Set neighbours (Guy)
-		NeighborDatabaseChanges ndc = new NeighborDatabaseChanges();
 		//child neighbors
-		ndc.updateDirect(this, child);
-		ndc.updateDirect(child, this);
+		this.L.addNeighbor(child);
+		child.L.addNeighbor(this);
 		for (Node n: L.getInverseSurrogateNeighbors()){
-			ndc.updateDirect(child, n);
-			ndc.updateDirect(n, child);
+			child.L.addNeighbor(n);
+			n.L.addNeighbor(child);
 			//Remove surrogate reference to parent
-			ndc.removeSurrogate(n, this);
-			ndc.removeInverse(this, n);
+			n.L.removeSurrogateNeighbor(this);
 		}
+		this.L.removeAllInverseSurrogateNeighbors();
 		//adds a neighbor of parent as a surrogate neighbor of child if neighbor is childless
 		//and makes child an isn of neighbor
 		for (Node n: L.getNeighbors()){
 			if (n.getHeight() < childHeight){
-				ndc.updateSurrogate(child, n);
-				ndc.updateInverse(n, child);
+				child.L.addSurrogateNeighbor(n);
+				n.L.addInverseSurrogateNeighbor(child);
 			}
 		}
 		
 		//Set folds (Brian/Isaac)
-		FoldDatabaseChanges fdc = new FoldDatabaseChanges();
-		foldState.updateFolds(fdc, this, child);
-		
-		//Attempt to add the node to the database
-		//If it fails, we cannot proceed
-		if (db != null) {
-			db.beginCommit();
-			//Create the child node
-			db.addNode(child);
-			//Update parent
-			db.setHeight(webID, childHeight);
-			db.removeAllInverseSurrogateNeighbors(webID);
-			//Set neighbors and folds
-			ndc.commitToDatabase(db);
-			fdc.commitToDatabase(db);
-			//Commit changes to database
-			if (!db.endCommit())
-				return null;
-		}
-		
-		//Add the node to the Java structure
-		{
-			//Update parent
-			setHeight(childHeight);
-			L.removeAllInverseSurrogateNeighbors();
-			//Update neighbors and folds
-			ndc.commitToHyPeerWeb();
-			fdc.commitToHyPeerWeb();
-			return child;
-		}
+		foldState.updateFolds(this, child);
+
+		return child;
 	}
 	/**
 	 * Replaces a node with this node
@@ -116,7 +88,7 @@ public class Node implements Serializable {
 	 * @return true, if the replacement was successful
 	 * @author isaac
 	 */
-	protected boolean replaceNode(Database db, Node toReplace){
+	protected void replaceNode(Node toReplace){
 		int oldWebID = this.webID;
 		//Swap out connections
 		//We're probably going to have to modify this so it works with proxies.
@@ -130,8 +102,6 @@ public class Node implements Serializable {
 		height = toReplace.getHeight();
 		//Notify all connections that their reference has changed
 		L.broadcastUpdate(toReplace, this);
-		//Commit to the database, if needed
-		return db != null ? db.replaceNode(webID, oldWebID, this) : true;
 	}
 	/**
 	 * Disconnects an edge node to replace a node that
@@ -140,50 +110,31 @@ public class Node implements Serializable {
 	 * @return the disconnected node
 	 * @author John, Brian, Guy
 	 */
-	protected Node disconnectNode(Database db){
-		NeighborDatabaseChanges ndc = new NeighborDatabaseChanges();
-		FoldDatabaseChanges fdc = new FoldDatabaseChanges();
+	protected Node disconnectNode(){
 		Node parent = getParent();
 		int parentHeight = parent.getHeight()-1;
+		//reduce parent height by 1
+		parent.setHeight(parentHeight);
 
 		//all of the neighbors of this except parent will have parent as surrogateNeighbor instead of neighbor, and
 		//parent will have all neighbors of this except itself as inverse surrogate neighbor
 		for (Node neighbor: L.getNeighbors()){
-			if(neighbor != parent){
-				ndc.updateSurrogate(neighbor, parent);
-				ndc.updateInverse(parent, neighbor);
-				ndc.removeDirect(neighbor, this);
+			if (neighbor != parent){
+				neighbor.L.addSurrogateNeighbor(parent);
+				parent.L.addInverseSurrogateNeighbor(neighbor);
+				neighbor.L.removeNeighbor(this);
 			}
 		}	
 		//remove this from parent neighbor list
-		ndc.removeDirect(parent, this);
+		parent.L.removeNeighbor(this);
 		//all SNs of this will have this removed from their ISN list
 		for (Node sn : L.getSurrogateNeighbors())
-			ndc.removeInverse(sn, this);
+			sn.L.removeInverseSurrogateNeighbor(this);
 
 		//Reverse the fold state; we will always have a fold - guaranteed
-		L.getFold().getFoldState().reverseFolds(fdc, parent, this);
+		L.getFold().getFoldState().reverseFolds(parent, this);
 
-		//Attempt to update the database
-		//If it fails, we cannot proceed
-		if (db != null) {
-			db.beginCommit();
-			//reduce parent height by 1
-			db.setHeight(parent.getWebId(), parentHeight);
-			ndc.commitToDatabase(db);
-			fdc.commitToDatabase(db);
-			//Commit changes to database
-			if (!db.endCommit())
-				return null;
-		}
-		//Update the Java structure
-		{
-			//reduce parent height by 1
-			parent.setHeight(parentHeight);
-			ndc.commitToHyPeerWeb();
-			fdc.commitToHyPeerWeb();
-			return this;
-		}
+		return this;
 	}
 	
 	//VISITOR METHODS
@@ -399,159 +350,6 @@ public class Node implements Serializable {
 	protected Node findDisconnectNode(){
 		return findValidNode(disconnectCriteria);
 	}
-
-	//EN-MASSE DATABASE CHANGE HANDLING
-	/**
-	 * Sub-Class to keep track of Fold updates
-	 * @author isaac
-	 */
-	private static class DatabaseChanges{
-		//Valid types of changes
-		protected enum NodeUpdateType{
-			DIRECT, SURROGATE, INVERSE
-		}
-		//List of changes
-		protected ArrayList<NodeUpdate> updates;
-		//Holds all change information
-		protected class NodeUpdate{
-			public NodeUpdateType type;
-			public Node node;
-			public Node value;
-			public boolean delete;
-			public NodeUpdate(NodeUpdateType type, Node node, Node value, boolean delete){
-				this.type = type;
-				this.node = node;
-				this.value = value;
-				this.delete = delete;
-			}
-		}
-		//constructor
-		public DatabaseChanges(){
-			updates = new ArrayList<>();
-		}
-		//add updates
-		public void updateDirect(Node node, Node value){
-			newUpdate(NodeUpdateType.DIRECT, node, value, false);
-		}
-		public void updateSurrogate(Node node, Node value){
-			newUpdate(NodeUpdateType.SURROGATE, node, value, false);
-		}
-		public void updateInverse(Node node, Node value){
-			newUpdate(NodeUpdateType.INVERSE, node, value, false);
-		}
-		//remove updates
-		public void removeDirect(Node node, Node value){
-			newUpdate(NodeUpdateType.DIRECT, node, value, true);
-		}
-		public void removeSurrogate(Node node, Node value){
-			newUpdate(NodeUpdateType.SURROGATE, node, value, true);
-		}
-		public void removeInverse(Node node, Node value){
-			newUpdate(NodeUpdateType.INVERSE, node, value, true);
-		}
-		
-		//general constructor
-		private void newUpdate(NodeUpdateType type, Node n, Node v, boolean del){
-			updates.add(new NodeUpdate(type, n, v, del));
-		}
-	}
-	/**
-	 * Interface for implementing node-specific commit actions
-	 * @author isaac
-	 */
-	private interface DatabaseChangesInterface{
-		public void commitToDatabase(Database db);
-		public void commitToHyPeerWeb();
-	}
-	/**
-	 * Extension of DatabaseChanges class to handle folds
-	 * @author isaac
-	 */
-	private static class FoldDatabaseChanges extends DatabaseChanges implements DatabaseChangesInterface{
-		@Override
-		public void commitToDatabase(Database db) {
-			for (NodeUpdate nu: updates){
-				int value = nu.delete ? -1 : nu.value.webID;
-				switch (nu.type){
-					case DIRECT:
-						db.setFold(nu.node.webID, value);
-						break;
-					case SURROGATE:
-						db.setSurrogateFold(nu.node.webID, value);
-						break;
-					case INVERSE:
-						db.setInverseSurrogateFold(nu.node.webID, value);
-						break;
-				}
-			}
-		}
-		@Override
-		public void commitToHyPeerWeb() {
-			for (NodeUpdate nu: updates){
-				Node value = nu.delete ? null : nu.value;
-				switch (nu.type){
-					case DIRECT:
-						nu.node.L.setFold(value);
-						break;
-					case SURROGATE:
-						nu.node.L.setSurrogateFold(value);
-						break;
-					case INVERSE:
-						nu.node.L.setInverseSurrogateFold(value);
-						//Update node FoldState; nu.delete corresponds directly to a Stable state
-						nu.node.setFoldState(nu.delete ? FoldState.STABLE : FoldState.UNSTABLE);
-						break;
-				}
-			}
-		}
-	}
-	/**
-	 * Extension of DatabaseChanges to handle neighbors
-	 * @author guy
-	 */
-	private static class NeighborDatabaseChanges extends DatabaseChanges implements DatabaseChangesInterface{
-		@Override
-		public void commitToDatabase(Database db) {
-			for (NodeUpdate nu: updates){
-				switch (nu.type){
-					case DIRECT:
-						if (nu.delete)
-							db.removeNeighbor(nu.node.webID, nu.value.webID);
-						else db.addNeighbor(nu.node.webID, nu.value.webID);
-						break;
-					case SURROGATE:
-						if (nu.delete)
-							db.removeSurrogateNeighbor(nu.node.webID, nu.value.webID);
-						else db.addSurrogateNeighbor(nu.node.webID, nu.value.webID);
-						break;
-					//Surrogate/Inverse are reflexive; DB will handle the rest
-					case INVERSE: break;
-				}
-			}
-		}
-		@Override
-		public void commitToHyPeerWeb() {
-			for (NodeUpdate nu: updates){
-				switch (nu.type){
-					case DIRECT:
-						if (nu.delete)
-							nu.node.L.removeNeighbor(nu.value);
-						else nu.node.L.addNeighbor(nu.value);
-						break;
-					case SURROGATE:
-						if (nu.delete)
-							nu.node.L.removeSurrogateNeighbor(nu.value);
-						else nu.node.L.addSurrogateNeighbor(nu.value);
-						break;
-					case INVERSE:
-						if (nu.delete)
-							nu.node.L.removeInverseSurrogateNeighbor(nu.value);
-						else nu.node.L.addInverseSurrogateNeighbor(nu.value);
-						break;
-				}
-			}
-		}
-	}
 	
 	//GETTERS
 	/**
@@ -689,44 +487,47 @@ public class Node implements Serializable {
 		STABLE{
 			//After running we should be in an unstable state
 			@Override
-			public void updateFolds(Node.FoldDatabaseChanges fdc, Node caller, Node child) {
+			public void updateFolds(Node caller, Node child) {
 				Node fold = caller.getFold();
 				//Update reflexive folds
-				fdc.updateDirect(child, fold);
-				fdc.updateDirect(fold, child);
+				child.L.setFold(fold);
+				fold.L.setFold(child);
 				//Insert surrogates for non-existant node
-				fdc.updateSurrogate(caller, fold);
-				fdc.updateInverse(fold, caller);
+				caller.L.setSurrogateFold(fold);
+				fold.L.setInverseSurrogateFold(caller);
+				fold.setFoldState(FoldState.UNSTABLE);
 				//Remove stable state reference
-				fdc.removeDirect(caller, null);
+				caller.L.setFold(null);
 			}
 			@Override
-			public void reverseFolds(Node.FoldDatabaseChanges fdc, Node parent, Node child) {
+			public void reverseFolds(Node parent, Node child) {
 				/* To reverse from a stable state:
 				 * parent.isf = child.f
 				 * child.f.sf = parent
 				 * child.f.f = null
 				 */
 				Node fold = child.getFold();
-				fdc.updateInverse(parent, fold);
-				fdc.updateSurrogate(fold, parent);
-				fdc.removeDirect(fold, null);
+				parent.L.setInverseSurrogateFold(fold);
+				parent.setFoldState(FoldState.UNSTABLE);
+				fold.L.setSurrogateFold(parent);
+				fold.L.setFold(null);
 			}
 		},
-		UNSTABLE{			
+		UNSTABLE{
 			//After running, we should be in a stable state
 			@Override
-			public void updateFolds(Node.FoldDatabaseChanges fdc, Node caller, Node child) {
+			public void updateFolds(Node caller, Node child) {
 				//Stable-state fold references
 				Node isfold = caller.getInverseSurrogateFold();
-				fdc.updateDirect(child, isfold);
-				fdc.updateDirect(isfold, child);
+				child.L.setFold(isfold);
+				isfold.L.setFold(child);
 				//Remove surrogate references
-				fdc.removeSurrogate(isfold, null);
-				fdc.removeInverse(caller, null);
+				isfold.L.setSurrogateFold(null);
+				caller.L.setInverseSurrogateFold(null);
+				caller.setFoldState(FoldState.STABLE);
 			}
 			@Override
-			public void reverseFolds(Node.FoldDatabaseChanges fdc, Node parent, Node child) {
+			public void reverseFolds(Node parent, Node child) {
 				/* To reverse from an unstable state:
 				 * parent.f = child.f
 				 * child.f.f = parent
@@ -734,15 +535,16 @@ public class Node implements Serializable {
 				 * child.f.isf = null
 				 */
 				Node fold = child.getFold();
-				fdc.updateDirect(parent, fold);
-				fdc.updateDirect(fold, parent);
-				fdc.removeSurrogate(parent, null);
-				fdc.removeInverse(fold, null);
+				parent.L.setFold(fold);
+				fold.L.setFold(parent);
+				parent.L.setSurrogateFold(null);
+				fold.L.setInverseSurrogateFold(null);
+				fold.setFoldState(FoldState.STABLE);
 			}
 		};
 		
-		public abstract void updateFolds(Node.FoldDatabaseChanges fdc, Node caller, Node child);
-		public abstract void reverseFolds(Node.FoldDatabaseChanges fdc, Node caller, Node child);
+		public abstract void updateFolds(Node caller, Node child);
+		public abstract void reverseFolds(Node caller, Node child);
 	}
 	
 	//VISITOR PATTERN
@@ -780,7 +582,7 @@ public class Node implements Serializable {
 	public Object readResolve() throws ObjectStreamException {
 		return this;
 	}
-	public static abstract class Listener {
+	public static abstract class Listener implements Serializable{
 		public abstract void callback(Node n);
 	}
 }

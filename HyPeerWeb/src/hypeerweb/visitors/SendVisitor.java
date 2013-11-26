@@ -3,7 +3,8 @@ package hypeerweb.visitors;
 import hypeerweb.Node;
 
 /**
- * Navigates from one node to another
+ * Navigates from one node to another; listener callback is
+ * guaranteed to run on the same machine the node is on
  */
 public class SendVisitor extends AbstractVisitor{
 	//Attributes we will store in the visitor data
