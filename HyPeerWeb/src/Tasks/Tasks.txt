@@ -41,7 +41,7 @@ Done(Yes)		Optimize NodeProxy to hold stuff like height/webID by default
 Done(No)		MockConnections class for testing purposes 
 Done(No)		make add/removeNode add to the segment that made the request
 Done(No)		Allow multiple segments per machine (different ports), to allow multiple HyPeerWeb processes
-Done(No)		Testing & Optimization: minimize network communications as much as possible 
+Done(No)		Testing & Optimization: minimize network communications as much as possible (group things in .executeRemotely like HAS_ONE.addNode)
 
 Done(No)	Database 
 Done(No)		distributed database; current commit system will not work anymore (store NodeCache in file???)
@@ -74,12 +74,12 @@ HyPeerWebSegment:
 			x addNode
 			x removeNode
 		- HAS_ONE
-			- addNode
+			x addNode
 			x removeNode
 		- HAS_MANY
 			- addNode
 			- removeNode
-	- changeState
+	x changeState
 	x getFirstSegmentNode
 	x getLastSegmentNode
 	x getSegmentSize
@@ -101,4 +101,5 @@ Questions:
 	banking on the fact that this is possible
 - should we allow null listeners in HyPeerWebSegment
 - do proxies need UID? is there any case we reference node.UID when it would be a proxy
+- make sure executeRemotely is really doing just that
 

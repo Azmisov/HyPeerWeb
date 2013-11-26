@@ -117,16 +117,16 @@ public class NodeCache implements HyPeerWebInterface, Serializable{
 			height = real.getHeight();
 			//Folds
 			hypeerweb.Node temp;
-			if ((temp = real.getFold()) != null)
+			if ((temp = real.L.getFold()) != null)
 				f = temp.getWebId();
-			if ((temp = real.getSurrogateFold()) != null)
+			if ((temp = real.L.getSurrogateFold()) != null)
 				sf = temp.getWebId();
-			if ((temp = real.getInverseSurrogateFold()) != null)
+			if ((temp = real.L.getInverseSurrogateFold()) != null)
 				sf = temp.getWebId();
 			//Neighbors
-			n = convertToCached(real.getNeighbors());
-			sn = convertToCached(real.getSurrogateNeighbors());
-			isn = convertToCached(real.getInverseSurrogateNeighbors());
+			n = convertToCached(real.L.getNeighbors());
+			sn = convertToCached(real.L.getSurrogateNeighbors());
+			isn = convertToCached(real.L.getInverseSurrogateNeighbors());
 		}
 
 		//BASIC GETTERS

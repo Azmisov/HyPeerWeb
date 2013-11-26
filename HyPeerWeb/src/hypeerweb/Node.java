@@ -135,104 +135,6 @@ public class Node implements Serializable {
 		return this;
 	}
 	
-	//VISITOR METHODS
-	/**
-	 * Get a closer Link to a target WebID
-	 * @param target the WebID we're searching for
-	 * @param mustBeCloser if false, it will get surrogate neighbors of equal
-	 * closeness, provided no other link is closer
-	 * @return a Node that is closer to the target WebID; null, if there are
-	 * no closer nodes or if the target is negative
-	 */
-	public Node getCloserNode(int target, boolean mustBeCloser){
-		//Trying to find a negative node is a waste of time
-		if (target < 0) return null;
-		//Try to find a link with a webid that is closer to the target
-		//Keep track of highest scoring match; not as greedy, but less network
-		//communications should make up for the slowness
-		Node closest = null;
-		int base = this.scoreWebIdMatch(target), high = base, temp;
-		for (Node n: L.getAllLinks()){
-			if ((temp = n.scoreWebIdMatch(target)) > high){
-				high = temp;
-				closest = n;
-			}
-		}
-		if (closest != null)
-			return closest;
-		//If none are closer, get a SNeighbor
-		if (!mustBeCloser){
-			for (Node sn: L.getSurrogateNeighbors()){
-				if (sn.scoreWebIdMatch(target) == base)
-					return sn;
-			}
-		}
-		//Otherwise, that node doesn't exist
-		return null;
-	}
-	/**
-	 * Scores how well a webID matches a search key compared to a base score
-	 * @param idSearch the query result webID
-	 * @return how many bits are set in the number
-	 */
-	public int scoreWebIdMatch(int idSearch){
-		return Integer.bitCount(~(webID ^ idSearch));
-	}
-	/**
-	 * Get all child nodes of HyPeerWeb spanning tree
-	 * @return a list of children nodes
-	 */
-	public ArrayList<Node> getTreeChildren(){
-		HashSet<Integer>
-				generatedNeighbors = new HashSet(),
-				generatedInverseSurrogates = new HashSet();
-		ArrayList<Node> found = new ArrayList<>();
-		int id = this.getWebId(),
-			//Add a one bit to left-end of id, to get neighbor's children
-			id_surr = id | ((1 << (height - 1)) << 1),
-			trailingZeros = Integer.numberOfTrailingZeros(id);
-		//Flip each of the trailing zeros, one at a time
-		int bitShifter = 1;
-		for(int i = 0; i < trailingZeros; i++){
-			generatedNeighbors.add(id | bitShifter);
-			generatedInverseSurrogates.add(id_surr | bitShifter);
-			bitShifter <<= 1;
-		}
-		//If any of the neighbors match these webId's, we should broadcast to them
-		for(Node node : L.getNeighbors()){
-			if (generatedNeighbors.contains(node.getWebId()))
-				found.add(node);
-		}
-		//Broadcast to any of our neighbor's children, if we have links to them
-		for(Node node : L.getInverseSurrogateNeighbors()){
-			if (generatedInverseSurrogates.contains(node.getWebId()))
-				found.add(node);
-		}
-		return found;
-	}
-	/**
-	 * Get parent node of HyPeerWeb spanning tree
-	 * @return null if there is no parent, 
-	 */
-	public Node getTreeParent(){
-		if (webID == 0) return null;
-		//This algorithm is just the reverse of getTreeChildren()
-		//First check for a neighbor with the correct ID
-		int neighborID = webID & ~Integer.lowestOneBit(webID);
-		for (Node n: L.getNeighbors()){
-			if (n.getWebId() == neighborID)
-				return n;
-		}
-		//Otherwise, there must be a surrogate tree parent
-		for (Node sn: L.getSurrogateNeighbors()){
-			if (sn.getWebId() == (neighborID & ~((1 << (sn.getHeight() - 1)) << 1)))
-				return sn;
-		}
-		//This should never happen in a valid HyPeerWeb
-		assert(false);
-		return null;
-	}
-	
 	//FIND VALID NODES
 	/**
 	 * Defines a set of criteria for a valid node point
@@ -355,6 +257,14 @@ public class Node implements Serializable {
 	
 	//GETTERS
 	/**
+	 * Gets stored data in this node
+	 * @param key key for this data
+	 * @return data associated with this key
+	 */
+	public Object getData(String key){
+		return data.getAttribute(key);
+	}
+	/**
 	 * Gets the WebID of the Node
 	 *
 	 * @return The WebID of the Node
@@ -385,64 +295,111 @@ public class Node implements Serializable {
 		return null;
 	}
 	/**
-	 * Get the node's neighbors
-	 * @return a list of nodes
+	 * Get all child nodes of HyPeerWeb spanning tree
+	 * @return a list of children nodes
 	 */
-	public Node[] getNeighbors() {
-		return L.getNeighbors();
+	public ArrayList<Node> getTreeChildren(){
+		HashSet<Integer>
+				generatedNeighbors = new HashSet(),
+				generatedInverseSurrogates = new HashSet();
+		ArrayList<Node> found = new ArrayList<>();
+		int id = this.getWebId(),
+			//Add a one bit to left-end of id, to get neighbor's children
+			id_surr = id | ((1 << (height - 1)) << 1),
+			trailingZeros = Integer.numberOfTrailingZeros(id);
+		//Flip each of the trailing zeros, one at a time
+		int bitShifter = 1;
+		for(int i = 0; i < trailingZeros; i++){
+			generatedNeighbors.add(id | bitShifter);
+			generatedInverseSurrogates.add(id_surr | bitShifter);
+			bitShifter <<= 1;
+		}
+		//If any of the neighbors match these webId's, we should broadcast to them
+		for(Node node : L.getNeighbors()){
+			if (generatedNeighbors.contains(node.getWebId()))
+				found.add(node);
+		}
+		//Broadcast to any of our neighbor's children, if we have links to them
+		for(Node node : L.getInverseSurrogateNeighbors()){
+			if (generatedInverseSurrogates.contains(node.getWebId()))
+				found.add(node);
+		}
+		return found;
 	}
 	/**
-	 * Get this node's surrogate neighbors
-	 * @return a list of nodes
+	 * Get parent node of HyPeerWeb spanning tree
+	 * @return null if there is no parent, 
 	 */
-	public Node[] getSurrogateNeighbors() {
-		return L.getSurrogateNeighbors();
+	public Node getTreeParent(){
+		if (webID == 0) return null;
+		//This algorithm is just the reverse of getTreeChildren()
+		//First check for a neighbor with the correct ID
+		int neighborID = webID & ~Integer.lowestOneBit(webID);
+		for (Node n: L.getNeighbors()){
+			if (n.getWebId() == neighborID)
+				return n;
+		}
+		//Otherwise, there must be a surrogate tree parent
+		for (Node sn: L.getSurrogateNeighbors()){
+			if (sn.getWebId() == (neighborID & ~((1 << (sn.getHeight() - 1)) << 1)))
+				return sn;
+		}
+		//This should never happen in a valid HyPeerWeb
+		assert(false);
+		return null;
 	}
 	/**
-	 * Get this node's inverse surrogate neighbors
-	 * @return a list of nodes
+	 * Get a closer Link to a target WebID
+	 * @param target the WebID we're searching for
+	 * @param mustBeCloser if false, it will get surrogate neighbors of equal
+	 * closeness, provided no other link is closer
+	 * @return a Node that is closer to the target WebID; null, if there are
+	 * no closer nodes or if the target is negative
 	 */
-	public Node[] getInverseSurrogateNeighbors() {
-		return L.getInverseSurrogateNeighbors();
+	public Node getCloserNode(int target, boolean mustBeCloser){
+		//Trying to find a negative node is a waste of time
+		if (target < 0) return null;
+		//Try to find a link with a webid that is closer to the target
+		//Keep track of highest scoring match; not as greedy, but less network
+		//communications should make up for the slowness
+		Node closest = null;
+		int base = this.scoreWebIdMatch(target), high = base, temp;
+		for (Node n: L.getAllLinks()){
+			if ((temp = n.scoreWebIdMatch(target)) > high){
+				high = temp;
+				closest = n;
+			}
+		}
+		if (closest != null)
+			return closest;
+		//If none are closer, get a SNeighbor
+		if (!mustBeCloser){
+			for (Node sn: L.getSurrogateNeighbors()){
+				if (sn.scoreWebIdMatch(target) == base)
+					return sn;
+			}
+		}
+		//Otherwise, that node doesn't exist
+		return null;
 	}
 	/**
-	 * Get this node's fold
-	 * @return a single node
+	 * Scores how well a webID matches a search key compared to a base score
+	 * @param idSearch the query result webID
+	 * @return how many bits are set in the number
 	 */
-	public Node getFold() {
-		return L.getFold();
-	}
-	/**
-	 * Get this node's surrogate fold
-	 * @return a single node
-	 */
-	public Node getSurrogateFold() {
-		return L.getSurrogateFold();
-	}
-	/**
-	 * Get this node's inverse surrogate fold
-	 * @return a single node
-	 */
-	public Node getInverseSurrogateFold() {
-		return L.getInverseSurrogateFold();
-	}
-	/**
-	 * Gets all the nodes connections
-	 * @return a Links class
-	 */
-	public Links getLinks(){
-		return L;
-	}
-	/**
-	 * Gets stored data in this node
-	 * @param key key for this data
-	 * @return data associated with this key
-	 */
-	public Object getData(String key){
-		return data.getAttribute(key);
+	private int scoreWebIdMatch(int idSearch){
+		return Integer.bitCount(~(webID ^ idSearch));
 	}
 	
 	//SETTERS
+	/**
+	 * Sets the value of stored data
+	 * @param key string to associate to this data
+	 * @param val data for this key
+	 */
+	public void setData(String key, Object val){
+		data.setAttribute(key, val);
+	}
 	/**
 	 * Sets the WebID of the Node
 	 * @param id the new webID
@@ -469,14 +426,6 @@ public class Node implements Serializable {
 		foldState = state;
 	}
 	/**
-	 * Sets the value of stored data
-	 * @param key string to associate to this data
-	 * @param val data for this key
-	 */
-	public void setData(String key, Object val){
-		data.setAttribute(key, val);
-	}
-	/**
 	 * Resets links so we can assure we're working
 	 * with a clean copy of the Node; this is used when
 	 * we pass in a NodeProxy to addChild/replaceNode etc to
@@ -499,7 +448,7 @@ public class Node implements Serializable {
 			//After running we should be in an unstable state
 			@Override
 			public void updateFolds(Node caller, Node child) {
-				Node fold = caller.getFold();
+				Node fold = caller.L.getFold();
 				//Update reflexive folds
 				child.L.setFold(fold);
 				fold.L.setFold(child);
@@ -517,7 +466,7 @@ public class Node implements Serializable {
 				 * child.f.sf = parent
 				 * child.f.f = null
 				 */
-				Node fold = child.getFold();
+				Node fold = child.L.getFold();
 				parent.L.setInverseSurrogateFold(fold);
 				parent.setFoldState(FoldState.UNSTABLE);
 				fold.L.setSurrogateFold(parent);
@@ -529,7 +478,7 @@ public class Node implements Serializable {
 			@Override
 			public void updateFolds(Node caller, Node child) {
 				//Stable-state fold references
-				Node isfold = caller.getInverseSurrogateFold();
+				Node isfold = caller.L.getInverseSurrogateFold();
 				child.L.setFold(isfold);
 				isfold.L.setFold(child);
 				//Remove surrogate references
@@ -545,7 +494,7 @@ public class Node implements Serializable {
 				 * parent.sf = null
 				 * child.f.isf = null
 				 */
-				Node fold = child.getFold();
+				Node fold = child.L.getFold();
 				parent.L.setFold(fold);
 				fold.L.setFold(parent);
 				parent.L.setSurrogateFold(null);
@@ -567,6 +516,35 @@ public class Node implements Serializable {
 		v.visit(this);
 	}
 	
+	//NETWORKING
+	/**
+	 * Get the segment that holds this node, if any
+	 * @return a HyPeerWebSegment containing this node
+	 */
+	public HyPeerWebSegment getHostSegment(){
+		for (HyPeerWebSegment s: HyPeerWebSegment.segmentList){
+			if (s.getSegmentNodeByUID(UID) != null)
+				return s;
+		}
+		return null;
+	}
+	/**
+	 * Executes a callback on the machine this node is on
+	 * @param listener a command/callback to execute
+	 */
+	public void executeRemotely(Node.Listener listener){
+		listener.callback(this);
+	}
+	public Object writeReplace() throws ObjectStreamException {
+		return new NodeProxy(this);
+	}
+	public Object readResolve() throws ObjectStreamException {
+		return this;
+	}
+	public static abstract class Listener implements Serializable{
+		public abstract void callback(Node n);
+	}
+	
 	//CLASS OVERRIDES
 	public int compareTo(Node node) {
 		int id = node.getWebId();
@@ -584,27 +562,5 @@ public class Node implements Serializable {
 	@Override
 	public int hashCode() {
 		return 51 + this.webID;
-	}
-	
-	//NETWORKING
-	/**
-	 * Get the segment that holds this node, if any
-	 * @return a HyPeerWebSegment containing this node
-	 */
-	public HyPeerWebSegment getHostSegment(){
-		for (HyPeerWebSegment s: HyPeerWebSegment.segmentList){
-			if (s.getSegmentNodeByUID(UID) != null)
-				return s;
-		}
-		return null;
-	}
-	public Object writeReplace() throws ObjectStreamException {
-		return new NodeProxy(this);
-	}
-	public Object readResolve() throws ObjectStreamException {
-		return this;
-	}
-	public static abstract class Listener implements Serializable{
-		public abstract void callback(Node n);
 	}
 }

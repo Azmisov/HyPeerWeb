@@ -134,6 +134,15 @@ public class HyPeerWebSegment<T extends Node> extends Node{
 		else state.addNode(this, proxy, listener);
 	}
 	/**
+	 * Add a node to the node's list; this is called from a
+	 * remote machine once it has filled a n's proxy with
+	 * id/height/links
+	 * @param n a node on this machine that has just been modified
+	 */
+	protected void addDistantChild(Node n){
+		nodes.put(n.getWebId(), n);
+	}
+	/**
 	 * Holds the state of the entire HyPeerWeb, not just
 	 * this individual segment. Handles special cases for
 	 * add and remove node, as well as a corrupt HyPeerWeb.
@@ -162,19 +171,34 @@ public class HyPeerWebSegment<T extends Node> extends Node{
 		//Only one node
 		HAS_ONE {
 			@Override
-			public void addNode(HyPeerWebSegment web, Node n, Node.Listener listener){
-				Node sec = new Node(1, 1),
-					 first = (Node) web.nodes.firstEntry().getValue();
-				//Handle special case
+			public void addNode(final HyPeerWebSegment web, final Node sec, final Node.Listener listener){
+				final Node first = web.getFirstSegmentNode();
+				//Always modify heights before you start changing links
+				//Doing so will result in less network communications
 				first.setHeight(1);
-				first.L.setFold(sec);
-				sec.L.setFold(first);
-				first.L.addNeighbor(sec);
-				sec.L.addNeighbor(first);
-				web.addDistantChild(sec);
-				//Broadcast state change
-				web.changeState(HAS_MANY);
-				listener.callback(sec);
+				sec.executeRemotely(new Node.Listener(){
+					@Override
+					public void callback(Node n){
+						//Update data for the new node
+						n.setHeight(1);
+						n.setWebID(1);
+						n.resetLinks();
+						n.L.setFold(first);
+						n.L.addNeighbor(first);
+						n.getHostSegment().nodes.put(1, n);
+						//Update data for the first node
+						first.executeRemotely(new Node.Listener(){
+							@Override
+							public void callback(Node n){								
+								n.L.setFold(sec);
+								n.L.addNeighbor(sec);
+								//Broadcast state change and execute callback
+								web.changeState(HAS_MANY);
+								listener.callback(sec);
+							}
+						});
+					}
+				});
 			}
 			@Override
 			public void removeNode(HyPeerWebSegment web, Node n, Node.Listener listener){
@@ -189,12 +213,19 @@ public class HyPeerWebSegment<T extends Node> extends Node{
 		//More than one node
 		HAS_MANY {
 			@Override
-			public void addNode(HyPeerWebSegment web, Node n, Node.Listener listener){
-				//Use a proxy, if the request came from another segment
+			public void addNode(HyPeerWebSegment web, final Node n, Node.Listener listener){
 				web.getRandomNode(new Node.Listener() {
 					@Override
-					public void callback(Node n) {
-						Node child = n.findInsertionNode().addChild(new Node(0,0));
+					public void callback(Node ranNode) {
+						ranNode.findInsertionNode().executeRemotely(new Node.Listener(){
+							@Override
+							public void callback(Node insertNode) {
+								//We are now at a valid insertion point
+								Node child = insertNode.addChild(n);
+								
+								insertNode.getHostSegment()
+							}
+						});
 						if (child == null)
 							web.changeState(CORRUPT);
 						else{
@@ -209,16 +240,14 @@ public class HyPeerWebSegment<T extends Node> extends Node{
 			@Override
 			public void removeNode(HyPeerWebSegment web, Node n, Node.Listener listener){
 				//If the HyPeerWeb has more than two nodes, remove normally
-				int size = web.nodes.size();
+				int size = web.getSegmentSize();
 				Node last, first = null;
 				if (size > 2 ||
-					//We can get rid of the rest of these checks if we end
-					//up storing proxy nodes in "nodes"
 					//Basically, we're trying to find a node with webID > 1 or height > 1
-					(last = (Node) web.nodes.lastEntry().getValue()).getWebId() > 1 ||
+					(last = (Node) web.getLastSegmentNode()).getWebId() > 1 ||
 					//The only nodes left are 0 and 1; check their heights to see if they have children
 					last.getHeight() > 1 ||
-					(size == 2 && ((Node) web.nodes.firstEntry().getValue()).getHeight() > 1) ||
+					(size == 2 && ((Node) web.getFirstSegmentNode()).getHeight() > 1) ||
 					//The only other possibility is if we have one node, with a proxy child
 					(size == 1 && last.L.getHighestLink().getWebId() > 1))
 				{
@@ -246,11 +275,11 @@ public class HyPeerWebSegment<T extends Node> extends Node{
 						}
 					});
 				}
-				//If the broadcastStateChangeentire HyPeerWeb has only two nodes
+				//If the entire HyPeerWeb has only two nodes
 				else{
 					//removing node 0
 					if(n.getWebId() == 0){
-						Node replace = n.getFold(); //gets node 1
+						Node replace = n.L.getFold(); //gets node 1
 						if (replace == null)
 							web.changeState(CORRUPT);
 						//Remove node from list of nodes
@@ -263,7 +292,7 @@ public class HyPeerWebSegment<T extends Node> extends Node{
 					}
 					//removing node 1
 					else{
-						Node other = n.getFold();
+						Node other = n.L.getFold();
 						if (other == null)
 							web.changeState(CORRUPT);
 						web.nodes.remove(1);
@@ -424,14 +453,5 @@ public class HyPeerWebSegment<T extends Node> extends Node{
 	}
 	public void restoreCache() throws Exception{
 		//NOT IMPLEMENTED
-	}
-	
-	//NETWORKING
-	/**
-	 * Executes a callback on the machine this segment is on
-	 * @param listener a command/callback to execute
-	 */
-	public void executeRemotely(Node.Listener listener){
-		listener.callback(this);
 	}
 }
