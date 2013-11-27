@@ -308,19 +308,10 @@ public class Node implements Serializable, Comparable<Node>{
 	private static final Criteria insertCriteria = new Criteria(){
 		@Override
 		public Node check(Node origin, Node friend){
-			int originHeight = origin.getHeight();
 			//Insertion point is always the lowest point within recurseLevel connections
 			Node low = friend.L.getLowestLink();
-			if (low != null && low.getHeight() < originHeight)
+			if (low != null && low.getHeight() < origin.getHeight())
 				return low;
-			//Friend's fold cannot have smaller height
-			Node temp = friend.L.getSurrogateFold();
-			if (temp != null && temp.getHeight() < originHeight)
-				return temp;
-			//Friends cannot have surrogate neighbors of less height
-			temp = friend.L.getLowestSurrogateNeighbor();
-			if (temp != null && temp.getHeight() < originHeight)
-				return temp;
 			return null;
 		}
 	};
