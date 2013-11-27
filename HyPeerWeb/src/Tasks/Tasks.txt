@@ -63,41 +63,37 @@ QUALITY CHECKING:
 HyPeerWebSegment:
 	x constructor 1
 	- constructor 3
-	- removeNode(int)
-	- removeNode(Node)
-	- removeAllNodes
-	- addNode
-	- addNode (proxy)
+	x removeNode(int)
+	x removeNode(Node)
+	x removeAllNodes
+	x addNode
 	- HyPeerWebState
-		- HAS_NONE
-			- addNode
-			- removeNode
-		- HAS_ONE
-			- addNode
-			- removeNode
+		x HAS_NONE
+			x addNode
+			x removeNode
+		x HAS_ONE
+			x addNode
+			x removeNode
 		- HAS_MANY
 			- addNode
 			- removeNode
-	- changeState
-	- getFirstSegmentNode
-	- getLastSegmentNode
-	- getSegmentSize
-	- isSegmentEmpty
-	- getNonemptySegment
-	- getSegmentNodeByUID
-	- getRandomNode
-	- getNode
-	- isEmpty
+	x changeState
+	x getFirstSegmentNode
+	x getLastSegmentNode
+	x getSegmentSize
+	x isSegmentEmpty
+	x getNonemptySegment
+	x getSegmentNodeByUID
+	x getRandomNode
+	x getNode
+	x isEmpty
 	- getCache
 	- store
 	- restore
 	- executeRemotely
 
 Questions:
-- are anonymous inner classes serializable
-- is an extended class of a serializable object automatically serializable?
-- will AbstractVisitor listeners execute on machine that contains node? We're
-	banking on the fact that this is possible
+- findValidNode: are those Criteria objects getting resolved correctly?
 - should we allow null listeners in HyPeerWebSegment
 - do proxies need UID? is there any case we reference node.UID when it would be a proxy
 - make sure executeRemotely is really doing just that

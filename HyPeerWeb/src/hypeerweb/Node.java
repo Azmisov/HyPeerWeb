@@ -1,8 +1,8 @@
 package hypeerweb;
 
-import communicator.Command;
 import communicator.Communicator;
-import communicator.RemoteAddress;
+import communicator.NodeListener;
+import static hypeerweb.HyPeerWebSegment.HyPeerWebState.HAS_MANY;
 import hypeerweb.visitors.AbstractVisitor;
 import java.io.ObjectStreamException;
 import java.io.Serializable;
@@ -15,7 +15,8 @@ import java.util.*;
  *  - make sure we can use == or .equals when we get to proxies
  * @author Guy
  */
-public class Node implements Serializable {
+public class Node implements Serializable{
+	public static final String className = Node.class.getCanonicalName();
 	//Serialization
 	public final int UID = Communicator.assignId();
 	//Node Attributes
@@ -47,7 +48,7 @@ public class Node implements Serializable {
 	 * @param child the Node to add as a child
 	 * @param listener the add node callback
 	 */
-	protected void addChild(Node child, final Node.Listener listener){
+	protected void addChild(Node child, final NodeListener listener){
 		//Get new height and child's WebID
 		final int
 			childHeight = height+1,
@@ -72,7 +73,7 @@ public class Node implements Serializable {
 		final Node[] child_sn = sn.toArray(new Node[sn.size()]);
 		
 		//Execute the update on the external segment
-		child.executeRemotely(new Node.Listener() {
+		child.executeRemotely(new NodeListener() {
 			@Override
 			public void callback(Node n) {
 				//Update height and webID first
@@ -162,6 +163,32 @@ public class Node implements Serializable {
 
 		//Reverse the fold state; we will always have a fold - guaranteed
 		L.getFold().getFoldState().reverseFolds(parent, this);
+	}
+	
+	//MASS NODE UPDATES
+	protected static void _ONE_editSecondNode(Node sec, Node first, NodeListener listener){
+		//Update data for the new second node
+		sec.setHeight(1);
+		sec.setWebID(1);
+		sec.resetLinks();
+		sec.L.setFold(first);
+		sec.L.addNeighbor(first);
+		//Host will be on executing machine
+		sec.getHostSegment().nodes.put(1, sec);
+		//Update data for the first node
+		first.executeRemotely(new NodeListener(
+			className, "_ONE_editFirstNode",
+			new String[]{className, className, NodeListener.className},
+			new Object[]{sec, first, listener}
+		));
+	}
+	protected static void _ONE_editFirstNode(Node sec, Node first, NodeListener listener){
+		first.L.setFold(sec);
+		first.L.addNeighbor(sec);
+		//Broadcast state change and execute callback
+		//Host will be on the executing machine
+		first.getHostSegment().changeState(HAS_MANY);
+		listener.callback(sec);
 	}
 	
 	//FIND VALID NODES
@@ -561,48 +588,17 @@ public class Node implements Serializable {
 	 * Executes a callback on the machine this node is on
 	 * @param listener a command/callback to execute
 	 */
-	public void executeRemotely(Node.Listener listener){
+	public void executeRemotely(NodeListener listener){
 		listener.callback(this);
 	}
+	
+	//CLASS OVERRIDES
 	public Object writeReplace() throws ObjectStreamException {
 		return new NodeProxy(this);
 	}
 	public Object readResolve() throws ObjectStreamException {
 		return this;
 	}
-	/**
-	 * Mimics RMI or AJAX; performs a remote operation that takes
-	 * a single parameter, a Node
-	 */
-	public static class Listener implements Serializable{
-		private static final String nodeName = Node.class.getCanonicalName();
-		public final int UID = Communicator.assignId();
-		private RemoteAddress raddr;
-
-		public void execute(Node n){
-			//If we're executing on the same machine
-			if (raddr == null)
-				callback(n);
-			//Otherwise, delgate to the communicator
-			else{
-				Command command = new Command("", methodName, new String[]{nodeName}, new Object[]{n});
-				Communicator.request(raddr, command, false);
-			}
-		}
-		public void callback(Node n){}
-		//Sending the listener across the net
-		public Object writeReplace() throws ObjectStreamException{
-			raddr = Communicator.getAddress();
-			return this;
-		}
-		public Object readResolve() throws ObjectStreamException{
-			if (raddr.onSameMachineAs(Communicator.getAddress()))
-				raddr = null;
-			return this;
-		}
-	}
-	
-	//CLASS OVERRIDES
 	public int compareTo(Node node) {
 		int id = node.getWebId();
 		if (webID == id)

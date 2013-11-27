@@ -1,6 +1,6 @@
 package hypeerweb.visitors;
 
-import communicator.Command;
+import communicator.NodeListener;
 import hypeerweb.Node;
 import java.io.Serializable;
 
@@ -9,12 +9,10 @@ import java.io.Serializable;
  * Takes a static method as a callback
  */
 public abstract class AbstractVisitor implements Serializable{
-	public static final String nodeClass = Node.class.getCanonicalName();
-	protected final Command callback;
+	protected final NodeListener callback;
 	
-	public AbstractVisitor(Command listener){
+	public AbstractVisitor(NodeListener listener){
 		callback = listener;
-		callback.addParameter(nodeClass);
 	}
 	
 	/**
@@ -22,13 +20,4 @@ public abstract class AbstractVisitor implements Serializable{
 	 * @param n the node to visit
 	 */
 	public abstract void visit(Node n);
-	/**
-	 * Runs the callback on this node
-	 * @param n the node to callback on
-	 */
-	protected void callback(Node n){
-		callback.setParameter(0, n);
-		callback.execute();
-		callback.setParameter(0, null);
-	}
 }

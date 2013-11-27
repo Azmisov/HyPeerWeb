@@ -1,6 +1,6 @@
 package hypeerweb.visitors;
 
-import communicator.Command;
+import communicator.NodeListener;
 import hypeerweb.Node;
 
 /**
@@ -17,7 +17,7 @@ public class SendVisitor extends AbstractVisitor{
 	 * @param targetWebId the WebID of the node to navigate to
 	 * @param listener the command to execute on the target node
 	 */
-	public SendVisitor(int targetWebId, Command listener){
+	public SendVisitor(int targetWebId, NodeListener listener){
 		this(targetWebId, false, listener);
 	}
 	/**
@@ -28,7 +28,7 @@ public class SendVisitor extends AbstractVisitor{
 	 * get all the way to the node (e.g. use this to get random nodes)
 	 * @param listener the command to execute on the target node
 	 */
-	public SendVisitor(int targetWebId, boolean approximateMatch, Command listener){
+	public SendVisitor(int targetWebId, boolean approximateMatch, NodeListener listener){
 		super(listener);
 		target = targetWebId;
 		approximate = approximateMatch;
@@ -42,13 +42,13 @@ public class SendVisitor extends AbstractVisitor{
 	public final void visit(Node n){
 		//We found a match!
 		if (n.getWebId() == target)
-			callback(n);
+			callback.callback(n);
 		//Otherwise, get the next closest node
 		else{
 			Node next = n.getCloserNode(target, approximate);
 			if (next != null) next.accept(this);
 			//Pass null, if we couldn't find the node
-			else callback(approximate ? n : null);
+			else callback.callback(approximate ? n : null);
 		}
 	}
 }

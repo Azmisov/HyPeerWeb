@@ -1,6 +1,6 @@
 package hypeerweb.visitors;
 
-import communicator.Command;
+import communicator.NodeListener;
 import hypeerweb.Node;
 
 /**
@@ -14,7 +14,7 @@ public class BroadcastVisitor extends AbstractVisitor{
 	 * Create a new broadcast visitor
 	 * @param listener the visitor callback
 	 */
-	public BroadcastVisitor(Command listener){
+	public BroadcastVisitor(NodeListener listener){
 		super(listener);
 	}
 
@@ -25,7 +25,7 @@ public class BroadcastVisitor extends AbstractVisitor{
 	@Override
 	public final void visit(Node n){
 		//Run callback on this node
-		callback(n);
+		callback.callback(n);
 		
 		//Reset blacklist flag
 		int cur_blacklist = blacklist;
