@@ -69,7 +69,6 @@ public class HyPeerWebTest {
 											System.out.println(cache);
 											STOP_TESTS = true;
 										}
-										else System.out.println("-- passed "+final_i+" --");
 									}catch (Exception e){
 										System.out.println("VALIDATION FAILED:");
 										System.out.println(cache);

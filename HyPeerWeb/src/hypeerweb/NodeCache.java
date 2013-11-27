@@ -172,9 +172,15 @@ public class NodeCache implements HyPeerWebInterface, Serializable{
 			//See comments in hypeerweb.Node class for documentation
 			if (webID == 0) return null;
 			int parID = webID & ~Integer.highestOneBit(webID);
-			int idx = Arrays.binarySearch(n, parID);
-			if (idx < 0) return null;
-			return nodes.get(n[idx]);
+			//TODO, TEMPORARY DEBUGGING CODE HERE
+			for (int i=0; i<n.length; i++){
+				if (n[i] == parID)
+					return nodes.get(parID);
+			}
+			return null;
+			//int idx = Arrays.binarySearch(n, parID);
+			//if (idx < 0) return null;
+			//return nodes.get(parID);
 		}
 		public Node[] getTreeChildren(){
 			//See comments in hypeerweb.Node class for documentation
@@ -227,7 +233,7 @@ public class NodeCache implements HyPeerWebInterface, Serializable{
 			int[] temp = new int[realList.length];
 			for (int i=0; i<realList.length; i++)
 				temp[i] = realList[i].getWebId();
-			Arrays.sort(temp);
+			//Arrays.sort(temp);
 			return temp;
 		}
 

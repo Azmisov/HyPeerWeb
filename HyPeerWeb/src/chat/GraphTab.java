@@ -26,7 +26,7 @@ import javax.swing.event.ChangeListener;
  * TODO:
  *	- hide should remove selection
  *	- spanning tree fanning
- *  - default graph evenly distribute non-children
+ *  - cluster graph evenly distribute non-children
  * @author isaac
  */
 public class GraphTab extends JPanel{

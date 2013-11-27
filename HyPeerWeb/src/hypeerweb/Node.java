@@ -69,12 +69,13 @@ public class Node implements Serializable, Comparable<Node>{
 		}
 		Node[] child_sn = sn.toArray(new Node[sn.size()]);
 		
+		//Always set height/webID before changing links
+		//Setting height is a little funky, in that it has to notify all
+		//remote links to keep things valid. If you remove links, it can't notify them
+		setHeight(childHeight);
+		
 		//Child has taken all isneighbors
 		L.removeAllInverseSurrogateNeighbors();
-		
-		//Always set height/webID before adding links
-		//This results in less network communications
-		setHeight(childHeight);
 		
 		//Execute the update on the external segment
 		child.executeRemotely(new NodeListener(
@@ -307,10 +308,19 @@ public class Node implements Serializable, Comparable<Node>{
 	private static final Criteria insertCriteria = new Criteria(){
 		@Override
 		public Node check(Node origin, Node friend){
+			int originHeight = origin.getHeight();
 			//Insertion point is always the lowest point within recurseLevel connections
 			Node low = friend.L.getLowestLink();
-			if (low != null && low.getHeight() < origin.getHeight())
+			if (low != null && low.getHeight() < originHeight)
 				return low;
+			//Friend's fold cannot have smaller height
+			Node temp = friend.L.getSurrogateFold();
+			if (temp != null && temp.getHeight() < originHeight)
+				return temp;
+			//Friends cannot have surrogate neighbors of less height
+			temp = friend.L.getLowestSurrogateNeighbor();
+			if (temp != null && temp.getHeight() < originHeight)
+				return temp;
 			return null;
 		}
 	};
