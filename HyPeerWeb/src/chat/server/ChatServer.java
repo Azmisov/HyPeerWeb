@@ -10,11 +10,15 @@ import java.io.ObjectStreamException;
 import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Random;
+import javax.swing.JFrame;
+import javax.swing.JScrollPane;
+import javax.swing.JTextArea;
+import javax.swing.JTextPane;
 
 /**
  * Handles communications in the chat network
  */
-public class ChatServer implements Serializable{
+public class ChatServer extends JFrame{
 	public final int UID = Communicator.assignId();
 	private final HyPeerWebSegment<HyPeerWebSegment<Node>> segment;
 	private String networkName = "";
@@ -26,7 +30,7 @@ public class ChatServer implements Serializable{
 	//List of all users and their GUI/Clients that are leeching on this network
 	private final HashMap<Integer, ChatUser> clients = new HashMap();
 	
-	public ChatServer() throws Exception{
+	public ChatServer(int port){
 		segment = new HyPeerWebSegment("InceptionWeb.db", -1);
 		segment.setData("ChatServer", this);
 		/* TODO:
@@ -35,6 +39,28 @@ public class ChatServer implements Serializable{
 			- cache
 			- chatUsers
 		*/
+		
+		setSize(500, 300);
+		setLocationByPlatform(true);
+		
+		//Console GUI
+		JTextPane console = new JTextPane();
+		JScrollPane consoleScroll = new JScrollPane(
+			console,
+			JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED,
+			JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED
+		);
+		add(console);
+		
+		//Console.redirectOutput(console);
+		MessageConsole m = new MessageConsole(console);
+		m.redirectErr();
+		m.redirectOut();
+		m.setMessageLines(250);
+		
+		System.out.println("Starting server...");
+		Communicator.startup(port);
+		setTitle("HyPeerWeb Chat Server: "+Communicator.getAddress().port);
 	}
 	
 	//GUI

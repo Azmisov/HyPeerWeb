@@ -1,9 +1,12 @@
 package chat;
 
 import chat.client.ChatClient;
+import chat.server.ChatServer;
 import com.alee.laf.WebLookAndFeel;
 import communicator.*;
 import java.awt.EventQueue;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * Command line startup
@@ -36,6 +39,15 @@ public class Main {
 			else if ("-s".equals(args[0]) || "-server".equals(args[0])){
 				//New network
 				if (args.length == 1){
+					//Start up the window
+					EventQueue.invokeLater(new Runnable() {
+						@Override
+						public void run() {
+							new ChatServer(5200).setVisible(true);
+						}
+					});
+					/*
+					
 					Communicator.startup(5200);
 					System.out.println("This isn't implemented yet");
 					String path = Main.class.getProtectionDomain().getCodeSource().getLocation().getPath();
