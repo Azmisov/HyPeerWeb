@@ -122,7 +122,7 @@ public class NodeCache implements HyPeerWebInterface, Serializable{
 			if ((temp = real.L.getSurrogateFold()) != null)
 				sf = temp.getWebId();
 			if ((temp = real.L.getInverseSurrogateFold()) != null)
-				sf = temp.getWebId();
+				isf = temp.getWebId();
 			//Neighbors
 			n = convertToCached(real.L.getNeighbors());
 			sn = convertToCached(real.L.getSurrogateNeighbors());
@@ -226,7 +226,8 @@ public class NodeCache implements HyPeerWebInterface, Serializable{
 		private int[] convertToCached(hypeerweb.Node[] realList){
 			int[] temp = new int[realList.length];
 			for (int i=0; i<realList.length; i++)
-				isn[i] = realList[i].getWebId();
+				temp[i] = realList[i].getWebId();
+			Arrays.sort(temp);
 			return temp;
 		}
 
@@ -238,6 +239,39 @@ public class NodeCache implements HyPeerWebInterface, Serializable{
 			int nh = node.getHeight();
 			return (height == nh ? webID < id : height < nh) ? -1 : 1;
 		}
+		@Override
+		public String toString(){
+			StringBuilder builder = new StringBuilder();
+			builder.append("\nNode: ").append(webID).append("(").append(height).append(")");
+			//Folds
+			//builder.append("\n\tFold State: ").append(foldState instanceof FoldStateStable ? "Stable" : "Unstable");
+			if (f != -1)
+				builder.append("\n\tFold: ").append(f).
+						append("(").append(getNode(f).getHeight()).append(")");
+			if (sf != -1)
+				builder.append("\n\tSFold: ").append(sf).
+						append("(").append(getNode(sf).getHeight()).append(")");
+			if (isf != -1)
+				builder.append("\n\tISFold: ").append(isf).
+						append("(").append(getNode(isf).getHeight()).append(")");
+			//Neighbors
+			if (n.length > 0){
+				builder.append("\n\tNeighbors: ");
+				for (int a_n : n)
+					builder.append(a_n).append("(").append(getNode(a_n).getHeight()).append("), ");
+			}
+			if (sn.length > 0){
+				builder.append("\n\tSNeighbors: ");
+				for (int a_sn : sn)
+					builder.append(a_sn).append("(").append(getNode(a_sn).getHeight()).append("), ");
+			}
+			if (isn.length > 0){
+				builder.append("\n\tISNeighbors: ");
+				for (int a_isn : isn)
+					builder.append(a_isn).append("(").append(getNode(a_isn).getHeight()).append("), ");
+			}
+			return builder.toString();
+		}
 	}
 
 	//VALIDATOR
@@ -247,6 +281,13 @@ public class NodeCache implements HyPeerWebInterface, Serializable{
 	}
 	@Override
 	public NodeInterface getNode(int webId) {
-		throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+		return nodes.get(webId);
 	}
+	@Override
+    public String toString() {
+        StringBuilder builder = new StringBuilder();
+        for (Node n : nodes.values())
+            builder.append(n);
+        return builder.toString();
+    }
 }

@@ -24,8 +24,7 @@ import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.TableColumn;
 import javax.swing.table.TableColumnModel;
 import javax.swing.table.TableModel;
-import org.junit.runner.JUnitCore;
-import org.junit.runner.Result;
+import validator.Validator;
 
 /**
  * List all nodes in HyPeerWeb, categorized by
@@ -39,7 +38,7 @@ public class ListTab extends JPanel{
 	private static JComboBox segmentBox;
 	private static segmentModel segModel = new segmentModel();
 	
-	public ListTab(ChatClient container) {
+	public ListTab(final ChatClient container) {
 		super(new BorderLayout());
 		ListTab.container = container;
 		
@@ -54,15 +53,11 @@ public class ListTab extends JPanel{
 		validationResult.setPreferredSize(new Dimension(120,25));
 		JButton validateButton = new JButton("Validate");
 		validateButton.setBorder(new EmptyBorder(7, 10, 7, 10));
-        validateButton.addActionListener(new ActionListener() {
+        validateButton.addActionListener(new ActionListener(){
 			@Override
-			public void actionPerformed(ActionEvent e) {
-				JUnitCore junit = new JUnitCore();
-				Result result = junit.run(hypeerweb.HyPeerWebTest.class);
-				if(result.wasSuccessful())
-					validationResult.setText("Validation Passed!");
-				else
-					validationResult.setText("Validation Failed!");
+			public void actionPerformed(ActionEvent e){
+				boolean pass = container.nodeCache == null || (new Validator(container.nodeCache)).validate();
+				validationResult.setText(pass ? "Validation Passed!" : "Validation Failed!");
 			}
         });
 		segmentPanel.add(validateButton);

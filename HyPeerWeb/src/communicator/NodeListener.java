@@ -9,7 +9,7 @@ import hypeerweb.Node;
  * a single parameter, a Node
  */
 public class NodeListener extends Command{
-	public static final String className = NodeListener.class.getCanonicalName();
+	public static final String className = NodeListener.class.getName();
 	
 	/**
 	 * Create a new node listener
@@ -20,13 +20,13 @@ public class NodeListener extends Command{
 		this(cname, mname, null, null);
 	}
 	/**
-	 * Create a new node listener with a single non-null parameter
+	 * Create a new node listener with an embedded callback
 	 * @param cname the class name
 	 * @param mname a static method callback in that class
-	 * @param param a non-null object parameter
+	 * @param param an embedded callback
 	 */
-	public NodeListener(String cname, String mname, Object param){
-		this(cname, mname, new String[]{param.getClass().getCanonicalName()}, new Object[]{param});
+	public NodeListener(String cname, String mname, NodeListener cbk){
+		this(cname, mname, new String[]{NodeListener.className}, new Object[]{cbk});
 	}
 	/**
 	 * Create a new node listener with parameters

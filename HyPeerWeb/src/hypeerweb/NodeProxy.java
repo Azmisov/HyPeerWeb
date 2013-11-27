@@ -17,11 +17,11 @@ public class NodeProxy extends Node{
 	//NODE OPERATIONS
 	@Override
 	protected Node addChild(Node child) {
-		return (Node) request("addChild",new String[] {"hypeerweb.Node"}, new Object[] {child}, true);
+		return (Node) request("addChild",new String[] {Node.className}, new Object[] {child}, true);
 	}
 	@Override
 	protected boolean replaceNode(Node toReplace) {
-		return (boolean) request("replaceNode", new String[] {"hypeerweb.Node"}, new Object[] {toReplace}, true);
+		return (boolean) request("replaceNode", new String[] {Node.className}, new Object[] {toReplace}, true);
 	}
 	@Override
 	protected Node disconnectNode() {
@@ -29,7 +29,7 @@ public class NodeProxy extends Node{
 	}
 	@Override
 	protected Node findValidNode(Criteria x, int levels, boolean recursive) {
-		return (Node) request("findValidNode", new String[] {"hypeerweb.Node.Criteria","int","boolean"}, new Object[]{x, levels, recursive}, true);
+		return (Node) request("findValidNode", new String[] {"hypeerweb.Node$Criteria","int","boolean"}, new Object[]{x, levels, recursive}, true);
 	}
 	@Override
 	protected Node findInsertionNode() {
@@ -105,7 +105,7 @@ public class NodeProxy extends Node{
 	}
 	@Override
 	protected void setFoldState(FoldState state) {
-		request("setFoldState", new String[] {"hypeerweb.Node.FoldState"}, new Object[] {state}, false);
+		request("setFoldState", new String[] {"hypeerweb.Node$FoldState"}, new Object[] {state}, false);
 	}
 	@Override
 	public void setData(String key, Object val) {
@@ -116,7 +116,7 @@ public class NodeProxy extends Node{
 		return request(name, null, null, true);
 	}
 	private Object request(String name, String[] paramTypes, Object[] paramVals, boolean sync){
-		Command command = new Command("hypeerweb.Node", name, paramTypes, paramVals);
+		Command command = new Command(Node.className, name, paramTypes, paramVals);
 		return Communicator.request(raddr, command, sync);
 	}
 	

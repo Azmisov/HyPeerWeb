@@ -3,6 +3,7 @@ package communicator;
 import java.io.Serializable;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.util.Arrays;
 
 /**
  * Implements the Command pattern in such a way that the command can be sent over a socket.
@@ -52,15 +53,14 @@ public class Command implements Serializable{
 	 * @param paramVal the parameter's value
 	 */
 	public void addParameter(String paramType){
-		paramTypes = (String[]) unshift(paramTypes);
+		paramTypes = unshift(paramTypes, new String[paramTypes.length+1]);
 		paramTypes[0] = paramType;
-		paramVals = unshift(paramVals);
+		paramVals = unshift(paramVals, new Object[paramVals.length+1]);
 	}
-	private static Object[] unshift(Object[] arr){
-		Object[] big = new Object[arr.length+1];
-		for (int i=1, l=arr.length; i<=l; i++)
-			big[i] = arr[i-1];
-		return big;
+	private static <T> T[] unshift(T[] original, T[] shifted){
+		for (int i=1, l=original.length; i<=l; i++)
+			shifted[i] = original[i-1];
+		return shifted;
 	}
 	
 	/**
@@ -78,11 +78,14 @@ public class Command implements Serializable{
 	 */
 	public Object execute(){
 		try{
-			Class<?> targetClass = getClass(className);
+			Class<?> targetClass = resolveClassName(className);
 			Class<?>[] parameterTypes = new Class<?>[paramTypes.length];
 			for (int i = 0; i < paramTypes.length; i++)
-				parameterTypes[i] = getClass(paramTypes[i]);
+				parameterTypes[i] = resolveClassName(paramTypes[i]);
 			Method method = targetClass.getDeclaredMethod(methodName, parameterTypes);
+			//Override protected modifier
+			if (!method.isAccessible())
+				method.setAccessible(true);
 			Object target = null;
 			//If the target isn't a static method, resolve the UID
 			if (!Modifier.isStatic(method.getModifiers()))
@@ -90,6 +93,8 @@ public class Command implements Serializable{
 			return method.invoke(target, paramVals);
 		} catch (Exception e){
 			System.err.println("Failed to execute command: "+className+"."+methodName);
+			e.printStackTrace();
+			//e.getCause().printStackTrace();
 			return e;
 		}
 	}
@@ -111,7 +116,7 @@ public class Command implements Serializable{
 -	 * @param className the name of the class we want to return.
 -	 * @throws Exception  if a class with the indicated name is not found.
 -	 */
-	private static Class<?> getClass(String className) throws Exception{
+	private static Class<?> resolveClassName(String className) throws Exception{
 		switch (className) {
 			case "boolean":	return boolean.class;
 			case "byte":	return byte.class;

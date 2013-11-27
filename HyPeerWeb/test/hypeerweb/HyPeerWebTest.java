@@ -19,120 +19,71 @@ import validator.Validator;
  * HyPeerWeb testing
  */
 public class HyPeerWebTest {
+	public static boolean STOP_TESTS = false;
 	//Testing variables
 	private static final int
-		MAX_SIZE = 600,				//Maximum HyPeerWeb size for tests
+		MAX_SIZE = 600,					//Maximum HyPeerWeb size for tests
 		TEST_EVERY = 1,					//How often to validate the HyPeerWeb for add/delete
 		SEND_TESTS = 2000,				//How many times to test send operation
 		BROADCAST_TESTS = 120,			//How many times to test broadcast operation
-		RAND_SEED = -1;					//Seed for getting random nodes (use -1 for a random seed)
-	private static final String
-		DB_NAME = null;					//Enables database syncing
+		RAND_SEED = 5;					//Seed for getting random nodes (use -1 for a random seed)
+	private static final String DB_NAME = null;
 	private static HyPeerWebSegment web;
-	private static String curTest;
-	private static boolean
-		useDatabase = false,
-		useGraph = true;
-	
-	//TODO: Fill in callback methods
-	private Node.Listener RemoveAllListener = new Node.Listener () 
-	{@Override
-	public void callback(Node n)
-	{}};
-	private Node.Listener SendVisitorListener = new Node.Listener () 
-	{@Override
-	public void callback(Node n)
-	{}};
-	private Node.Listener ListNodesVisitorListener = new Node.Listener () 
-	{@Override
-	public void callback(Node n)
-	{}};
-	private Node.Listener RemoveListener = new Node.Listener () 
-	{@Override
-	public void callback(Node n)
-	{}};
-	private Node.Listener AddListener = new Node.Listener () 
-	{@Override
-	public void callback(Node n)
-	{}};
-	private Node.Listener GetListener = new Node.Listener () 
-	{@Override
-	public void callback(Node n)
-	{}};
-	
+	private static String curTest;	
 	
 	public HyPeerWebTest() throws Exception{
+		System.out.println("WARNING!!! These tests are synchronous; do not use them to test Proxy stuff");
 		web = new HyPeerWebSegment(DB_NAME, RAND_SEED);
-	}
-	
-	public int getSize()
-	{
-		return web.getSegmentNodeCache(1).nodes.size();
-	}
-	public NodeCache.Node getRandom()
-	{
-		NodeInterface[] nodeList = web.getSegmentNodeCache(1).getOrderedListOfNodes();
-		Random random = new Random();
-		return (NodeCache.Node) nodeList[random.nextInt()];
-	}
-	public NodeCache.Node getFirst()
-	{
-		return (NodeCache.Node) web.getSegmentNodeCache(1).getOrderedListOfNodes()[0];
-	}
-	public NodeCache.Node getAddedNode()
-	{
-		NodeInterface[] nodeList = web.getSegmentNodeCache(1).getOrderedListOfNodes();
-		web.addNode(AddListener);
-		NodeInterface[] nodeList2 = web.getSegmentNodeCache(1).getOrderedListOfNodes();
-		for (int i=0; i < nodeList2.length ; i++)
-		{
-			NodeInterface other = null;
-			for (int j=0; j < nodeList.length && other == null; j++)
-				if (nodeList[j] == nodeList2[i])
-					other = nodeList[j];
-			if (other == null)
-				return (NodeCache.Node)nodeList2[i];
-		}
-		
-		return null;
 	}
 	
 	/**
 	 * Populates the HyPeerWeb with some nodes
 	 */
 	public void populate() throws Exception{
-		//Restore the database, if we haven't already
-		//*
-		if (DB_NAME != null){
-			System.out.println("Restoring...");
-			try{
-				if (!(new Validator(web.getSegmentNodeCache(0))).validate())
-					throw new Exception("FATAL ERROR: Could not restore the old database");
-			} catch (Exception e){
-				System.out.println("The database <"+DB_NAME+"> must be corrupt. Did you previously force execution to stop?");
-				System.out.println("Deleting the old database... Rerun the tests two more times to verify it works");
-				Database badDB = Database.getInstance(DB_NAME);
-				badDB.clear();
-				throw e;
-			}
-			web.removeAllNodes(RemoveAllListener);
-		}
-		//*/
 		//Populate the DB with nodes, if needed
 		//Add a bunch of nodes if it validates afterwards, methods should be working
 		if (web.isEmpty()){
 			System.out.println("Populating...");
-			web.removeAllNodes(RemoveAllListener);
-			NodeCache.Node temp;
-			int old_size = 0;
-			for (int i=1; i<=MAX_SIZE; i++){
-				if ((temp = getAddedNode()) == null)
-					throw new Exception("Added node should not be null!");
-				if (getSize() != ++old_size)
-					throw new Exception("HyPeerWeb is not the correct size");
-				if (i % TEST_EVERY == 0)
-					assertTrue((new Validator(web.getSegmentNodeCache(0))).validate());
-			}
+			web.removeAllNodes(new SyncListener(){
+				@Override
+				public void callback(Node n){
+					NodeCache.Node temp;
+					int old_size = 0;
+					boolean halt;
+					for (int i=1; i<=MAX_SIZE; i++){
+						final int final_i = i, final_size = ++old_size;
+						web.addNode(new Node(0, 0), new SyncListener(){
+							@Override
+							public void callback(Node n){
+								int size = web.getSegmentSize();
+								if (size != final_size){
+									System.err.println("HyPeerWeb is not the correct size; should be "+final_size+" but found "+size);
+									STOP_TESTS = true;
+								}
+								if (final_i % TEST_EVERY == 0){
+									NodeCache cache = web.getCache(0);
+									Validator x = new Validator(cache);
+									try{
+										if (!x.validate()){
+											System.out.println("VALIDATION FAILED:");
+											System.out.println(cache);
+											STOP_TESTS = true;
+										}
+										else System.out.println("-- passed "+final_i+" --");
+									}catch (Exception e){
+										System.out.println("VALIDATION FAILED:");
+										System.out.println(cache);
+										e.printStackTrace();
+										STOP_TESTS = true;
+									}
+								}
+							}
+						});						
+						if (STOP_TESTS) fail();
+					}
+				}
+			});
+			if (STOP_TESTS) fail();
 		}
 	}
 	public void begin(String type) throws Exception{
@@ -161,6 +112,7 @@ public class HyPeerWebTest {
 	/**
 	 * Test of removeNode method (from zero, every time)
 	 */
+	/*
 	@Test
 	public void testRemoveZero() throws Exception {
 		begin("REMOVING ZERO");
@@ -176,9 +128,6 @@ public class HyPeerWebTest {
 		}
 	}
 	
-	/**
-	 * Test of removeNode method (picking randomly)
-	 */
 	@Test
 	public void testRemoveRandom() throws Exception {
 		begin("REMOVING RANDOM");
@@ -194,9 +143,6 @@ public class HyPeerWebTest {
 		}
 	}
 	
-	/**
-	 * Test of send visitor with valid target node
-	 */
 	@Test
 	public void testSendValid() throws Exception {
 		//Test send node
@@ -220,9 +166,6 @@ public class HyPeerWebTest {
 		}
 	}
 	
-	/**
-	 * Test of send visitor with invalid target node
-	 */
 	@Test
 	public void testSendInvalid() throws Exception {
 		begin("SENDING INVALID");
@@ -263,4 +206,5 @@ public class HyPeerWebTest {
 			assertTrue(set.size() == x.getNodeList().size());
 		}
 	}
+	*/
 }

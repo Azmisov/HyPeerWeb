@@ -12,11 +12,11 @@ import java.util.TreeMap;
  * @param <>> The Node type for this HyPeerWeb instance
  */
 public class HyPeerWebSegment<T extends Node> extends Node{
-	public static final String className = HyPeerWebSegment.class.getCanonicalName();
+	public static final String className = HyPeerWebSegment.class.getName();
 	//Segment attributes
 	protected final TreeMap<Integer, T> nodes;
 	private final TreeMap<Integer, T> nodesByUID;
-	private HyPeerWebState state;
+	private HyPeerWebState state = HyPeerWebState.HAS_NONE;
 	//Random number generator for getting random nodes
 	private static final Random rand = new Random();
 	//Static list of all HWSegments in this JVM; they may not correspond to the same HyPeerWeb
@@ -120,14 +120,16 @@ public class HyPeerWebSegment<T extends Node> extends Node{
 	 * this individual segment. Handles special cases for
 	 * add and remove node, as well as a corrupt HyPeerWeb.
 	 */
-	protected enum HyPeerWebState{
+	public enum HyPeerWebState{
 		//No nodes
 		HAS_NONE {
 			@Override
 			public void addNode(HyPeerWebSegment web, Node n, NodeListener listener){
 				//When the entire HyPeerWeb is empty, we can guarantee that
 				//we will be executing on n's machine (e.g. web is not a proxy)
-				n = new Node(0, 0);
+				n.resetLinks();
+				n.setWebID(0);
+				n.setHeight(0);
 				web.nodes.put(0, n);
 				//broadcast state change to HAS_ONE
 				web.changeState(HAS_ONE);
@@ -239,7 +241,7 @@ public class HyPeerWebSegment<T extends Node> extends Node{
 			}
 		};
 
-		public static final String className = HyPeerWebState.class.getCanonicalName();
+		public static final String className = HyPeerWebState.class.getName();
 		/**
 		 * Add a node to the HyPeerWeb; we guarantee "n" will be on the same segment as "web"
 		 * @param web the HyPeerWebSegment
@@ -261,7 +263,9 @@ public class HyPeerWebSegment<T extends Node> extends Node{
 	 */
 	protected void changeState(final HyPeerWebState state){
 		(new BroadcastVisitor(new NodeListener(
-			className, "_changeState", state
+			className, "_changeState",
+			new String[]{HyPeerWebState.className},
+			new Object[]{state}
 		))).visit(this);
 	}
 	protected static void _changeState(Node n, HyPeerWebState state){
