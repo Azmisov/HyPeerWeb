@@ -24,7 +24,7 @@ import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.TableColumn;
 import javax.swing.table.TableColumnModel;
 import javax.swing.table.TableModel;
-import validator.Validator;
+import hypeerweb.validator.Validator;
 
 /**
  * List all nodes in HyPeerWeb, categorized by

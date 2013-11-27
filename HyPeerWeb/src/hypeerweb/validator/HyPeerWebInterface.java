@@ -1,4 +1,4 @@
-package validator;
+package hypeerweb.validator;
 
 /**
  * The methods required to use the Validator.

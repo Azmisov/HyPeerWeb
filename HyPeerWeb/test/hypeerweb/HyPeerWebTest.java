@@ -12,8 +12,8 @@ import java.util.Set;
 import org.junit.After;
 import org.junit.Test;
 import static org.junit.Assert.*;
-import validator.NodeInterface;
-import validator.Validator;
+import hypeerweb.validator.NodeInterface;
+import hypeerweb.validator.Validator;
 
 /**
  * HyPeerWeb testing
