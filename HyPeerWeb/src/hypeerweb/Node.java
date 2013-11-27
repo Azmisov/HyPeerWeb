@@ -1,6 +1,8 @@
 package hypeerweb;
 
+import communicator.Command;
 import communicator.Communicator;
+import communicator.RemoteAddress;
 import hypeerweb.visitors.AbstractVisitor;
 import java.io.ObjectStreamException;
 import java.io.Serializable;
@@ -43,41 +45,70 @@ public class Node implements Serializable {
 	 * Adds a child node to the current one
 	 * @param db the Database associated with the HyPeerWeb
 	 * @param child the Node to add as a child
-	 * @return the new child node; null if the node couldn't be added
-	 * @author Guy, Isaac, Brian
+	 * @param listener the add node callback
 	 */
-	protected Node addChild(Node child){
+	protected void addChild(Node child, final Node.Listener listener){
 		//Get new height and child's WebID
-		int childHeight = height+1,
+		final int
+			childHeight = height+1,
 			childWebID = (1 << height) | webID;
+		//Always set height/webID before updating links
+		//This results in less network communications
 		setHeight(childHeight);
-		child.setHeight(childHeight);
-		child.setWebID(childWebID);
-				
-		//Set neighbours (Guy)
-		//child neighbors
-		this.L.addNeighbor(child);
-		child.L.addNeighbor(this);
-		for (Node n: L.getInverseSurrogateNeighbors()){
-			child.L.addNeighbor(n);
-			n.L.addNeighbor(child);
-			//Remove surrogate reference to parent
-			n.L.removeSurrogateNeighbor(this);
-		}
-		this.L.removeAllInverseSurrogateNeighbors();
-		//adds a neighbor of parent as a surrogate neighbor of child if neighbor is childless
-		//and makes child an isn of neighbor
-		for (Node n: L.getNeighbors()){
-			if (n.getHeight() < childHeight){
-				child.L.addSurrogateNeighbor(n);
-				n.L.addInverseSurrogateNeighbor(child);
-			}
-		}
 		
-		//Set folds (Brian/Isaac)
+		//Compile a list of updates for the child; the more things we
+		//can group together, the less network communcations (and less failure)
+		final Node parent = this;
+		//New neighbors, including the parent node:
+		final Node[] child_n = L.getInverseSurrogateNeighbors();
+		//New surrogate neighbors:
+		//adds a neighbor of parent as a surrogate neighbor of child if
+		//neighbor is childless and makes child an isn of neighbor
+		ArrayList<Node> sn = new ArrayList();
+		for (Node n: L.getNeighbors()){
+			if (n.getHeight() < childHeight)
+				sn.add(n);
+		}
+		final Node[] child_sn = sn.toArray(new Node[sn.size()]);
+		
+		//Execute the update on the external segment
+		child.executeRemotely(new Node.Listener() {
+			@Override
+			public void callback(Node n) {
+				//Update height and webID first
+				n.setHeight(childHeight);
+				n.setWebID(childWebID);
+				n.resetLinks();
+				//Add neighbors
+				n.L.addNeighbor(parent);
+				for (Node friend: child_n)
+					n.L.addNeighbor(friend);
+				//Add surrogates
+				for (Node friend: child_sn)
+					n.L.addSurrogateNeighbor(friend);
+				
+				//Child data has been set, we can call the listener now
+				listener.callback(n);
+				
+				//Update parent node's connections
+				//TODO, group these into mass remote updates
+				parent.L.addNeighbor(n);
+				for (Node friend: child_n){
+					friend.L.addNeighbor(n);
+					//Remove surrogate reference to parent
+					friend.L.removeSurrogateNeighbor(parent);
+				}
+				for (Node friend: child_sn)
+					friend.L.addInverseSurrogateNeighbor(n);
+			}
+		});
+		
+		//Child has taken all isneighbors
+		L.removeAllInverseSurrogateNeighbors();
+		
+		//Set folds
+		//TODO, group these into mass remote updates
 		foldState.updateFolds(this, child);
-
-		return child;
 	}
 	/**
 	 * Replaces a node with this node
@@ -108,7 +139,7 @@ public class Node implements Serializable {
 	 * @return the disconnected node
 	 * @author John, Brian, Guy
 	 */
-	protected Node disconnectNode(){
+	protected Node disconnectNode(Node.Listener listener){
 		Node parent = getParent();
 		int parentHeight = parent.getHeight()-1;
 		//reduce parent height by 1
@@ -131,8 +162,6 @@ public class Node implements Serializable {
 
 		//Reverse the fold state; we will always have a fold - guaranteed
 		L.getFold().getFoldState().reverseFolds(parent, this);
-
-		return this;
 	}
 	
 	//FIND VALID NODES
@@ -404,7 +433,7 @@ public class Node implements Serializable {
 	 * Sets the WebID of the Node
 	 * @param id the new webID
 	 */
-	public void setWebID(int id){
+	protected void setWebID(int id){
 		webID = id;
 	}
 	/**
@@ -447,17 +476,17 @@ public class Node implements Serializable {
 		STABLE{
 			//After running we should be in an unstable state
 			@Override
-			public void updateFolds(Node caller, Node child) {
-				Node fold = caller.L.getFold();
+			public void updateFolds(Node parent, Node child) {
+				Node fold = parent.L.getFold();
 				//Update reflexive folds
 				child.L.setFold(fold);
 				fold.L.setFold(child);
 				//Insert surrogates for non-existant node
-				caller.L.setSurrogateFold(fold);
-				fold.L.setInverseSurrogateFold(caller);
+				parent.L.setSurrogateFold(fold);
+				fold.L.setInverseSurrogateFold(parent);
 				fold.setFoldState(FoldState.UNSTABLE);
 				//Remove stable state reference
-				caller.L.setFold(null);
+				parent.L.setFold(null);
 			}
 			@Override
 			public void reverseFolds(Node parent, Node child) {
@@ -476,15 +505,15 @@ public class Node implements Serializable {
 		UNSTABLE{
 			//After running, we should be in a stable state
 			@Override
-			public void updateFolds(Node caller, Node child) {
+			public void updateFolds(Node parent, Node child) {
 				//Stable-state fold references
-				Node isfold = caller.L.getInverseSurrogateFold();
+				Node isfold = parent.L.getInverseSurrogateFold();
 				child.L.setFold(isfold);
 				isfold.L.setFold(child);
 				//Remove surrogate references
 				isfold.L.setSurrogateFold(null);
-				caller.L.setInverseSurrogateFold(null);
-				caller.setFoldState(FoldState.STABLE);
+				parent.L.setInverseSurrogateFold(null);
+				parent.setFoldState(FoldState.STABLE);
 			}
 			@Override
 			public void reverseFolds(Node parent, Node child) {
@@ -503,8 +532,8 @@ public class Node implements Serializable {
 			}
 		};
 		
-		public abstract void updateFolds(Node caller, Node child);
-		public abstract void reverseFolds(Node caller, Node child);
+		public abstract void updateFolds(Node parent, Node child);
+		public abstract void reverseFolds(Node parent, Node child);
 	}
 	
 	//VISITOR PATTERN
@@ -541,8 +570,36 @@ public class Node implements Serializable {
 	public Object readResolve() throws ObjectStreamException {
 		return this;
 	}
-	public static abstract class Listener implements Serializable{
-		public abstract void callback(Node n);
+	/**
+	 * Mimics RMI or AJAX; performs a remote operation that takes
+	 * a single parameter, a Node
+	 */
+	public static class Listener implements Serializable{
+		private static final String nodeName = Node.class.getCanonicalName();
+		public final int UID = Communicator.assignId();
+		private RemoteAddress raddr;
+
+		public void execute(Node n){
+			//If we're executing on the same machine
+			if (raddr == null)
+				callback(n);
+			//Otherwise, delgate to the communicator
+			else{
+				Command command = new Command("", methodName, new String[]{nodeName}, new Object[]{n});
+				Communicator.request(raddr, command, false);
+			}
+		}
+		public void callback(Node n){}
+		//Sending the listener across the net
+		public Object writeReplace() throws ObjectStreamException{
+			raddr = Communicator.getAddress();
+			return this;
+		}
+		public Object readResolve() throws ObjectStreamException{
+			if (raddr.onSameMachineAs(Communicator.getAddress()))
+				raddr = null;
+			return this;
+		}
 	}
 	
 	//CLASS OVERRIDES

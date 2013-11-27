@@ -1,5 +1,6 @@
 package hypeerweb.visitors;
 
+import communicator.Command;
 import hypeerweb.Node;
 
 /**
@@ -8,18 +9,16 @@ import hypeerweb.Node;
  */
 public class SendVisitor extends AbstractVisitor{
 	//Attributes we will store in the visitor data
-	private static final String
-		target = "TARGET",
-		approx = "APPROX",
-		listen = "LISTEN";
-	private transient boolean hasListener = false;
+	private final int target;
+	private final boolean approximate;
 	
 	/**
 	 * Navigate to the specified node, with approximateMatch disabled
 	 * @param targetWebId the WebID of the node to navigate to
+	 * @param listener the command to execute on the target node
 	 */
-	public SendVisitor(int targetWebId, Node.Listener command){
-		this(targetWebId, false, command);
+	public SendVisitor(int targetWebId, Command listener){
+		this(targetWebId, false, listener);
 	}
 	/**
 	 * Creates a new Send operation visitor
@@ -27,12 +26,12 @@ public class SendVisitor extends AbstractVisitor{
 	 * @param approximateMatch if false, it will try to find an exact match to targetWebId;
 	 * if true, it will try to find a node that is close to targetWebID and may not
 	 * get all the way to the node (e.g. use this to get random nodes)
+	 * @param listener the command to execute on the target node
 	 */
-	public SendVisitor(int targetWebId, boolean approximateMatch, Node.Listener command){
-		data.setAttribute(target, targetWebId);
-		data.setAttribute(approx, approximateMatch);
-		data.setAttribute(listen, command);
-		hasListener = command == null;
+	public SendVisitor(int targetWebId, boolean approximateMatch, Command listener){
+		super(listener);
+		target = targetWebId;
+		approximate = approximateMatch;
 	}
 
 	/**
@@ -40,22 +39,16 @@ public class SendVisitor extends AbstractVisitor{
 	 * @param n the node to visit
 	 */
 	@Override
-	public final void visit(Node n) {
-		if (!hasListener) return;
-		int targetID = (int) data.getAttribute(target);
-		boolean approxMatch = (boolean) data.getAttribute(approx);
-		
-		if (n.getWebId() == targetID)
-			((Node.Listener) data.getAttribute(listen)).callback(n);
+	public final void visit(Node n){
+		//We found a match!
+		if (n.getWebId() == target)
+			callback(n);
+		//Otherwise, get the next closest node
 		else{
-			Node next = n.getCloserNode(targetID, approxMatch);
-			if (next != null)
-				next.accept(this);
-			else{
-				Node.Listener cbk = (Node.Listener) data.getAttribute(listen);
-				//Pass null, if we couldn't find the node
-				cbk.callback(approxMatch ? n : null);
-			}
+			Node next = n.getCloserNode(target, approximate);
+			if (next != null) next.accept(this);
+			//Pass null, if we couldn't find the node
+			else callback(approximate ? n : null);
 		}
 	}
 }

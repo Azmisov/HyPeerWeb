@@ -1,5 +1,6 @@
 package hypeerweb.visitors;
 
+import communicator.Command;
 import hypeerweb.Node;
 
 /**
@@ -7,37 +8,40 @@ import hypeerweb.Node;
  * to run on the same machine the node is on
  */
 public class BroadcastVisitor extends AbstractVisitor{
-	private static final String
-		childOrigin = "BLACKLIST_NODE",
-		listen = "LISTEN";
-	private transient boolean hasListener = false;
-	
-	public BroadcastVisitor(Node.Listener command){
-		data.setAttribute(listen, command);
-		hasListener = command == null;
-		//Set the blacklist attribute to -1 to kick of the broadcast
-		data.setAttribute(childOrigin, -1);
+	private int blacklist = -1;
+
+	/**
+	 * Create a new broadcast visitor
+	 * @param listener the visitor callback
+	 */
+	public BroadcastVisitor(Command listener){
+		super(listener);
 	}
-	
+
 	/**
 	 * Visit a node
 	 * @param n a node to begin broadcasting from
 	 */
 	@Override
 	public final void visit(Node n){
-		((Node.Listener) data.getAttribute(listen)).callback(n);
+		//Run callback on this node
+		callback(n);
+		
+		//Reset blacklist flag
+		int cur_blacklist = blacklist;
+		blacklist = -1;
+		
 		//Broadcast to children
-		Integer blacklist = (Integer) data.getAttribute(childOrigin);
 		for (Node child : n.getTreeChildren()){
-			if (blacklist == null || child.getWebId() != blacklist)
+			if (child.getWebId() != cur_blacklist)
 				child.accept(this);
 		}
 		//Broadcast to parent, if necessary
-		if (blacklist != null){
+		if (cur_blacklist != -1){
 			Node parent = n.getTreeParent();
 			if (parent != null){
 				//Put child in blacklist, so we don't broadcast to it again
-				data.setAttribute(childOrigin, n.getWebId());
+				blacklist = n.getWebId();
 				parent.accept(this);
 			}
 		}

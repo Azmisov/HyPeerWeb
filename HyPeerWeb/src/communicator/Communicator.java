@@ -33,6 +33,8 @@ public class Communicator extends Thread{
 		//put(ChatClient.class, 3);
 		//put(ChatServer.class, 4);
 	}};
+	//Listeners
+	private static final HashMap<Integer, Node.Listener> listeners = new HashMap();
 	
 	/**
 	 * Starts up the communicator
@@ -160,5 +162,13 @@ public class Communicator extends Thread{
 	 */
 	public static RemoteAddress getAddress(){
 		return address;
+	}
+	
+	//LISTENERS
+	public static Node.Listener releaseListener(int UID){
+		return listeners.remove(UID);
+	}
+	public static void detainListener(Node.Listener listener){
+		listeners.put(listener.UID, listener);
 	}
 }

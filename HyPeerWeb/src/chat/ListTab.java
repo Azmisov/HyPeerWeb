@@ -53,6 +53,7 @@ public class ListTab extends JPanel{
 		final JTextField validationResult = new JTextField();
 		validationResult.setPreferredSize(new Dimension(120,25));
 		JButton validateButton = new JButton("Validate");
+		validateButton.setBorder(new EmptyBorder(7, 10, 7, 10));
         validateButton.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
