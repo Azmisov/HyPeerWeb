@@ -2,8 +2,9 @@
  * To change this template, choose Tools | Templates
  * and open the template in the editor.
  */
-package chat;
+package chat.server;
 
+import chat.client.ChatClient;
 import communicator.Command;
 import communicator.Communicator;
 import communicator.RemoteAddress;

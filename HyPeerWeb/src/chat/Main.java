@@ -1,5 +1,6 @@
 package chat;
 
+import chat.client.ChatClient;
 import com.alee.laf.WebLookAndFeel;
 import communicator.*;
 import java.awt.EventQueue;
@@ -37,9 +38,45 @@ public class Main {
 				if (args.length == 1){
 					Communicator.startup(5200);
 					System.out.println("This isn't implemented yet");
+					String path = Main.class.getProtectionDomain().getCodeSource().getLocation().getPath();
+					System.out.println(path);
+					//Something like: java -cp C:\Users\Matt\workspace\HelloWorld2\bin HelloWorld2
+					//String[] term = new String[]{"/bin/bash","-c","java","-cp",path,Main.class.getName(),"-s","localhost:5200"};
+					Runtime.getRuntime().exec("/bin/bash");
+					//Process x = new ProcessBuilder("java","-cp",path,).start();
+					
+					/*
+					CURRENT CLASSPATH:
+					
+					ClassLoader.getSystemClassLoader().getResource(".").getPath();
+					
+					CodeSource codeSource = YourMainClass.class.getProtectionDomain().getCodeSource();
+					File jarFile = new File(codeSource.getLocation().toURI().getPath());
+					String jarDir = jarFile.getParentFile().getPath();
+					
+					URLDecoder.decode(ClassLoader.getSystemClassLoader().getResource(".").getPath(‌​), "UTF-8");
+					
+					String path = Test.class.getProtectionDomain().getCodeSource().getLocation().getPath();
+					String decodedPath = URLDecoder.decode(path, "UTF-8");
+					
+					return new File(MyClass.class.getProtectionDomain().getCodeSource().getLocation().toURI());‌
+					
+					Path path = Paths.get(Test.class.getProtectionDomain().getCodeSource().getLocation().toURI());
+					
+					IN TERMINAL:
+					
+					String path = "c:\\";
+					Runtime.getRuntime().exec(new String[] { "cmd.exe", "/C", "\"start; cd "+path+"\"" });
+					
+					Runtime.getRuntime().exec("/bin/bash -c Your Command");
+					
+					*/
+					//x.waitFor();
+					//String jvm = new java.io.File(new java.io.File(System.getProperty("java.home"), "bin"), "java").getAbsolutePath();
 				}
 				//Spawn server
 				else if (args.length == 2){
+					Communicator.startup(5300);
 					String[] addr = args[1].split(":");
 					if (addr.length != 2)
 						throw syntax;

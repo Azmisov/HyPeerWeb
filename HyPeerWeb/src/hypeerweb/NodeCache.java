@@ -5,8 +5,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.TreeMap;
-import hypeerweb.validator.HyPeerWebInterfachypeerweb.e;
-import validator.NodeInterface;
+import hypeerweb.validator.HyPeerWebInterface;
+import hypeerweb.validator.NodeInterface;
 
 /**
  * Lightweight cache of a HyPeerWeb's nodes

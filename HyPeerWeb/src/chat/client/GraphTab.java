@@ -1,4 +1,4 @@
-package chat;
+package chat.client;
 
 import hypeerweb.NodeCache.Node;
 import java.awt.*;

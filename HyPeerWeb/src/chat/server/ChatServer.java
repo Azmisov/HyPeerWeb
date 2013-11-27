@@ -1,5 +1,6 @@
-package chat;
+package chat.server;
 
+import chat.client.ChatClient;
 import communicator.Communicator;
 import hypeerweb.HyPeerWebSegment;
 import hypeerweb.Node;

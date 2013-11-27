@@ -1,11 +1,11 @@
-package chat;
+package chat.client;
 
-import chat.ChatServer.*;
-import com.alee.laf.WebLookAndFeel;
+import chat.server.ChatServer;
+import chat.server.ChatServer.ChatUser;
 import communicator.Communicator;
-import hypeerweb.NodeCache.Node;
 import hypeerweb.NodeCache;
-import static hypeerweb.NodeCache.SyncType.*;
+import hypeerweb.NodeCache.Node;
+import hypeerweb.NodeCache.SyncType.*;
 import java.awt.*;
 import java.awt.event.*;
 import java.util.ArrayList;
