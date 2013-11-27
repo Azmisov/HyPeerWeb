@@ -301,26 +301,6 @@ public class ChatClient extends JFrame{
 			}
 		});
 	}
-	
-	public static void main(String args[]) {
-		//Load the look-and-feel
-		/*
-		try {
-			UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
-		} catch (ClassNotFoundException | InstantiationException | IllegalAccessException | UnsupportedLookAndFeelException ex) {
-			System.out.println("Could not load look-and-feel to start the GUI");
-		}
-		//*/
-		WebLookAndFeel.install();
-
-		//Start up the window
-		EventQueue.invokeLater(new Runnable() {
-			@Override
-			public void run() {
-				new ChatClient().setVisible(true);
-			}
-		});
-	}
 	//</editor-fold>
 	
 	//ACTIONS

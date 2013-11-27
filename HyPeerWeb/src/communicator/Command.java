@@ -11,13 +11,13 @@ import java.util.Arrays;
  */
 public class Command implements Serializable{	
 	//The class in which the method is defined.
-	private final String className;
+	protected final String className;
 	//The name of the method to be invoked.
-	private final String methodName;
+	protected final String methodName;
 	//Fully qualified parameter class names (or raw primitive name: "int", "boolean", etc)
-	private String[] paramTypes;
+	protected String[] paramTypes;
 	//The actual parameters to be used when the method is invoked.
-	private Object[] paramVals;
+	protected Object[] paramVals;
 	//Indicates whether a result is expected.
 	protected boolean sync;
 	//localObjectId of the object of target object
@@ -92,9 +92,9 @@ public class Command implements Serializable{
 				target = Communicator.resolveId(targetClass, UID);
 			return method.invoke(target, paramVals);
 		} catch (Exception e){
-			System.err.println("Failed to execute command: "+className+"."+methodName);
-			e.printStackTrace();
-			//e.getCause().printStackTrace();
+			System.err.println("Command: Failed to execute "+className+"."+methodName);
+			//e.printStackTrace();
+			e.getCause().printStackTrace();
 			return e;
 		}
 	}

@@ -15,6 +15,8 @@ import java.util.HashMap;
  * @author Scott Woodfield
  */
 public class Communicator extends Thread{
+	public static final String className = Communicator.class.getName();
+	//Singleton
 	private static Communicator instance = null;
 	//Connection info for this server
 	private static RemoteAddress address;
@@ -39,8 +41,10 @@ public class Communicator extends Thread{
 	 */
 	private Communicator(int port) {
 		try{
-	   		address = new RemoteAddress(InetAddress.getLocalHost().getHostAddress(), port, 0);
-	   		socket = new ServerSocket(address.port);
+	   		socket = new ServerSocket(port);
+			port = socket.getLocalPort();
+			address = new RemoteAddress(InetAddress.getLocalHost().getHostAddress(), port, 0);
+			System.out.println("Communicator: Listening on "+address.ip+":"+port);
 			this.start();
 		} catch(IOException e){
 			System.err.println(e.getMessage());
@@ -51,7 +55,8 @@ public class Communicator extends Thread{
 	/**
 	 * Creates the single PeerCommunicator listening on the indicated port number.
 	 * Must be invoked before a singleton is retrieved.
-	 * @param port port to listen on; must be within RemoteAddress.MAX/MIN_PORT constants
+	 * @param port port to listen on; must be within RemoteAddress.MAX/MIN_PORT constants;
+	 *	use zero to pick a port automatically
 	 */
 	public static void startup(int port){
 		instance = new Communicator(port);
@@ -67,6 +72,9 @@ public class Communicator extends Thread{
 		} catch (IOException ex) {
 			System.err.println("Failed to close socket connection");
 		}
+	}
+	public static boolean handshake(){
+		return true;
 	}
 
 	/**
@@ -113,10 +121,11 @@ public class Communicator extends Thread{
 			//close connection
 			oos.close();
 			ois.close();
-		} catch(IOException | ClassNotFoundException e) {
-			System.err.println(e.getMessage());
-			System.err.println(e.getStackTrace());
-		}  
+		} catch(IOException | ClassNotFoundException e){
+			String errmess = e.getMessage();
+			System.err.println(errmess == null ? e : errmess);
+			e.printStackTrace();
+		}
 		return result;
 	}
 	

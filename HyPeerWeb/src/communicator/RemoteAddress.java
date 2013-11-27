@@ -11,7 +11,7 @@ import java.net.UnknownHostException;
 public class RemoteAddress{
 	//Port number constants
 	public static final int
-		MIN_PORT = 49152,
+		MIN_PORT = 1,
 		MAX_PORT = 65535,
 		DEFAULT_PORT = 49200;
 	//The machineAddr of the RemoteAddress
@@ -35,17 +35,17 @@ public class RemoteAddress{
 	 * @param machineName the name of the machine, may be an IP ip or domain name.
 		pass null to use localhost as the machine ip
 	 * @param portNumber the portNumber of the application the object is in.
-	 *	port must be within MIN_PORT and MAX_PORT constants
+	 *	port must be within MIN_PORT and MAX_PORT constants; use zero to leave unspecified
 	 * @param UID the unique id of the object in the application of the other machine
 	 */
 	public RemoteAddress(String machineName, int portNumber, int UID){
-		assert(portNumber >= MIN_PORT && portNumber <= MAX_PORT);
+		assert(portNumber == 0 || (portNumber >= MIN_PORT && portNumber <= MAX_PORT));
 		InetAddress address_temp = null;
 		if (machineName != null){
 			try {
 				address_temp = InetAddress.getByName(machineName);
 			} catch (UnknownHostException ex) {
-				System.err.println("Communicator: Machine name is invalid, using localhost.");
+				System.err.println("RemoteAddress: Machine name is invalid, using localhost.");
 				machineName = null;
 			}
 		}
@@ -53,7 +53,7 @@ public class RemoteAddress{
 			try{
 			    address_temp = InetAddress.getLocalHost();
 			} catch(UnknownHostException ex){
-				System.err.println("Communicator Could not get address of localhost, using null.");
+				System.err.println("RemoteAddress: Could not get address of localhost, using null.");
 				address_temp = null;
 			}
 		}

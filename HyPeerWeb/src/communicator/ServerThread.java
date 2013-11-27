@@ -42,7 +42,8 @@ public class ServerThread extends Thread {
 	public void run() {
 	    try {
 	        Command command = (Command) ois.readObject();
-	        if (command.isSynchronous()){
+			System.out.println("> "+command.className+"."+command.methodName);
+	        if (command.sync){
 	            Object result = command.execute();
 	            oos.writeObject(result);
 	            oos.flush();
