@@ -75,7 +75,7 @@ HyPeerWebSegment:
 			x addNode
 			x removeNode
 		- HAS_MANY
-			- addNode
+			x addNode
 			- removeNode
 	x changeState
 	x getFirstSegmentNode

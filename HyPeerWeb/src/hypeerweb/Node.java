@@ -2,7 +2,7 @@ package hypeerweb;
 
 import communicator.Communicator;
 import communicator.NodeListener;
-import static hypeerweb.HyPeerWebSegment.HyPeerWebState.HAS_MANY;
+import static hypeerweb.HyPeerWebSegment.HyPeerWebState.*;
 import hypeerweb.visitors.AbstractVisitor;
 import java.io.ObjectStreamException;
 import java.io.Serializable;
@@ -53,13 +53,9 @@ public class Node implements Serializable{
 		final int
 			childHeight = height+1,
 			childWebID = (1 << height) | webID;
-		//Always set height/webID before updating links
-		//This results in less network communications
-		setHeight(childHeight);
 		
 		//Compile a list of updates for the child; the more things we
 		//can group together, the less network communcations (and less failure)
-		final Node parent = this;
 		//New neighbors, including the parent node:
 		final Node[] child_n = L.getInverseSurrogateNeighbors();
 		//New surrogate neighbors:
@@ -72,44 +68,53 @@ public class Node implements Serializable{
 		}
 		final Node[] child_sn = sn.toArray(new Node[sn.size()]);
 		
-		//Execute the update on the external segment
-		child.executeRemotely(new NodeListener() {
-			@Override
-			public void callback(Node n) {
-				//Update height and webID first
-				n.setHeight(childHeight);
-				n.setWebID(childWebID);
-				n.resetLinks();
-				//Add neighbors
-				n.L.addNeighbor(parent);
-				for (Node friend: child_n)
-					n.L.addNeighbor(friend);
-				//Add surrogates
-				for (Node friend: child_sn)
-					n.L.addSurrogateNeighbor(friend);
-				
-				//Child data has been set, we can call the listener now
-				listener.callback(n);
-				
-				//Update parent node's connections
-				//TODO, group these into mass remote updates
-				parent.L.addNeighbor(n);
-				for (Node friend: child_n){
-					friend.L.addNeighbor(n);
-					//Remove surrogate reference to parent
-					friend.L.removeSurrogateNeighbor(parent);
-				}
-				for (Node friend: child_sn)
-					friend.L.addInverseSurrogateNeighbor(n);
-			}
-		});
-		
 		//Child has taken all isneighbors
 		L.removeAllInverseSurrogateNeighbors();
+		
+		//Always set height/webID before adding links
+		//This results in less network communications
+		setHeight(childHeight);
+		
+		//Execute the update on the external segment
+		child.executeRemotely(new NodeListener(
+			className, "_addChild",
+			new String[]{"int", "int", className, className+"[]", className+"[]", NodeListener.className},
+			new Object[]{childHeight, childWebID, this, child_n, child_sn, listener}
+		));
 		
 		//Set folds
 		//TODO, group these into mass remote updates
 		foldState.updateFolds(this, child);
+	}
+	protected static void _addChild(
+		Node child, int childHeight, int childWebID, Node parent,
+		Node[] child_n, Node[] child_sn, NodeListener listener
+	){
+		//Update height and webID first
+		child.setHeight(childHeight);
+		child.setWebID(childWebID);
+		child.resetLinks();
+		//Add neighbors
+		child.L.addNeighbor(parent);
+		for (Node friend: child_n)
+			child.L.addNeighbor(friend);
+		//Add surrogates
+		for (Node friend: child_sn)
+			child.L.addSurrogateNeighbor(friend);
+
+		//Child data has been set, we can call the listener now
+		listener.callback(child);
+
+		//Update parent node's connections
+		//TODO, group these into mass remote updates
+		parent.L.addNeighbor(child);
+		for (Node friend: child_n){
+			friend.L.addNeighbor(child);
+			//Remove surrogate reference to parent
+			friend.L.removeSurrogateNeighbor(parent);
+		}
+		for (Node friend: child_sn)
+			friend.L.addInverseSurrogateNeighbor(child);
 	}
 	/**
 	 * Replaces a node with this node
@@ -140,7 +145,7 @@ public class Node implements Serializable{
 	 * @return the disconnected node
 	 * @author John, Brian, Guy
 	 */
-	protected Node disconnectNode(Node.Listener listener){
+	protected Node disconnectNode(NodeListener listener){
 		Node parent = getParent();
 		int parentHeight = parent.getHeight()-1;
 		//reduce parent height by 1
@@ -178,17 +183,54 @@ public class Node implements Serializable{
 		//Update data for the first node
 		first.executeRemotely(new NodeListener(
 			className, "_ONE_editFirstNode",
-			new String[]{className, className, NodeListener.className},
-			new Object[]{sec, first, listener}
+			new String[]{className, NodeListener.className},
+			new Object[]{sec, listener}
 		));
 	}
-	protected static void _ONE_editFirstNode(Node sec, Node first, NodeListener listener){
+	protected static void _ONE_editFirstNode(Node first, Node sec, NodeListener listener){
 		first.L.setFold(sec);
 		first.L.addNeighbor(sec);
 		//Broadcast state change and execute callback
 		//Host will be on the executing machine
 		first.getHostSegment().changeState(HAS_MANY);
 		listener.callback(sec);
+	}
+	protected static void _MANY_add_random(Node ranNode, Node child, NodeListener listener){
+		//Find a valid insertion point and add the child
+		ranNode.findInsertionNode().addChild(child, new NodeListener(
+			className, "_MANY_add_insert", listener
+		));
+	}
+	protected static void _MANY_add_insert(Node child, NodeListener listener){
+		child.executeRemotely(new NodeListener(
+			className, "_MANY_add_finalize", listener
+		));
+	}
+	protected static void _MANY_add_finalize(Node child, NodeListener listener){
+		//Add to the host's node list
+		HyPeerWebSegment host = (HyPeerWebSegment) child.getHostSegment();
+		host.nodes.put(child.getWebId(), child);
+		listener.callback(child);
+	}
+	protected static void _MANY_remove_random(Node ranNode, Node remove, NodeListener listener){
+		//Find a valid disconnect point
+		ranNode.findDisconnectNode().disconnectNode(new NodeListener(){
+			className, "_MANY_remove_disconnect", 
+		});
+	}
+	protected static void _MANY_remove_disconnect(Node removed, Node replaced, NodeListener listener){
+		//Remove node from list of nodes
+		web.nodes.remove(replace.getWebId());
+		//Replace the node to be deleted
+		if (!n.equals(replace)){
+			int newWebID = n.getWebId();
+			web.nodes.remove(newWebID);
+			web.nodes.put(newWebID, replace);
+			if (!replace.replaceNode(n))
+				web.changeState(CORRUPT);
+		}
+		web.changeState(HAS_MANY);
+		listener.callback(n);
 	}
 	
 	//FIND VALID NODES

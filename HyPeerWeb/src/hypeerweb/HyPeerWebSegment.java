@@ -151,8 +151,8 @@ public class HyPeerWebSegment<T extends Node> extends Node{
 				first.setHeight(1);
 				sec.executeRemotely(new NodeListener(
 					Node.className, "_ONE_editSecondNode",
-					new String[]{Node.className, Node.className, NodeListener.className},
-					new Object[]{sec, first, listener}
+					new String[]{Node.className, NodeListener.className},
+					new Object[]{first, listener}
 				));
 			}
 			@Override
@@ -169,33 +169,18 @@ public class HyPeerWebSegment<T extends Node> extends Node{
 		HAS_MANY {
 			@Override
 			public void addNode(HyPeerWebSegment web, final Node n, final NodeListener listener){
-				//Find a random node to start insertion
-				web.getRandomNode(new Node.Listener(){
-					@Override
-					public void callback(Node ranNode){
-						//Find a valid insertion point and add the child
-						ranNode.findInsertionNode().addChild(n, new Node.Listener(){
-							@Override
-							public void callback(final Node insertNode){
-								//Node has been successfully updated
-								insertNode.getHostSegment().executeRemotely(new Node.Listener() {
-									@Override
-									public void callback(Node seg){
-										//Add to the host's node list
-										((HyPeerWebSegment) seg).nodes.put(n.getWebId(), n);
-										listener.callback(n);
-									}
-								});
-							}
-						});
-					}
-				});
+				//Find a random node to start insertion search from
+				web.getRandomNode(new NodeListener(
+					Node.className, "_MANY_add_random",
+					new String[]{Node.className, NodeListener.className},
+					new Object[]{n, listener}
+				));
 			}
 			@Override
 			public void removeNode(HyPeerWebSegment web, Node n, NodeListener listener){
 				//If the HyPeerWeb has more than two nodes, remove normally
 				int size = web.getSegmentSize();
-				Node last, first = null;
+				Node last;
 				if (size > 2 ||
 					//Basically, we're trying to find a node with webID > 1 or height > 1
 					(last = (Node) web.getLastSegmentNode()).getWebId() > 1 ||
@@ -206,33 +191,12 @@ public class HyPeerWebSegment<T extends Node> extends Node{
 					//Always execute this last, to avoid network communication if at all possible
 					(size == 1 && last.L.getHighestLink().getWebId() > 1))
 				{
-					//Find a disconnection point
-					web.getRandomNode(new Node.Listener(){
-						@Override
-						public void callback(Node ranNode) {
-							ranNode.findDisconnectNode().disconnectNode(new Node.Listener(){
-								@Override
-								public void callback(Node n){
-									
-									web.changeState(HAS_MANY);
-									listener.callback(n);
-								}
-							});
-								
-							//Remove node from list of nodes
-							web.nodes.remove(replace.getWebId());
-							//Replace the node to be deleted
-							if (!n.equals(replace)){
-								int newWebID = n.getWebId();
-								web.nodes.remove(newWebID);
-								web.nodes.put(newWebID, replace);
-								if (!replace.replaceNode(n))
-									web.changeState(CORRUPT);
-							}
-							
-							
-						}
-					});
+					//Get a random node to start a disconnect search from
+					web.getRandomNode(new NodeListener(
+						Node.className, "_MANY_remove_random",
+						new String[]{Node.className, NodeListener.className},
+						new Object[]{n, listener}
+					));
 				}
 				//If the entire HyPeerWeb has only two nodes
 				else{
