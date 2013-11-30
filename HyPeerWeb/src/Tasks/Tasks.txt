@@ -98,3 +98,4 @@ Questions:
 - do proxies need UID? is there any case we reference node.UID when it would be a proxy
 - make sure executeRemotely is really doing just that
 - can we cache fold-state? in node proxies
+- what if we send a node across the net that used localhost for IP?

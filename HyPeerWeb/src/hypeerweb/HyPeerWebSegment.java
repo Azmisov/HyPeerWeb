@@ -9,7 +9,7 @@ import java.util.TreeMap;
 
 /**
  * The Great HyPeerWeb
- * @param <>> The Node type for this HyPeerWeb instance
+ * @param <T> The Node type for this HyPeerWeb instance
  */
 public class HyPeerWebSegment<T extends Node> extends Node{
 	public static final String className = HyPeerWebSegment.class.getName();

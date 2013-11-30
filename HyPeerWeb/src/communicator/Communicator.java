@@ -44,9 +44,10 @@ public class Communicator extends Thread{
 	   		socket = new ServerSocket(port);
 			port = socket.getLocalPort();
 			address = new RemoteAddress(InetAddress.getLocalHost().getHostAddress(), port, 0);
-			System.out.println("Communicator: Listening on "+address.ip+":"+port);
+			System.out.println("Communicator: Listening on "+address.ip_string+":"+port);
 			this.start();
-		} catch(IOException e){
+		} catch(Exception e){
+			System.err.println("Fatal Error! Failed to start communicator!");
 			System.err.println(e.getMessage());
 			System.err.println(e.getStackTrace());
 		}
@@ -72,9 +73,6 @@ public class Communicator extends Thread{
 		} catch (IOException ex) {
 			System.err.println("Failed to close socket connection");
 		}
-	}
-	public static boolean handshake(){
-		return true;
 	}
 
 	/**

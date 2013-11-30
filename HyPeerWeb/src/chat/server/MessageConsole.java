@@ -2,7 +2,6 @@ package chat.server;
 
 import java.io.*;
 import java.awt.*;
-import javax.swing.*;
 import javax.swing.event.*;
 import javax.swing.text.*;
 
@@ -17,15 +16,13 @@ import javax.swing.text.*;
  *
  *  You can limit the number of lines to hold in the Document.
  */
-public class MessageConsole
-{
+public class MessageConsole{
 	private JTextComponent textComponent;
 	private Document document;
 	private boolean isAppend;
 	private DocumentListener limitLinesListener;
 
-	public MessageConsole(JTextComponent textComponent)
-	{
+	public MessageConsole(JTextComponent textComponent){
 		this(textComponent, true);
 	}
 
@@ -36,8 +33,7 @@ public class MessageConsole
 	 *  The messages can either be appended to the end of the console or
 	 *  inserted as the first line of the console.
 	 */
-	public MessageConsole(JTextComponent textComponent, boolean isAppend)
-	{
+	public MessageConsole(JTextComponent textComponent, boolean isAppend){
 		this.textComponent = textComponent;
 		this.document = textComponent.getDocument();
 		this.isAppend = isAppend;
@@ -48,9 +44,8 @@ public class MessageConsole
 	 *  Redirect the output from the standard output to the console
 	 *  using the default text color and null PrintStream
 	 */
-	public void redirectOut()
-	{
-		redirectOut(null, null);
+	public void redirectOut(){
+		redirectOut(Color.BLACK, null);
 	}
 
 	/*
@@ -59,8 +54,7 @@ public class MessageConsole
 	 *  is specified the message will be added to the Document before
 	 *  it is also written to the PrintStream.
 	 */
-	public void redirectOut(Color textColor, PrintStream printStream)
-	{
+	public void redirectOut(Color textColor, PrintStream printStream){
 		ConsoleOutputStream cos = new ConsoleOutputStream(textColor, printStream);
 		System.setOut( new PrintStream(cos, true) );
 	}
@@ -69,9 +63,8 @@ public class MessageConsole
 	 *  Redirect the output from the standard error to the console
 	 *  using the default text color and null PrintStream
 	 */
-	public void redirectErr()
-	{
-		redirectErr(null, null);
+	public void redirectErr(){
+		redirectErr(Color.RED, null);
 	}
 
 	/*
@@ -80,8 +73,7 @@ public class MessageConsole
 	 *  is specified the message will be added to the Document before
 	 *  it is also written to the PrintStream.
 	 */
-	public void redirectErr(Color textColor, PrintStream printStream)
-	{
+	public void redirectErr(Color textColor, PrintStream printStream){
 		ConsoleOutputStream cos = new ConsoleOutputStream(textColor, printStream);
 		System.setErr( new PrintStream(cos, true) );
 	}
@@ -93,12 +85,11 @@ public class MessageConsole
 	 *  This number can be dynamically changed, but the console will only
 	 *  be updated the next time the Document is updated.
 	 */
-	public void setMessageLines(int lines)
-	{
+	public void setMessageLines(int lines){
 		if (limitLinesListener != null)
 			document.removeDocumentListener( limitLinesListener );
 
-		limitLinesListener = new LimitLinesDocumentListener(lines, isAppend);
+		limitLinesListener = new LineLimitListener(lines, isAppend);
 		document.addDocumentListener( limitLinesListener );
 	}
 
@@ -108,8 +99,7 @@ public class MessageConsole
 	 *  The text displayed in the Document can be color coded to indicate
 	 *  the output source.
 	 */
-	class ConsoleOutputStream extends ByteArrayOutputStream
-	{
+	class ConsoleOutputStream extends ByteArrayOutputStream{
 		private final String EOL = System.getProperty("line.separator");
 		private SimpleAttributeSet attributes;
 		private PrintStream printStream;
@@ -119,10 +109,8 @@ public class MessageConsole
 		/*
 		 *  Specify the option text color and PrintStream
 		 */
-		public ConsoleOutputStream(Color textColor, PrintStream printStream)
-		{
-			if (textColor != null)
-			{
+		public ConsoleOutputStream(Color textColor, PrintStream printStream){
+			if (textColor != null){
 				attributes = new SimpleAttributeSet();
 				StyleConstants.setForeground(attributes, textColor);
 			}
@@ -143,8 +131,7 @@ public class MessageConsole
 		 *  The message will be treated differently depending on whether the line
 		 *  will be appended or inserted into the Document
 		 */
-		public void flush()
-		{
+		public void flush(){
 			String message = toString();
 
 			if (message.length() == 0) return;
@@ -163,14 +150,10 @@ public class MessageConsole
 		 *
 		 *  newLine + message
 		 */
-		private void handleAppend(String message)
-		{
+		private void handleAppend(String message){
 			if (EOL.equals(message))
-			{
 				buffer.append(message);
-			}
-			else
-			{
+			else{
 				buffer.append(message);
 				clearBuffer();
 			}
@@ -182,14 +165,11 @@ public class MessageConsole
 		 *
 		 *  message + newLine
 		 */
-		private void handleInsert(String message)
-		{
+		private void handleInsert(String message){
 			buffer.append(message);
 
 			if (EOL.equals(message))
-			{
 				clearBuffer();
-			}
 		}
 
 		/*
@@ -197,29 +177,23 @@ public class MessageConsole
 		 *  appropriate order so we can now update the Document and send the
 		 *  text to the optional PrintStream.
 		 */
-		private void clearBuffer()
-		{
+		private void clearBuffer(){
 			//  In case both the standard out and standard err are being redirected
 			//  we need to insert a newline character for the first line only
 
 			if (isFirstLine && document.getLength() != 0)
-			{
 			    buffer.insert(0, "\n");
-			}
 
 			isFirstLine = false;
 			String line = buffer.toString();
 
-			try
-			{
-				if (isAppend)
-				{
+			try{
+				if (isAppend){
 					int offset = document.getLength();
 					document.insertString(offset, line, attributes);
 					textComponent.setCaretPosition( document.getLength() );
 				}
-				else
-				{
+				else{
 					document.insertString(0, line, attributes);
 					textComponent.setCaretPosition( 0 );
 				}
@@ -227,9 +201,7 @@ public class MessageConsole
 			catch (BadLocationException ble) {}
 
 			if (printStream != null)
-			{
 				printStream.print(line);
-			}
 
 			buffer.setLength(0);
 		}

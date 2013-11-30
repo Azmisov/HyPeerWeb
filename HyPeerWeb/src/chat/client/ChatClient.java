@@ -30,7 +30,7 @@ public class ChatClient extends JFrame{
 	//Serialization
 	public final int UID = Communicator.assignId();
 	//Window title
-	private static final String title = "HyPeerWeb Chat v0.2a";
+	private static final String title = "HyPeerWeb Chat v0.3a";
 	//Window dimensions
 	private static final int width = 750, height = 700;
 	//Action bar's pixel width
@@ -60,6 +60,8 @@ public class ChatClient extends JFrame{
 		
 	public ChatClient(){
 		initGUI();
+		//Startup a communicator, to receive server events
+		Communicator.startup(0);
 	}
 	
 	// <editor-fold defaultstate="collapsed" desc="GUI INITIALIZATION">
@@ -120,19 +122,26 @@ public class ChatClient extends JFrame{
 	public JPanel initNetworkBox(){
 		//Create a network
 		JButton btnCreate = new JButton("Create Network");
+		btnCreate.addActionListener(new ActionListener(){
+			@Override
+			public void actionPerformed(ActionEvent e){
+				ChatServer.startServerProcess(null, Communicator.getAddress());
+			}
+		});
+		btnCreate.setPreferredSize(new Dimension(actionBarWidth, 25));
 		
 		//Connect to a network
-		JButton btnJoin = new JButton("Join");
-		btnJoin.addActionListener(new ActionListener(){
+		JButton btnSpawn = new JButton("Spawn");
+		btnSpawn.addActionListener(new ActionListener(){
 			@Override
 			public void actionPerformed(ActionEvent e) {
 				setConnected(true);
 			}
 		});
-		JButton btnWatch = new JButton("Watch");
+		JButton btnLeech = new JButton("Leech");
 		
 		//Network connection configuration
-		final String t1 = "IP Address", t2 = "Port #";
+		final String t1 = "Address", t2 = "Port";
 		final JTextField txtIP = new JTextField(t1);
 		final JTextField txtPort = new JTextField(t2);
 		smartTextField(t1, txtIP);
@@ -158,10 +167,10 @@ public class ChatClient extends JFrame{
 		c.gridy++;
 		c.gridwidth = 1;
 		c.insets.right = 4;
-		box.add(btnJoin, c);
+		box.add(btnSpawn, c);
 		c.gridx = 1;
 		c.insets.right = 0;
-		box.add(btnWatch, c);
+		box.add(btnLeech, c);
 		c.gridwidth = 2;
 		c.gridy++;
 		c.gridx = 0;
@@ -196,7 +205,7 @@ public class ChatClient extends JFrame{
 		
 		//Disconnect button
 		JButton btnDisconnect = new JButton("Disconnect");
-		btnDisconnect.setPreferredSize(new Dimension(150, 25));
+		btnDisconnect.setPreferredSize(new Dimension(actionBarWidth, 25));
 		
 		//Shutdown button
 		JButton btnShutdown = new JButton("Shutdown");

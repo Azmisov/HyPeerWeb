@@ -5,25 +5,13 @@ import java.awt.BorderLayout;
 import java.awt.Dimension;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import javax.swing.ComboBoxModel;
-import javax.swing.JButton;
-import javax.swing.JComboBox;
-import javax.swing.JLabel;
-import javax.swing.JPanel;
-import javax.swing.JScrollPane;
-import javax.swing.JTable;
-import javax.swing.JTextField;
-import javax.swing.ListSelectionModel;
-import javax.swing.SwingConstants;
+import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import javax.swing.event.ListDataListener;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
 import javax.swing.event.TableModelListener;
-import javax.swing.table.DefaultTableCellRenderer;
-import javax.swing.table.TableColumn;
-import javax.swing.table.TableColumnModel;
-import javax.swing.table.TableModel;
+import javax.swing.table.*;
 import hypeerweb.validator.Validator;
 
 /**
@@ -49,10 +37,16 @@ public class ListTab extends JPanel{
 		segmentBox.setBorder(new EmptyBorder(4, 8, 4, 4));
 		segmentPanel.add(label);
 		segmentPanel.add(segmentBox);
+		
+		EmptyBorder btnBorder = new EmptyBorder(7, 10, 7, 10);
+		JButton deleteAll = new JButton("Clear HyPeerWeb");
+		deleteAll.setBorder(btnBorder);
+		segmentPanel.add(deleteAll);
+		
 		final JTextField validationResult = new JTextField();
 		validationResult.setPreferredSize(new Dimension(120,25));
 		JButton validateButton = new JButton("Validate");
-		validateButton.setBorder(new EmptyBorder(7, 10, 7, 10));
+		validateButton.setBorder(btnBorder);
         validateButton.addActionListener(new ActionListener(){
 			@Override
 			public void actionPerformed(ActionEvent e){

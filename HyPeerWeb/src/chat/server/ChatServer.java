@@ -1,66 +1,83 @@
 package chat.server;
 
+import chat.Main;
 import chat.client.ChatClient;
 import communicator.Communicator;
-import hypeerweb.HyPeerWebSegment;
-import hypeerweb.Node;
-import hypeerweb.NodeCache;
+import communicator.RemoteAddress;
+import hypeerweb.*;
 import hypeerweb.visitors.BroadcastVisitor;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.ObjectStreamException;
+import java.io.PipedOutputStream;
 import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Random;
 import javax.swing.JFrame;
 import javax.swing.JScrollPane;
-import javax.swing.JTextArea;
 import javax.swing.JTextPane;
 
 /**
  * Handles communications in the chat network
  */
 public class ChatServer extends JFrame{
-	public final int UID = Communicator.assignId();
-	private final HyPeerWebSegment<HyPeerWebSegment<Node>> segment;
-	private String networkName = "";
+	public static final int UID = Communicator.assignId();
+	//Chat servers are singletons
+	private static ChatServer instance;
+	//Inception web
+	private static HyPeerWebSegment<HyPeerWebSegment<Node>> segment;
+	private static String networkName = "";
 	//Node cache for the entire HyPeerWeb
-	private NodeCache cache;
+	private static NodeCache cache;
 	//Cached list of all users
 	private static final Random randomName = new Random();
-	private final HashMap<Integer, ChatUser> users = new HashMap();
+	private static final HashMap<Integer, ChatUser> users = new HashMap();
 	//List of all users and their GUI/Clients that are leeching on this network
-	private final HashMap<Integer, ChatUser> clients = new HashMap();
+	private static final HashMap<Integer, ChatUser> clients = new HashMap();
 	
-	public ChatServer(int port){
+	private ChatServer(){
 		segment = new HyPeerWebSegment("InceptionWeb.db", -1);
-		segment.setData("ChatServer", this);
-		/* TODO:
-			Join the network by creating another node in "segment"
-			Fetch the following from another segment in the InceptionWeb
-			- cache
-			- chatUsers
-		*/
-		
-		setSize(500, 300);
-		setLocationByPlatform(true);
+
+		setSize(500, 350);
+		setLocationRelativeTo(null);
+		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		
 		//Console GUI
-		JTextPane console = new JTextPane();
 		JScrollPane consoleScroll = new JScrollPane(
-			console,
 			JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED,
 			JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED
 		);
-		add(console);
+		JTextPane console = new JTextPane();
+		consoleScroll.setViewportView(console);
+		this.setVisible(true);
 		
 		//Console.redirectOutput(console);
 		MessageConsole m = new MessageConsole(console);
 		m.redirectErr();
 		m.redirectOut();
-		m.setMessageLines(250);
+		m.setMessageLines(500);
+
+		add(consoleScroll);
 		
 		System.out.println("Starting server...");
-		Communicator.startup(port);
+		Communicator.startup(0);
 		setTitle("HyPeerWeb Chat Server: "+Communicator.getAddress().port);
+	}
+	/**
+	 * Gets an instance of the server on this computer
+	 * @return the server singleton
+	 */
+	public static ChatServer getInstance(){
+		//Create the singleton
+		if (instance == null){
+			instance = new ChatServer();
+			segment.setData("ChatServer", instance);
+		}
+		return instance;
 	}
 	
 	//GUI
@@ -97,11 +114,70 @@ public class ChatServer extends JFrame{
 	
 	//NETWORK
 	/**
-	 * Spawn a new server off of this one
+	 * Create a new JVM process to run a server
+	 * @param spawner address of the spawning server; null to create a new network
+	 * @param leecher address of the leeching client; null to skip pre-loading a client
 	 */
-	public void spawnNewServer(){
-		//We may need to write our own communication thing
-		//instead of calling this method
+	public static void startServerProcess(RemoteAddress spawner, RemoteAddress leecher){
+		try {
+			ArrayList<String> args = new ArrayList(Arrays.asList(new String[]{Main.jvm, "-cp", Main.executable, Main.class.getName()}));
+			if (spawner == null)
+				args.add("-new");
+			else{
+				args.add("-spawn");
+				args.add(spawner.ip_string+":"+spawner.port);
+			}
+			if (leecher != null){
+				args.add("-leech");
+				args.add(leecher.ip_string+":"+leecher.port);
+			}
+			System.out.println("Starting a new child server process...");
+			Process x = new ProcessBuilder(args).start();
+			new StreamGobbler(x.getErrorStream(), "Server Error").start();
+		} catch (IOException ex) {
+			System.err.println("Failed to start a new JVM process!");
+		}
+	}
+	private static class StreamGobbler extends Thread {
+		InputStream is;
+		String type;
+		private StreamGobbler(InputStream is, String type) {
+			this.is = is;
+			this.type = type;
+		}
+		@Override
+		public void run() {
+			try {
+				InputStreamReader isr = new InputStreamReader(is);
+				BufferedReader br = new BufferedReader(isr);
+				String line;
+				while ((line = br.readLine()) != null)
+					System.err.println(type + " > " + line);
+			}
+			catch (IOException ioe) {
+				ioe.printStackTrace();
+			}
+		}
+	}
+	/**
+	 * Initialize this server from an existing server
+	 * @param spawner address of the spawning server
+	 * @param leecher address of the leeching client
+	 */
+	public void initialize(RemoteAddress spawner, RemoteAddress leecher){
+		System.out.println("TODO, intialize spawner/leecher here");
+		/* TODO:
+			Join the network by creating another node in "segment"
+			Fetch the following from another segment in the InceptionWeb
+			- cache
+			- chatUsers
+		*/
+		/*
+		Command handshake = new Command(Communicator.className, "handshake");
+		Object result = Communicator.request(spawn, handshake, true);
+		if (!(result instanceof Boolean))
+			throw new Exception("Cannot connect to spawning server!");
+		*/
 	}
 	/**
 	 * Disconnect from the network

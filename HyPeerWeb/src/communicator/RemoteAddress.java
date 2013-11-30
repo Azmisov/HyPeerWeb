@@ -15,20 +15,27 @@ public class RemoteAddress{
 		MAX_PORT = 65535,
 		DEFAULT_PORT = 49200;
 	//The machineAddr of the RemoteAddress
-	public final InetAddress ip;
+	public InetAddress ip;
+	public String ip_string;
 	//The portNumber of the RemoteAddress
-	public final int port;
+	public int port;
 	//The localObjectId of the RemoteAddress
-	public final int UID;
+	public int UID;
 	
 	//CONSTRUCTORS
 	/**
 	 * Constructs a RemoteAddress from a unique identifier
- Uses localhost as the machine ip and the applications port number
+	 * Uses localhost as the machine ip and the applications port number
 	 * @param UID the unique ID of the object in the application of the other machine
 	 */
-	public RemoteAddress(int UID) {
-		this(null, Communicator.getAddress().port, UID);
+	public RemoteAddress(int UID){
+		setPortUID(Communicator.getAddress().port, UID);
+		try {
+			ip = InetAddress.getLocalHost();
+			ip_string = ip.getHostAddress();
+		} catch (UnknownHostException ex) {
+			System.err.println("Could not resolve localhost address! This should never happen");
+		}
 	}
 	/**
 	 * Constructs a RemoteAddress from a given machine name, portNumber, and unique identifier
@@ -37,27 +44,15 @@ public class RemoteAddress{
 	 * @param portNumber the portNumber of the application the object is in.
 	 *	port must be within MIN_PORT and MAX_PORT constants; use zero to leave unspecified
 	 * @param UID the unique id of the object in the application of the other machine
+	 * @throws java.lang.Exception
 	 */
-	public RemoteAddress(String machineName, int portNumber, int UID){
+	public RemoteAddress(String machineName, int portNumber, int UID) throws Exception{
+		setPortUID(portNumber, UID);
+		ip = machineName == null ? InetAddress.getLocalHost() : InetAddress.getByName(machineName);
+		ip_string = ip.getHostAddress();
+	}
+	private void setPortUID(int portNumber, int UID){
 		assert(portNumber == 0 || (portNumber >= MIN_PORT && portNumber <= MAX_PORT));
-		InetAddress address_temp = null;
-		if (machineName != null){
-			try {
-				address_temp = InetAddress.getByName(machineName);
-			} catch (UnknownHostException ex) {
-				System.err.println("RemoteAddress: Machine name is invalid, using localhost.");
-				machineName = null;
-			}
-		}
-		if (machineName == null){
-			try{
-			    address_temp = InetAddress.getLocalHost();
-			} catch(UnknownHostException ex){
-				System.err.println("RemoteAddress: Could not get address of localhost, using null.");
-				address_temp = null;
-			}
-		}
-		this.ip = address_temp;
 		this.port = portNumber;
 		this.UID = UID;
 	}
