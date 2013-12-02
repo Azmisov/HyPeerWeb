@@ -46,14 +46,6 @@ public class NodeProxy extends Node{
 	
 	//GETTERS
 	@Override
-    public hypeerweb.Node[] getNeighbors(){
-		return (Node[]) request("getNeighbors");
-    }
-	@Override
-    public Node getFold(){
-		return (Node) request("getFold");
-    }
-	@Override
     public ArrayList getTreeChildren(){
 		return (ArrayList<Node>) request("getTreeChildren");
     }
@@ -62,24 +54,8 @@ public class NodeProxy extends Node{
 		return (Node) request("getTreeParent");
     }
 	@Override
-    public Node[] getSurrogateNeighbors(){
-		return (Node[]) request("getSurrogateNeighbors");
-    }
-	@Override
     public Node getCloserNode(int p0, boolean p1){
 		return (Node) request("getCloserNode", new String[]{"int", "boolean"}, new Object[]{p0, p1}, true);
-    }
-	@Override
-    public Node[] getInverseSurrogateNeighbors(){
-		return (Node[]) request("getInverseSurrogateNeighbors");
-	}
-	@Override
-    public Node getSurrogateFold(){
-        return (Node) request("getSurrogateFold");
-    }
-	@Override
-    public Node getInverseSurrogateFold(){
-		return (Node) request("getInverseSurrogateFold");
     }
 	@Override
 	public Object getData(String key) {
