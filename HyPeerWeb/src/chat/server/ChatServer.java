@@ -216,7 +216,8 @@ public class ChatServer extends JFrame{
 	 * Adds a node to the HyPeerWeb and tells the nodeListeners about it.
 	 */
 	public static void addNode(){
-		segment.getFirstSegmentNode().addNode(new Node.Listener() {
+		hypeerweb.Node newNode = new hypeerweb.Node(0, 0);
+		segment.getFirstSegmentNode().addNode(newNode, new NodeListener() {
 			@Override
 			public void callback(Node n) {
 				resyncCache(n, NodeCache.SyncType.ADD);
@@ -229,7 +230,7 @@ public class ChatServer extends JFrame{
 	 */
 	public static void removeNode(int webID){
 		HyPeerWebSegment hws = segment.getFirstSegmentNode();
-		hws.removeNode(webID, new Node.Listener(){
+		hws.removeNode(webID, new NodeListener(){
 			@Override
 			public void callback(Node n) {
 				resyncCache(n, NodeCache.SyncType.REMOVE);
