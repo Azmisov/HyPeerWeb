@@ -5,6 +5,7 @@ import chat.server.ChatServer;
 import com.alee.laf.WebLookAndFeel;
 import communicator.*;
 import java.awt.EventQueue;
+import java.net.URLDecoder;
 import java.util.Arrays;
 import javax.swing.JFrame;
 
@@ -13,7 +14,7 @@ import javax.swing.JFrame;
  * @author isaac
  */
 public class Main {
-	public static String executable, jvm;
+	public static String className = Main.class.getName(), executable, jvm;
 	private static final Exception syntax = new Exception(
 		"Invalid arguments!\n"+
 		" - To start a client, don't pass any arguments\n"+
@@ -24,14 +25,10 @@ public class Main {
 		" - Optionally, you can include a client to auto-connect to (for -new or -spawn):\n"+
 		"      [-leech|-l] machine:port");
 	public static void main(final String args[]){
-		/* Get the location of this executable and JVM; Here are alternatives:
-		  - URLDecoder.decode(ClassLoader.getSystemClassLoader().getResource(".").getPath(‌​), "UTF-8");
-		  - String path = Test.class.getProtectionDomain().getCodeSource().getLocation().getPath();
-			String decodedPath = URLDecoder.decode(path, "UTF-8");
-		*/
-		executable = Main.class.getProtectionDomain().getCodeSource().getLocation().getPath();
-		jvm = new java.io.File(new java.io.File(System.getProperty("java.home"), "bin"), "java").getAbsolutePath();
 		try{
+			//Get the location of this executable and JVM
+			executable = URLDecoder.decode(Main.class.getProtectionDomain().getCodeSource().getLocation().getPath(), "UTF-8");
+			jvm = new java.io.File(new java.io.File(System.getProperty("java.home"), "bin"), "java").getAbsolutePath();
 			//Parse terminal arguments
 			boolean new_network = false;
 			RemoteAddress spawner = null, leecher = null;

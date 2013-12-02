@@ -101,14 +101,15 @@ public class ChatServer extends JFrame{
 		//Broadcast this user update to all segments & userListeners
 		updateUser(user.id, user.name, user.networkID);
 		//Send the new client the node cache and user list
-		users.put(newUser, user);
-		clients.put(newUser, user);
 		Command register = new Command(
 			ChatClient.className, "registerServer",
-			new String[]{NodeCache.className, ChatUser.classNameArr},
-			new Object[]{cache, users.values().toArray(new ChatUser[users.size()])}
+			new String[]{NodeCache.className, ChatUser.className, ChatUser.classNameArr},
+			new Object[]{cache, user, users.values().toArray(new ChatUser[users.size()])}
 		);
 		Communicator.request(client, register, false);
+		//Add new client to our list
+		users.put(newUser, user);
+		clients.put(newUser, user);
 	}
 	/**
 	 * Unregisters a GUI/Client from the server
@@ -128,22 +129,24 @@ public class ChatServer extends JFrame{
 	 */
 	public static void startServerProcess(RemoteAddress spawner, RemoteAddress leecher){
 		try {
-			ArrayList<String> args = new ArrayList(Arrays.asList(new String[]{Main.jvm, "-cp", Main.executable, Main.class.getName()}));
+			ArrayList<String> args = new ArrayList(Arrays.asList(new String[]{Main.jvm, "-cp", Main.executable, Main.className}));
 			if (spawner == null)
 				args.add("-new");
 			else{
 				args.add("-spawn");
-				args.add(spawner.ip_string+":"+spawner.port);
+				args.add(spawner.toString());
 			}
 			if (leecher != null){
 				args.add("-leech");
-				args.add(leecher.ip_string+":"+leecher.port);
+				args.add(leecher.toString());
 			}
 			System.out.println("Starting a new child server process...");
 			Process x = new ProcessBuilder(args).start();
 			new StreamGobbler(x.getErrorStream(), "Server Error").start();
-		} catch (IOException ex) {
+		} catch (Exception e) {
 			System.err.println("Failed to start a new JVM process!");
+			System.err.println(e);
+			System.err.println(e.getMessage());
 		}
 	}
 	private static class StreamGobbler extends Thread {
@@ -295,7 +298,7 @@ public class ChatServer extends JFrame{
 	 * @param userID the user's id we want to update
 	 * @param name new name for this user
 	 */
-	public void updateUser(final int userid, String username, final int networkid){
+	public static void updateUser(final int userid, String username, final int networkid){
 		if (username != null && users.containsKey(userid)){
 			users.get(userid).name = username;
 			//broadcast name change

@@ -2,10 +2,9 @@ package chat.client;
 
 import chat.server.ChatServer;
 import chat.server.ChatServer.ChatUser;
-import communicator.Communicator;
+import communicator.*;
 import hypeerweb.NodeCache;
 import hypeerweb.NodeCache.Node;
-import hypeerweb.NodeCache.SyncType.*;
 import java.awt.*;
 import java.awt.event.*;
 import java.util.ArrayList;
@@ -42,13 +41,14 @@ public class ChatClient extends JFrame{
 	private static final Font bold = new Font("SansSerif", Font.BOLD, 12);
 	
 	//Data items
+	private static RemoteAddress server;
 	protected static ChatClient instance;
-	private static ChatServer server;							//Server reference
-	protected static HashMap<Integer, ChatUser> chatUsers;		//List of all chat users
 	protected static ChatUser activeUser;						//The user associated with this client
 	protected static NodeCache nodeCache = null;				//List of all nodes in HyPeerWeb
 	private static Node selected;								//The selected node
 	private static String subnetName;
+	//List of all chat users
+	protected static HashMap<Integer, ChatUser> chatUsers = new HashMap();
 	
 	//GUI components
 	private static final ChatTab chat = new ChatTab(padding, title);
@@ -58,6 +58,7 @@ public class ChatClient extends JFrame{
 	private static final JTable connectList = new JTable(nodeInfo);
 	private static final ListTab listTab = new ListTab();
 	private static final JTextField txtSubnetName = new JTextField();
+	private static final JTextField txtChatAlias = new JTextField();
 	private static ArrayList<JPanel> boxes;
 		
 	private ChatClient(){
@@ -207,15 +208,38 @@ public class ChatClient extends JFrame{
 			@Override
 			public void actionPerformed(ActionEvent e) {
 				String newName = txtSubnetName.getText();
-				if (server != null && !newName.equals(subnetName))
-					server.changeNetworkName(newName);
+				if (isConnected() && !newName.equals(subnetName)){
+					Command namer = new Command(
+						ChatServer.className, "changeNetworkName",
+						new String[]{"java.lang.String"}, new Object[]{newName}
+					);
+					Communicator.request(server, namer, false);
+				}
 			}
 		});
 		
 		//Username
 		JLabel lblName = new JLabel("Chat Alias:");
 		lblName.setFont(bold);
-		JTextField txtName = new JTextField();
+		txtChatAlias.addActionListener(new ActionListener(){
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				String newAlias = txtChatAlias.getText();
+				//Prevent empty names
+				if (newAlias.length() == 0)
+					txtChatAlias.setText(activeUser.name);
+				//Otherwise, broadcast the name change to the server
+				else if (isConnected() && !newAlias.equals(activeUser.name)){
+					Command namer = new Command(
+						ChatServer.className, "updateUser",
+						new String[]{"int", "java.lang.String", "int"},
+						new Object[]{activeUser.id, newAlias, activeUser.networkID}
+					);
+					Communicator.request(server, namer, false);
+				}
+			}
+		});
+		
 		
 		//Disconnect button
 		JButton btnDisconnect = new JButton("Disconnect");
@@ -240,7 +264,7 @@ public class ChatClient extends JFrame{
 		box.add(lblName, c);
 		c.gridy++;
 		c.insets.bottom = 4;
-		box.add(txtName, c);
+		box.add(txtChatAlias, c);
 		c.gridy++;
 		box.add(btnDisconnect, c);
 		c.gridy++;
@@ -330,16 +354,6 @@ public class ChatClient extends JFrame{
 	protected static boolean isConnected(){
 		return nodeCache != null;
 	}
-	protected static void setConnected(boolean connected){
-		boxes.get(0).setVisible(!connected);
-		boxes.get(1).setVisible(connected);
-		boxes.get(2).setVisible(connected);
-		if (!connected){
-			nodeCache = null;
-			chatUsers = null;
-			//TODO, reset other stuff here
-		}
-	}
 	protected static void sendMessage(int userID, int recipientID, String message){
 		if (server != null)
 			server.sendMessage(userID, recipientID, message);
@@ -349,16 +363,33 @@ public class ChatClient extends JFrame{
 		nodeSelect.setValue(n == null ? -1 : n.getWebId());
 		nodeInfo.updateInfo(n);
 	}
+	private static void setConnected(boolean connected){
+		boxes.get(0).setVisible(!connected);
+		boxes.get(1).setVisible(connected);
+		boxes.get(2).setVisible(connected);
+		if (!connected){
+			nodeCache = null;
+			chatUsers.clear();
+			//TODO, reset other stuff here
+		}
+	}
 	
 	//LISTENERS
-	public static void registerServer(NodeCache cache, ChatUser[] users){
+	public static void registerServer(NodeCache cache, ChatUser active, ChatUser[] users){
 		nodeCache = cache;
+		chatUsers.clear();
+		activeUser = active;
+		updateUser(active.id, active.name, active.networkID);
 		for (ChatUser usr: users)
 			updateUser(usr.id, usr.name, usr.networkID);
+		//Update GUI components
+		txtChatAlias.setText(active.name);
+		setConnected(true);
 	}
 	public static void updateNetworkName(String newName){
 		txtSubnetName.setText(newName);
 		subnetName = newName;
+		chat.writeStatus("Subnet renamed to <b>"+newName+"</b>");
 	}
 	public static void updateUser(int userid, String username, int networkid){
 		chat.updateUser(userid, username, networkid);
