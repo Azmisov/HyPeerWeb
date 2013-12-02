@@ -287,14 +287,27 @@ public class ChatClient extends JFrame{
 		addNode.addActionListener(new ActionListener(){
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				server.addNode();
+				if (isConnected()){
+					Command adder = new Command(
+					ChatServer.className, "addNode",
+					new String[]{},
+					new Object[]{}
+					);
+					Communicator.request(server, adder, false);
+				}
 			}
 		});
 		deleteNode.addActionListener(new ActionListener(){
 			@Override
 			public void actionPerformed(ActionEvent e){
-				if (selected != null)
-					server.removeNode(selected.getWebId());
+				if (selected != null){
+					Command deleter = new Command(
+					ChatServer.className, "removeNode",
+					new String[]{"int"},
+					new Object[]{selected.getWebId()}
+					);
+					Communicator.request(server, deleter, false);
+				}
 			}
 		});
 		
@@ -355,8 +368,14 @@ public class ChatClient extends JFrame{
 		return nodeCache != null;
 	}
 	protected static void sendMessage(int userID, int recipientID, String message){
-		if (server != null)
-			server.sendMessage(userID, recipientID, message);
+		if (server != null){
+			Command sender = new Command(
+			ChatServer.className, "sendMessage",
+			new String[]{"int", "int", "java.lang.String"},
+			new Object[]{userID, recipientID, message}
+			);
+			Communicator.request(server, sender, false);
+		}
 	}
 	protected static void setSelectedNode(Node n){
 		selected = n;
