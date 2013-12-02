@@ -375,7 +375,8 @@ public class ChatClient extends JFrame{
 	}
 	
 	//LISTENERS
-	public static void registerServer(NodeCache cache, ChatUser active, ChatUser[] users){
+	public static void registerServer(RemoteAddress addr, NodeCache cache, ChatUser active, ChatUser[] users){
+		server = addr;
 		nodeCache = cache;
 		chatUsers.clear();
 		activeUser = active;

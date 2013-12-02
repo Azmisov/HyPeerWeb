@@ -90,7 +90,7 @@ HyPeerWebSegment:
 	- getCache
 	- store
 	- restore
-	- executeRemotely
+	x executeRemotely
 
 Questions:
 - findValidNode: are those Criteria objects getting resolved correctly?

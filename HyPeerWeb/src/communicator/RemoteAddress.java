@@ -1,5 +1,7 @@
 package communicator;
 
+import java.io.ObjectStreamException;
+import java.io.Serializable;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 
@@ -8,15 +10,16 @@ import java.net.UnknownHostException;
  * Holds the object's IPAddress, Port, and unique identifier (UID)
  * @author Scott Woodfield
  */
-public class RemoteAddress{
+public class RemoteAddress implements Serializable{
+	public static final String className = RemoteAddress.class.getName();
 	//Port number constants
 	public static final int
 		MIN_PORT = 1,
 		MAX_PORT = 65535,
 		DEFAULT_PORT = 49200;
 	//The machineAddr of the RemoteAddress
-	public InetAddress ip;
-	private String ip_string;
+	public transient InetAddress ip;
+	private String serialize_ip;
 	//The portNumber of the RemoteAddress
 	public int port;
 	//The localObjectId of the RemoteAddress
@@ -89,5 +92,17 @@ public class RemoteAddress{
 	@Override
 	public String toString(){
 		return ip.getHostAddress()+":"+port;
+	}
+	public Object writeReplace() throws ObjectStreamException {
+		serialize_ip = ip.getHostAddress();
+		return this;
+	}
+	public Object readResolve() throws ObjectStreamException {
+		try {
+			ip = InetAddress.getByName(serialize_ip);
+		} catch (UnknownHostException ex) {
+			System.err.println("RemoteAddress: Could not resolve serialized IP Address!!!");
+		}
+		return this;
 	}
 }

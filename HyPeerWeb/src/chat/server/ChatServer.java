@@ -53,7 +53,6 @@ public class ChatServer extends JFrame{
 		consoleScroll.setViewportView(console);
 		this.setVisible(true);
 		
-		//Console.redirectOutput(console);
 		MessageConsole m = new MessageConsole(console);
 		m.redirectErr();
 		m.redirectOut();
@@ -61,7 +60,6 @@ public class ChatServer extends JFrame{
 
 		add(consoleScroll);
 		
-		System.out.println("Starting server...");
 		Communicator.startup(0);
 		setTitle("HyPeerWeb Chat Server: "+Communicator.getAddress().port);
 	}
@@ -103,8 +101,8 @@ public class ChatServer extends JFrame{
 		//Send the new client the node cache and user list
 		Command register = new Command(
 			ChatClient.className, "registerServer",
-			new String[]{NodeCache.className, ChatUser.className, ChatUser.classNameArr},
-			new Object[]{cache, user, users.values().toArray(new ChatUser[users.size()])}
+			new String[]{RemoteAddress.className, NodeCache.className, ChatUser.className, ChatUser.classNameArr},
+			new Object[]{Communicator.getAddress(), cache, user, users.values().toArray(new ChatUser[users.size()])}
 		);
 		Communicator.request(client, register, false);
 		//Add new client to our list
@@ -185,6 +183,8 @@ public class ChatServer extends JFrame{
 				- chatUsers
 			*/
 		}
+		else cache = new NodeCache();
+		//Auto-register client
 		if (leecher != null)
 			registerClient(leecher);
 	}
