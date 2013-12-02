@@ -17,18 +17,16 @@ import hypeerweb.validator.Validator;
 /**
  * List all nodes in HyPeerWeb, categorized by
  * their InceptionSegment
- * @author isaac
+ * @author guy
  */
 public class ListTab extends JPanel{
-	private static ChatClient container;
 	private static JTable table;
 	private static MyTableModel tabModel = new MyTableModel();
 	private static JComboBox segmentBox;
 	private static segmentModel segModel = new segmentModel();
 	
-	public ListTab(final ChatClient container) {
+	public ListTab(){
 		super(new BorderLayout());
-		ListTab.container = container;
 		
 		JPanel segmentPanel = new JPanel();
 		JLabel label = new JLabel("Segment:");
@@ -50,7 +48,7 @@ public class ListTab extends JPanel{
         validateButton.addActionListener(new ActionListener(){
 			@Override
 			public void actionPerformed(ActionEvent e){
-				boolean pass = container.nodeCache == null || (new Validator(container.nodeCache)).validate();
+				boolean pass = ChatClient.nodeCache == null || (new Validator(ChatClient.nodeCache)).validate();
 				validationResult.setText(pass ? "Validation Passed!" : "Validation Failed!");
 			}
         });
@@ -109,10 +107,10 @@ public class ListTab extends JPanel{
 		
 		@Override
 		public int getRowCount() {
-			if(container.nodeCache == null)
+			if(ChatClient.nodeCache == null)
 				return 0;
 			else
-				return container.nodeCache.nodes.size();
+				return ChatClient.nodeCache.nodes.size();
 		}
 
 		@Override
@@ -137,11 +135,11 @@ public class ListTab extends JPanel{
 
 		@Override
 		public Object getValueAt(int rowIndex, int columnIndex) {
-			if(container.nodeCache == null)
+			if(ChatClient.nodeCache == null)
 				return null;
 			
 			String result = "";
-			Node node = (Node) container.nodeCache.nodes.values().toArray()[rowIndex];
+			Node node = (Node) ChatClient.nodeCache.nodes.values().toArray()[rowIndex];
 			int selection = segModel.getSelection();
 			
 			if(selection == -1 || selection == node.getNetworkId()){
@@ -201,12 +199,12 @@ public class ListTab extends JPanel{
 		String[] segments = {"All"};
 		
 		private void updateSegments(){
-			if(container.nodeCache == null)
+			if(ChatClient.nodeCache == null)
 				return;
 			
-			int size = container.nodeCache.segments.size();
+			int size = ChatClient.nodeCache.segments.size();
 			int index = 1;
-			Integer[] seg = container.nodeCache.segments.toArray(new Integer[size]);
+			Integer[] seg = ChatClient.nodeCache.segments.toArray(new Integer[size]);
 			size++;//All goes first
 			segments = new String[size];
 			segments[0] = "All";
@@ -265,8 +263,8 @@ public class ListTab extends JPanel{
 		public void valueChanged(ListSelectionEvent e) {
 			ListSelectionModel lsm = (ListSelectionModel)e.getSource();
 			int index = lsm.getMinSelectionIndex();
-			Node n = (Node) container.nodeCache.nodes.values().toArray()[index];
-			container.setSelectedNode(n);	
+			Node n = (Node) ChatClient.nodeCache.nodes.values().toArray()[index];
+			ChatClient.setSelectedNode(n);	
 		}
 	}
 }

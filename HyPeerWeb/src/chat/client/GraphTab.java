@@ -30,7 +30,6 @@ import javax.swing.event.ChangeListener;
  * @author isaac
  */
 public class GraphTab extends JPanel{
-	private static ChatClient container;
 	private Node activeNode;	//the selected node; may not be in graph
 	//Drawing stuff
 	private static final int maxSizeX = 550, maxSizeY = 600;
@@ -40,8 +39,7 @@ public class GraphTab extends JPanel{
 	private GraphMode previousMode = GraphMode.DEFAULT;
 	private static Graph graph;
 	
-	public GraphTab(ChatClient container){
-		GraphTab.container = container;
+	public GraphTab(){
 		setLayout(new BorderLayout(0, 0));
 		
 		//Bottom is the actual graph
@@ -250,7 +248,7 @@ public class GraphTab extends JPanel{
 				}
 			}
 			private Node getActiveNode(){
-				return container.nodeCache.nodes.get((int) select.getValue());
+				return ChatClient.nodeCache.nodes.get((int) select.getValue());
 			}
 			
 			@Override
@@ -356,7 +354,7 @@ public class GraphTab extends JPanel{
 				}
 			}
 			private Node getActiveNode(){
-				return container.nodeCache.nodes.get((int) select.getValue());
+				return ChatClient.nodeCache.nodes.get((int) select.getValue());
 			}
 			
 			@Override
@@ -418,7 +416,7 @@ public class GraphTab extends JPanel{
 				links = new TreeSet();
 				helpers = new ArrayList();
 				
-				TreeMap<Integer, Node> all = container.nodeCache.nodes;
+				TreeMap<Integer, Node> all = ChatClient.nodeCache.nodes;
 				Node[] vals = all.values().toArray(new Node[all.size()]);
 				Integer[] keys = all.keySet().toArray(new Integer[all.size()]);
 				HashSet<DrawLink> linksPot = new HashSet();
@@ -772,7 +770,7 @@ public class GraphTab extends JPanel{
 		public void selectNode(){
 			if (active != null){
 				selected = active;
-				container.setSelectedNode(selected.n);
+				ChatClient.setSelectedNode(selected.n);
 				redraw(false);
 			}
 		}
@@ -820,7 +818,7 @@ public class GraphTab extends JPanel{
 				DrawData d = GraphMode.nodes.get(selected.n);
 				selected = d;
 				if (d == null)
-					container.setSelectedNode(null);
+					ChatClient.setSelectedNode(null);
 			}
 			active = null;
 			buffer = null;
@@ -945,7 +943,7 @@ public class GraphTab extends JPanel{
 				}
 			}
 			//Set cursor
-			container.setCursor(active != null ?
+			ChatClient.singleton.setCursor(active != null ?
 				Cursor.getPredefinedCursor(Cursor.CROSSHAIR_CURSOR) :
 				Cursor.getPredefinedCursor(Cursor.DEFAULT_CURSOR)
 			);

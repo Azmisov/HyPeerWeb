@@ -28,7 +28,7 @@ import javax.swing.table.AbstractTableModel;
  */
 public class ChatClient extends JFrame{
 	//Serialization
-	public final int UID = Communicator.assignId();
+	public static final int UID = Communicator.assignId();
 	//Window title
 	private static final String title = "HyPeerWeb Chat v0.3a";
 	//Window dimensions
@@ -41,27 +41,33 @@ public class ChatClient extends JFrame{
 	private static final Font bold = new Font("SansSerif", Font.BOLD, 12);
 	
 	//Data items
-	private ChatServer server;							//Server reference
-	protected HashMap<Integer, ChatUser> chatUsers;		//List of all chat users
-	protected ChatUser activeUser;						//The user associated with this client
-	protected NodeCache nodeCache = null;				//List of all nodes in HyPeerWeb
-	private Node selected;								//The selected node
-	private String subnetName;
+	protected static ChatClient singleton;
+	private static ChatServer server;							//Server reference
+	protected static HashMap<Integer, ChatUser> chatUsers;		//List of all chat users
+	protected static ChatUser activeUser;						//The user associated with this client
+	protected static NodeCache nodeCache = null;				//List of all nodes in HyPeerWeb
+	private static Node selected;								//The selected node
+	private static String subnetName;
 	
 	//GUI components
-	private final ChatTab chat = new ChatTab(this, padding, title);
-	private final GraphTab graph = new GraphTab(this);
-	private final JSpinner nodeSelect = new JSpinner(new SpinnerNumberModel(-1, -1, null, 1));
-	private final NodeInfo nodeInfo = new NodeInfo();
-	private final JTable connectList = new JTable(nodeInfo);
-	private final ListTab listTab = new ListTab(this);
-	private final JTextField txtSubnetName = new JTextField();
-	private ArrayList<JPanel> boxes;
+	private static final ChatTab chat = new ChatTab(padding, title);
+	private static final GraphTab graph = new GraphTab();
+	private static final JSpinner nodeSelect = new JSpinner(new SpinnerNumberModel(-1, -1, null, 1));
+	private static final NodeInfo nodeInfo = new NodeInfo();
+	private static final JTable connectList = new JTable(nodeInfo);
+	private static final ListTab listTab = new ListTab();
+	private static final JTextField txtSubnetName = new JTextField();
+	private static ArrayList<JPanel> boxes;
 		
-	public ChatClient(){
+	private ChatClient(){
 		initGUI();
 		//Startup a communicator, to receive server events
 		Communicator.startup(0);
+	}
+	public static ChatClient getInstance(){
+		if (singleton == null)
+			singleton = new ChatClient();
+		return singleton;
 	}
 	
 	// <editor-fold defaultstate="collapsed" desc="GUI INITIALIZATION">
@@ -313,30 +319,30 @@ public class ChatClient extends JFrame{
 	//</editor-fold>
 	
 	//ACTIONS
-	protected void setConnected(boolean connected){
+	protected static void setConnected(boolean connected){
 		boxes.get(0).setVisible(!connected);
 		boxes.get(1).setVisible(connected);
 		boxes.get(2).setVisible(connected);
 	}
-	protected void sendMessage(int userID, int recipientID, String message){
+	protected static void sendMessage(int userID, int recipientID, String message){
 		if (server != null)
 			server.sendMessage(userID, recipientID, message);
 	}
-	protected void setSelectedNode(Node n){
+	protected static void setSelectedNode(Node n){
 		selected = n;
 		nodeSelect.setValue(n == null ? -1 : n.getWebId());
 		nodeInfo.updateInfo(n);
 	}
 	
 	//LISTENERS
-	public void updateNetworkName(String newName){
+	public static void updateNetworkName(String newName){
 		txtSubnetName.setText(newName);
 		subnetName = newName;
 	}
-	public void updateUser(int userid, String username, int networkid){
+	public static void updateUser(int userid, String username, int networkid){
 		chat.updateUser(userid, username, networkid);
 	}
-	public void updateNodeCache(Node affectedNode, NodeCache.SyncType type, Node[] updatedNodes){
+	public static void updateNodeCache(Node affectedNode, NodeCache.SyncType type, Node[] updatedNodes){
 		if (nodeCache != null){
 			switch (type){
 				case ADD:
@@ -353,11 +359,11 @@ public class ChatClient extends JFrame{
 			
 		}
 	}
-	public void receiveMessage(int senderID, int recipientID, String mess){
+	public static void receiveMessage(int senderID, int recipientID, String mess){
 		chat.receiveMessage(senderID, recipientID, mess);
 	}
 	
-	private class NodeInfo extends AbstractTableModel{
+	private static class NodeInfo extends AbstractTableModel{
 		ArrayList<String[]> data = new ArrayList();
 		public void updateInfo(Node n){
 			data.clear();

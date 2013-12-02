@@ -25,7 +25,6 @@ import javax.swing.text.html.StyleSheet;
  * @author isaac
  */
 public class ChatTab extends JPanel{
-	private ChatClient container;
 	//Active chat users and their associated colors
 	private final DefaultComboBoxModel<ChatUser> chatUsersLst = new DefaultComboBoxModel();
 	//The last user that chatted something
@@ -42,7 +41,7 @@ public class ChatTab extends JPanel{
 	//Different layouts depending on amount of users
 	private static final String EMPTY = "Empty", FILLED = "Filled";
 	
-	public ChatTab(ChatClient container, Border padding, String title){
+	public ChatTab(Border padding, String title){
 		//The chat log is on top, the tools are on the bottom
 		JScrollPane chatLogScroll = new JScrollPane(
 			JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED,
@@ -187,21 +186,21 @@ public class ChatTab extends JPanel{
 	 * @param username new chat user alias
 	 */
 	public void updateUser(int userid, String username, int networkid){
-		ChatUser cu = container.chatUsers.get(userid);
+		ChatUser cu = ChatClient.chatUsers.get(userid);
 		if (cu == null && username == null)
 			return;
 		//Remove a user
 		if (username == null){
 			writeStatus("<b>"+cu.name+"</b> is offline");
-			container.chatUsers.remove(userid);
+			ChatClient.chatUsers.remove(userid);
 			chatUsersLst.removeElement(cu);
 		}
 		//Add a new user
 		else if (cu == null){
 			cu = new ChatUser(userid, username, networkid);
-			container.chatUsers.put(userid, cu);
+			ChatClient.chatUsers.put(userid, cu);
 			//Can't send messages to yourself
-			if (userid != container.activeUser.id)
+			if (userid != ChatClient.activeUser.id)
 				chatUsersLst.addElement(cu);
 			writeStatus("<b>"+username+"</b> is online");
 		}
@@ -214,7 +213,7 @@ public class ChatTab extends JPanel{
 				cu.name = username;
 				//Notify the user list
 				//Active user won't be in the user list
-				if (userid != container.activeUser.id){
+				if (userid != ChatClient.activeUser.id){
 					int index = chatUsersLst.getIndexOf(cu);
 					//Make sure it exists; shouldn't happen, but just in case
 					if (index != -1){
@@ -241,8 +240,8 @@ public class ChatTab extends JPanel{
 		//Otherwise, a regular chat message
 		else{
 			writeMessage(
-				container.chatUsers.get(userID),
-				recipientID == -1 ? null : container.chatUsers.get(recipientID),
+				ChatClient.chatUsers.get(userID),
+				recipientID == -1 ? null : ChatClient.chatUsers.get(recipientID),
 				message
 			);
 		}
@@ -256,15 +255,15 @@ public class ChatTab extends JPanel{
 	private void sendMessage(boolean privateMessage){
 		String mess = chatBox.getText().trim();
 		//Cannot send a message if we haven't registered a user to this GUI
-		if (container.activeUser != null && mess.length() > 0){
+		if (ChatClient.activeUser != null && mess.length() > 0){
 			int recipientID = -1;
 			//Only broadcast the message if there are users
 			if (chatUsersLst.getSize() > 0){
 				if (privateMessage)
 					recipientID = ((ChatUser) chatUsersLst.getSelectedItem()).id;
-				container.sendMessage(container.activeUser.id, recipientID, mess);
+				ChatClient.sendMessage(ChatClient.activeUser.id, recipientID, mess);
 			}
-			receiveMessage(container.activeUser.id, recipientID, mess);
+			receiveMessage(ChatClient.activeUser.id, recipientID, mess);
 		}
 		chatBox.setText(null);
 	}
@@ -277,11 +276,13 @@ public class ChatTab extends JPanel{
 	 * @param message the message they sent
 	 */
 	private void writeMessage(ChatUser userFrom, ChatUser userTo, String message){
+		int fromID = userFrom == null ? -1 : userFrom.id,
+			toID = userTo == null ? -1 : userTo.id;
 		//We don't know who sent this message; they never sent an updateUser command
 		if (userFrom == null)
 			userFrom = new ChatUser(-1, "anonymous", -1);
 		//This person was the last one to chat something
-		if (userFrom.id == lastUserFrom && userTo.id == lastUserTo)
+		if (fromID == lastUserFrom && toID == lastUserTo)
 			writePlain(message+"<br/>");
 		else{
 			writeUser(userFrom);
@@ -290,8 +291,8 @@ public class ChatTab extends JPanel{
 				writeUser(userTo);
 			}
 			writePlain(": "+message+"<br/>");
-			lastUserFrom = userFrom.id;
-			lastUserTo = userTo.id;
+			lastUserFrom = fromID;
+			lastUserTo = toID;
 		}
 	}
 	/**

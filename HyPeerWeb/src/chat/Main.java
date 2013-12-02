@@ -5,6 +5,7 @@ import chat.server.ChatServer;
 import com.alee.laf.WebLookAndFeel;
 import communicator.*;
 import java.awt.EventQueue;
+import java.util.Arrays;
 import javax.swing.JFrame;
 
 /**
@@ -71,12 +72,13 @@ public class Main {
 					else{
 						//Only load the look-and-feel for clients
 						WebLookAndFeel.install();
-						win = new ChatClient();
+						win = ChatClient.getInstance();
 					}
 					win.setVisible(true);
 				}
 			});
 		} catch (Exception e){
+			System.err.println("Error with arguments "+Arrays.toString(args));
 			System.err.println(e.getMessage());
 		}
 	}
