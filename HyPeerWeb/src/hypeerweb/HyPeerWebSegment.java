@@ -187,6 +187,9 @@ public class HyPeerWebSegment<T extends Node> extends Node{
 					new Object[]{n, listener}
 				));
 				
+				if (web.getSegmentSize() == 1)
+					web.changeState(HAS_ONE);
+				
 				/*//If the HyPeerWeb has more than two nodes, remove normally
 				int size = web.getSegmentSize();
 				Node last;
