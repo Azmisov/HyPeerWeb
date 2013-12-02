@@ -16,7 +16,7 @@ public class RemoteAddress{
 		DEFAULT_PORT = 49200;
 	//The machineAddr of the RemoteAddress
 	public InetAddress ip;
-	public String ip_string;
+	private String ip_string;
 	//The portNumber of the RemoteAddress
 	public int port;
 	//The localObjectId of the RemoteAddress
@@ -32,7 +32,6 @@ public class RemoteAddress{
 		setPortUID(Communicator.getAddress().port, UID);
 		try {
 			ip = InetAddress.getLocalHost();
-			ip_string = ip.getHostAddress();
 		} catch (UnknownHostException ex) {
 			System.err.println("Could not resolve localhost address! This should never happen");
 		}
@@ -49,7 +48,6 @@ public class RemoteAddress{
 	public RemoteAddress(String machineName, int portNumber, int UID) throws Exception{
 		setPortUID(portNumber, UID);
 		ip = machineName == null ? InetAddress.getLocalHost() : InetAddress.getByName(machineName);
-		ip_string = ip.getHostAddress();
 	}
 	private void setPortUID(int portNumber, int UID){
 		assert(portNumber == 0 || (portNumber >= MIN_PORT && portNumber <= MAX_PORT));
@@ -87,5 +85,9 @@ public class RemoteAddress{
 						&& UID == raddr.UID;
 		}
 		return result;                 
+	}
+	@Override
+	public String toString(){
+		return ip.getHostAddress()+":"+port;
 	}
 }

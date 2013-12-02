@@ -126,6 +126,17 @@ public class Communicator extends Thread{
 		}
 		return result;
 	}
+	/**
+	 * Performs a handshake with a remote class, to make sure it exists
+	 * @param remoteClass the class to handshake with
+	 * @param addr the remote address of the class
+	 * @return whether handshake was successful
+	 */
+	public static boolean handshake(String remoteClass, RemoteAddress addr){
+		Command handshake = new Command(remoteClass, "handshake");
+		Object result = Communicator.request(addr, handshake, true);
+		return (result instanceof Boolean) && ((boolean) result);
+	}
 	
 	/**
 	 * Assigns a unique local object id

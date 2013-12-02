@@ -1,5 +1,6 @@
 package hypeerweb;
 
+import communicator.Communicator;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -14,6 +15,7 @@ import hypeerweb.validator.NodeInterface;
  * @author inygaard
  */
 public class NodeCache implements HyPeerWebInterface, Serializable{
+	public static final String className = NodeCache.class.getName();
 	public enum SyncType {ADD, REMOVE, REPLACE}
 	public TreeMap<Integer, Node> nodes = new TreeMap();
 	public HashSet<Integer> segments = new HashSet();

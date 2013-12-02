@@ -943,7 +943,7 @@ public class GraphTab extends JPanel{
 				}
 			}
 			//Set cursor
-			ChatClient.singleton.setCursor(active != null ?
+			ChatClient.instance.setCursor(active != null ?
 				Cursor.getPredefinedCursor(Cursor.CROSSHAIR_CURSOR) :
 				Cursor.getPredefinedCursor(Cursor.DEFAULT_CURSOR)
 			);

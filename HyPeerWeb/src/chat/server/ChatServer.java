@@ -2,16 +2,13 @@ package chat.server;
 
 import chat.Main;
 import chat.client.ChatClient;
-import communicator.Communicator;
-import communicator.RemoteAddress;
+import communicator.*;
 import hypeerweb.*;
 import hypeerweb.visitors.BroadcastVisitor;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.io.ObjectStreamException;
-import java.io.PipedOutputStream;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -25,6 +22,7 @@ import javax.swing.JTextPane;
  * Handles communications in the chat network
  */
 public class ChatServer extends JFrame{
+	public static final String className = ChatServer.class.getName();
 	public static final int UID = Communicator.assignId();
 	//Chat servers are singletons
 	private static ChatServer instance;
@@ -86,7 +84,13 @@ public class ChatServer extends JFrame{
 	 * @param client the ChatClient to register with this server
 	 * @return the ChatUser for this GUI/Client
 	 */
-	public ChatUser registerClient(ChatClient client){
+	public static void registerClient(RemoteAddress client){
+		//Perform a handshake with the client
+		System.out.println("Registering client at "+client);
+		if (!Communicator.handshake(ChatClient.className, client)){
+			System.err.println("Client handshake failed");
+			return;
+		}
 		//Generate a userID that has not been taken already
 		int newUser;
 		do{
@@ -94,19 +98,23 @@ public class ChatServer extends JFrame{
 		} while (users.containsKey(newUser));
 		ChatUser user = new ChatUser(newUser, "user"+newUser, segment.getWebId());
 		user.client = client;
+		//Broadcast this user update to all segments & userListeners
+		updateUser(user.id, user.name, user.networkID);
+		//Send the new client the node cache and user list
 		users.put(newUser, user);
 		clients.put(newUser, user);
-		//broadcast this user update to all segments & userListeners
-		updateUser(user.id, user.name, user.networkID);
-		//TODO, send the client the nodecache, userlist, etc, through the listeners
-		
-		return user;
+		Command register = new Command(
+			ChatClient.className, "registerServer",
+			new String[]{NodeCache.className, ChatUser.classNameArr},
+			new Object[]{cache, users.values().toArray(new ChatUser[users.size()])}
+		);
+		Communicator.request(client, register, false);
 	}
 	/**
 	 * Unregisters a GUI/Client from the server
 	 * @param userID the user ID associated with this client
 	 */
-	public void unregisterClient(int userID){
+	public static void unregisterClient(int userID){
 		users.remove(userID);
 		clients.remove(userID);
 		//TODO, broadcast this user update to all other segments
@@ -165,24 +173,22 @@ public class ChatServer extends JFrame{
 	 * @param leecher address of the leeching client
 	 */
 	public void initialize(RemoteAddress spawner, RemoteAddress leecher){
-		System.out.println("TODO, intialize spawner/leecher here");
-		/* TODO:
-			Join the network by creating another node in "segment"
-			Fetch the following from another segment in the InceptionWeb
-			- cache
-			- chatUsers
-		*/
-		/*
-		Command handshake = new Command(Communicator.className, "handshake");
-		Object result = Communicator.request(spawn, handshake, true);
-		if (!(result instanceof Boolean))
-			throw new Exception("Cannot connect to spawning server!");
-		*/
+		if (spawner != null){
+			System.out.println("TODO, intialize spawner here");
+			/* TODO:
+				Join the network by creating another node in "segment"
+				Fetch the following from another segment in the InceptionWeb
+				- cache
+				- chatUsers
+			*/
+		}
+		if (leecher != null)
+			registerClient(leecher);
 	}
 	/**
 	 * Disconnect from the network
 	 */
-	public void disconnect(){
+	public static void disconnect(){
 		//this one looks tough
 		//I think this is the part where Dr. Woodfield said that if one segment
 		//wanted to quit, all of the segments would have to quit.  Now I can 
@@ -192,12 +198,12 @@ public class ChatServer extends JFrame{
 	/**
 	 * Shutdown all servers in this network
 	 */
-	public void shutdown(){}
+	public static void shutdown(){}
 	/**
 	 * Change the ChatServer's name
 	 * @param name 
 	 */
-	public void changeNetworkName(String name){
+	public static void changeNetworkName(String name){
 		networkName = name;
 		//broadcast to all network name listeners
 	}
@@ -206,7 +212,7 @@ public class ChatServer extends JFrame{
 	/**
 	 * Adds a node to the HyPeerWeb and tells the nodeListeners about it.
 	 */
-	public void addNode(){
+	public static void addNode(){
 		segment.getFirstSegmentNode().addNode(new Node.Listener() {
 			@Override
 			public void callback(Node n) {
@@ -218,7 +224,7 @@ public class ChatServer extends JFrame{
 	 * Deletes a node from the HyPeerWeb and tells the nodeListeners about it.
 	 * @param webID the webID of the node to delete
 	 */
-	public void removeNode(int webID){
+	public static void removeNode(int webID){
 		HyPeerWebSegment hws = segment.getFirstSegmentNode();
 		hws.removeNode(webID, new Node.Listener(){
 			@Override
@@ -232,7 +238,7 @@ public class ChatServer extends JFrame{
 	 * @param n the Node that changed
 	 * @param type the change type
 	 */
-	private void resyncCache(Node n, NodeCache.SyncType type){
+	private static void resyncCache(Node n, NodeCache.SyncType type){
 		//These are a list of dirty nodes in our cache
 		int[] dirty = new int[1];
 		switch (type){
@@ -260,7 +266,7 @@ public class ChatServer extends JFrame{
 	 * @param recipientID who should receive the message (-1 to give to everyone)
 	 * @param message the message
 	 */
-	public void sendMessage(final int senderID, final int recipientID, final String message){
+	public static void sendMessage(final int senderID, final int recipientID, final String message){
 		if(recipientID == -1){
 			(new BroadcastVisitor(new Node.Listener() {
 				@Override
@@ -304,6 +310,9 @@ public class ChatServer extends JFrame{
 		}
 	}
 	public static class ChatUser implements Serializable{
+		public static final String
+			className = ChatUser.class.getName(),
+			classNameArr = ChatUser[].class.getName();
 		//Random color generator
 		private static final Random rand = new Random();
 		private static final int minRGB = 30, maxRGB = 180;
@@ -312,7 +321,7 @@ public class ChatServer extends JFrame{
 		public int id;
 		//Server that owns this user
 		public int networkID;
-		public transient ChatClient client;
+		public transient RemoteAddress client;
 		
 		/**
 		 * Create a new chat user
@@ -340,15 +349,8 @@ public class ChatServer extends JFrame{
 		}
 	}
 	
-	/**
-	 *
-	 * @return
-	 * @throws Exception
-	 */
-	public Object writeReplace() throws Exception {
-		return new ChatServerProxy(this);
-	}
-	public Object readResolve() throws ObjectStreamException {
-		return this;
+	//NETWORKING
+	public static boolean handshake(){
+		return instance != null;
 	}
 }

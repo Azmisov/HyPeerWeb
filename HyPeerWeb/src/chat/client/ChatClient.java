@@ -28,6 +28,7 @@ import javax.swing.table.AbstractTableModel;
  */
 public class ChatClient extends JFrame{
 	//Serialization
+	public static final String className = ChatClient.class.getName();
 	public static final int UID = Communicator.assignId();
 	//Window title
 	private static final String title = "HyPeerWeb Chat v0.3a";
@@ -41,7 +42,7 @@ public class ChatClient extends JFrame{
 	private static final Font bold = new Font("SansSerif", Font.BOLD, 12);
 	
 	//Data items
-	protected static ChatClient singleton;
+	protected static ChatClient instance;
 	private static ChatServer server;							//Server reference
 	protected static HashMap<Integer, ChatUser> chatUsers;		//List of all chat users
 	protected static ChatUser activeUser;						//The user associated with this client
@@ -65,9 +66,9 @@ public class ChatClient extends JFrame{
 		Communicator.startup(0);
 	}
 	public static ChatClient getInstance(){
-		if (singleton == null)
-			singleton = new ChatClient();
-		return singleton;
+		if (instance == null)
+			instance = new ChatClient();
+		return instance;
 	}
 	
 	// <editor-fold defaultstate="collapsed" desc="GUI INITIALIZATION">
@@ -140,11 +141,18 @@ public class ChatClient extends JFrame{
 		JButton btnSpawn = new JButton("Spawn");
 		btnSpawn.addActionListener(new ActionListener(){
 			@Override
-			public void actionPerformed(ActionEvent e) {
+			public void actionPerformed(ActionEvent e){
+				System.out.println("TODO, parse ip and port");
 				setConnected(true);
 			}
 		});
 		JButton btnLeech = new JButton("Leech");
+		btnLeech.addActionListener(new ActionListener(){
+			@Override
+			public void actionPerformed(ActionEvent e){
+				System.out.println("TODO, parse ip and port");
+			}
+		});
 		
 		//Network connection configuration
 		final String t1 = "Address", t2 = "Port";
@@ -319,10 +327,18 @@ public class ChatClient extends JFrame{
 	//</editor-fold>
 	
 	//ACTIONS
+	protected static boolean isConnected(){
+		return nodeCache != null;
+	}
 	protected static void setConnected(boolean connected){
 		boxes.get(0).setVisible(!connected);
 		boxes.get(1).setVisible(connected);
 		boxes.get(2).setVisible(connected);
+		if (!connected){
+			nodeCache = null;
+			chatUsers = null;
+			//TODO, reset other stuff here
+		}
 	}
 	protected static void sendMessage(int userID, int recipientID, String message){
 		if (server != null)
@@ -335,6 +351,11 @@ public class ChatClient extends JFrame{
 	}
 	
 	//LISTENERS
+	public static void registerServer(NodeCache cache, ChatUser[] users){
+		nodeCache = cache;
+		for (ChatUser usr: users)
+			updateUser(usr.id, usr.name, usr.networkID);
+	}
 	public static void updateNetworkName(String newName){
 		txtSubnetName.setText(newName);
 		subnetName = newName;
@@ -415,5 +436,10 @@ public class ChatClient extends JFrame{
 				return boldify("No node selected");
 			return data.get(rowIndex)[columnIndex];
 		}
+	}
+	
+	//NETWORKING
+	public static boolean handshake(){
+		return instance != null;
 	}
 }

@@ -45,11 +45,15 @@ public class Main {
 						break;
 					case "-s":
 					case "-spawn":
-						spawner = parseAddress(args[++i]);
+						if (args.length == ++i)
+							throw syntax;
+						spawner = parseAddress(args[i]);
 						break;
 					case "-l":
 					case "-leech":
-						leecher = parseAddress(args[++i]);
+						if (args.length == ++i)
+							throw syntax;
+						leecher = parseAddress(args[i]);
 						break;
 					default:
 						throw syntax;
