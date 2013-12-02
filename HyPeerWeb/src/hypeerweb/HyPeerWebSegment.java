@@ -179,8 +179,15 @@ public class HyPeerWebSegment<T extends Node> extends Node{
 				));
 			}
 			@Override
-			public void removeNode(HyPeerWebSegment web, Node n, NodeListener listener){
-				//If the HyPeerWeb has more than two nodes, remove normally
+			public void removeNode(HyPeerWebSegment web, final Node n, final NodeListener listener){
+				
+				web.getRandomNode(new NodeListener(
+					Node.className, "_MANY_remove_random",
+					new String[]{Node.className, NodeListener.className},
+					new Object[]{n, listener}
+				));
+				
+				/*//If the HyPeerWeb has more than two nodes, remove normally
 				int size = web.getSegmentSize();
 				Node last;
 				if (size > 2 ||
@@ -226,7 +233,7 @@ public class HyPeerWebSegment<T extends Node> extends Node{
 						other.setHeight(0);
 					}
 					web.changeState(HAS_ONE);
-				}				
+				}*/				
 			}
 		},
 		//Network is corrupt; a segment failed to perform an operation
