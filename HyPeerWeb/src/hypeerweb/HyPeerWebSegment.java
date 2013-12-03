@@ -14,16 +14,20 @@ import java.util.TreeMap;
  */
 public class HyPeerWebSegment<T extends Node> extends Node{
 	public static final String className = HyPeerWebSegment.class.getName();
-	//Segment attributes
+	//HyPeerWebSegment attributes
 	protected final TreeMap<Integer, T> nodes;
 	private final TreeMap<Integer, T> nodesByUID;
-	private HyPeerWebState state = HyPeerWebState.HAS_NONE;
+	private HyPeerWebState
+		state = HyPeerWebState.HAS_NONE,
+		inceptionState = HyPeerWebState.HAS_ONE;
+	private boolean isInceptionWeb = false;
 	//Random number generator for getting random nodes
 	private static final Random rand = new Random();
 	//Static list of all HWSegments in this JVM; they may not correspond to the same HyPeerWeb
 	public static final ArrayList<HyPeerWebSegment> segmentList = new ArrayList();
-	//Database name
-	protected final String dbname;
+	//Segment settings
+	protected final transient String dbname;
+	protected final transient long seed;
 	
 	/**
 	 * Constructor for initializing the HyPeerWeb with default Node values
@@ -45,6 +49,7 @@ public class HyPeerWebSegment<T extends Node> extends Node{
 	public HyPeerWebSegment(String dbname, long seed, int webID, int height){
 		super(0, 0);
 		this.dbname = dbname;
+		this.seed = seed;
 		nodes = new TreeMap();
 		nodesByUID = new TreeMap();
 		if (seed != -1)
@@ -105,7 +110,7 @@ public class HyPeerWebSegment<T extends Node> extends Node{
 	 * Adds a node to the HyPeerWeb, using a pre-initialized Node;
 	 * Note: webID, height, and Links (L) will be altered; all other
 	 * attributes will remain the same, however
-	 * @param node a pre-initialized Node (Note, this should not be a proxy)
+	 * @param node a pre-initialized Node
 	 * @param listener add node callback
 	 */
 	public void addNode(T node, NodeListener listener){
@@ -113,6 +118,29 @@ public class HyPeerWebSegment<T extends Node> extends Node{
 		nodesByUID.put(node.UID, node);
 		//The HyPeerWeb's state will handle everything else
 		state.addNode(this, node, listener);
+	}
+	/**
+	 * Adds a segment to the HyPeerWeb, using a pre-initialized Segment;
+	 * Note: webID, height, Links (L), state, and inceptionState will be altered;
+	 * all other attributes will remain the same however
+	 * @param segment the pre-initialized segment
+	 * @param listener add segment callback
+	 */
+	public void addSegment(HyPeerWebSegment<T> segment, NodeListener listener){
+		//Create a temporary segment container
+		HyPeerWebSegment<HyPeerWebSegment<T>> inceptionweb = new HyPeerWebSegment(null, seed);
+		inceptionweb.state = inceptionState;
+		inceptionweb.isInceptionWeb = true;
+		inceptionweb.nodes.put(this.webID, this);
+		inceptionweb.nodesByUID.put(this.UID, this);
+		//The only extra data we need to initialize is the state
+		segment.executeRemotely(new NodeListener(
+			HyPeerWebSegment.className, "_inheritState",
+			new String[]{HyPeerWebState.className},
+			new Object[]{state}
+		));
+		//Now run the add operation
+		inceptionweb.addNode(segment, listener);
 	}
 	
 	//HYPEERWEB STATE
@@ -283,7 +311,30 @@ public class HyPeerWebSegment<T extends Node> extends Node{
 		))).visit(this);
 	}
 	protected static void _changeState(Node n, HyPeerWebState state){
-		((HyPeerWebSegment) n).state = state;
+		HyPeerWebSegment seg = (HyPeerWebSegment) n;
+		seg.state = state;
+		//InceptionWeb will always have at least one node
+		if (seg.isInceptionWeb){
+			//changing the state for the first node will suffice
+			if (state == HyPeerWebState.HAS_MANY || state == HyPeerWebState.HAS_ONE)
+				((HyPeerWebSegment) seg.getFirstSegmentNode()).state = state;
+			//Corrupt state changes need to be broadcasted
+			else if (state == HyPeerWebState.CORRUPT){
+				(new BroadcastVisitor(new NodeListener(
+					className, "_changeInceptionState",
+					new String[]{HyPeerWebState.className},
+					new Object[]{state}
+				))).visit(seg.getFirstSegmentNode());
+			}
+		}
+	}
+	protected static void _changeInceptionState(Node n, HyPeerWebState state){
+		((HyPeerWebSegment) n).inceptionState = state;
+	}
+	protected static void _inheritState(Node n, HyPeerWebState state){
+		HyPeerWebSegment seg = (HyPeerWebSegment) n;
+		seg.state = state;
+		seg.inceptionState = HyPeerWebState.HAS_MANY;
 	}
 	
 	//SEGMENT GETTERS
@@ -327,7 +378,7 @@ public class HyPeerWebSegment<T extends Node> extends Node{
 		}
 	};
 	/**
-	 * Looks for a HyPeerWebSegment that is not empty
+	 * Looks for a Segment that is not empty
 	 * @return the segment found
 	 */
 	public HyPeerWebSegment getNonemptySegment(){

@@ -4,7 +4,7 @@ import chat.Main;
 import chat.client.ChatClient;
 import communicator.*;
 import hypeerweb.*;
-import hypeerweb.visitors.BroadcastVisitor;
+import hypeerweb.visitors.*;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
@@ -14,12 +14,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Random;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-import javax.swing.JFrame;
-import javax.swing.JOptionPane;
-import javax.swing.JScrollPane;
-import javax.swing.JTextPane;
 
 /**
  * Handles communications in the chat network
@@ -31,7 +25,7 @@ public class ChatServer{
 	private static ChatServer instance;
 	private static boolean spawningComplete = false;
 	//Inception web
-	private static HyPeerWebSegment<HyPeerWebSegment<Node>> segment;
+	private static HyPeerWebSegment<Node> segment;
 	private static String networkName = "";
 	//Node cache for the entire HyPeerWeb
 	private static NodeCache cache;
@@ -42,8 +36,7 @@ public class ChatServer{
 	private static final HashMap<Integer, ChatUser> clients = new HashMap();
 	
 	private ChatServer(){
-		segment = new HyPeerWebSegment("InceptionWeb.db", -1);
-		segment.addNode(new HyPeerWebSegment("HyPeerWeb.db", -1), null);
+		segment = new HyPeerWebSegment("HyPeerWeb.db", -1);
 		Communicator.startup(0);
 	}
 	/**
@@ -52,10 +45,8 @@ public class ChatServer{
 	 */
 	public static ChatServer getInstance(){
 		//Create the singleton
-		if (instance == null){
+		if (instance == null)
 			instance = new ChatServer();
-			segment.setData("ChatServer", instance);
-		}
 		return instance;
 	}
 	
@@ -78,7 +69,7 @@ public class ChatServer{
 		do{
 			newUser = randomName.nextInt(9999);
 		} while (users.containsKey(newUser));
-		ChatUser user = new ChatUser(newUser, "user"+newUser, segment.getFirstSegmentNode().getWebId());
+		ChatUser user = new ChatUser(newUser, "user"+newUser, segment.getWebId());
 		user.client = client;
 		
 		//Broadcast this user update to all segments & userListeners
@@ -175,11 +166,10 @@ public class ChatServer{
 				Command spawn = new Command(
 					ChatServer.className, "_spawn",
 					new String[]{RemoteAddress.className, HyPeerWebSegment.className},
-					new Object[]{Communicator.getAddress(), segment.getFirstSegmentNode()}
+					new Object[]{Communicator.getAddress(), segment}
 				);
 				Communicator.request(spawner, spawn, false);
-				//Wait until the data comes back before proceeding
-				//*
+				//Wait until the data comes back before proceeding				
 				synchronized (ChatServer.instance){
 					while (!spawningComplete){
 						try {
@@ -189,7 +179,6 @@ public class ChatServer{
 						}
 					}
 				}
-				//*/
 			}
 		}
 		//This is a new network; no spawning necessary
@@ -201,7 +190,7 @@ public class ChatServer{
 	}
 	protected static void _spawn(RemoteAddress rem, HyPeerWebSegment seg){
 		//Listener will execute on this segment/server
-		segment.addNode(seg, new NodeListener(
+		segment.addSegment(seg, new NodeListener(
 			ChatServer.className, "_spawnSendData",
 			new String[]{RemoteAddress.className},
 			new Object[]{rem}
@@ -255,7 +244,7 @@ public class ChatServer{
 	 */
 	public static void addNode(){
 		hypeerweb.Node newNode = new hypeerweb.Node(0, 0);
-		segment.getFirstSegmentNode().addNode(newNode, new NodeListener() {
+		segment.addNode(newNode, new NodeListener() {
 			@Override
 			public void callback(Node n) {
 				resyncCache(n, NodeCache.SyncType.ADD);
@@ -267,8 +256,7 @@ public class ChatServer{
 	 * @param webID the webID of the node to delete
 	 */
 	public static void removeNode(int webID){
-		HyPeerWebSegment hws = segment.getFirstSegmentNode();
-		hws.removeNode(webID, new NodeListener(){
+		segment.removeNode(webID, new NodeListener(){
 			@Override
 			public void callback(Node n) {
 				resyncCache(n, NodeCache.SyncType.REMOVE);
@@ -319,11 +307,14 @@ public class ChatServer{
 		}
 		else{
 			//Private message
-			segment.getNode(users.get(recipientID).networkID, false, new NodeListener(
-				ChatServer.className, "_sendMessagePrivate",
-				new String[]{"int", "int", "java.lang.String"},
-				new Object[]{senderID, recipientID, message}
-			));
+			new SendVisitor(
+				users.get(recipientID).networkID, false,
+				new NodeListener(
+					ChatServer.className, "_sendMessagePrivate",
+					new String[]{"int", "int", "java.lang.String"},
+					new Object[]{senderID, recipientID, message}
+				)
+			).visit(segment);
 		}
 	}
 	protected static void _sendMessagePublic(Node n, int senderID, String message){
@@ -352,24 +343,32 @@ public class ChatServer{
 	 * @param name new name for this user (null to remove user)
 	 */
 	public static void updateUser(int userid, String username, int networkid){
-		if (username != null && users.containsKey(userid)){
-			users.get(userid).name = username;
-			//broadcast name change
-			new BroadcastVisitor(new NodeListener(
-				ChatServer.className, "_updateUser",
-				new String[]{"int", "java.lang.String", "int"},
-				new Object[]{userid, username, networkid}
-			)).visit(segment);
-		}
+		new BroadcastVisitor(new NodeListener(
+			ChatServer.className, "_updateUser",
+			new String[]{"int", "java.lang.String", "int"},
+			new Object[]{userid, username, networkid}
+		)).visit(segment);
 	}
 	protected static void _updateUser(Node n, int userid, String username, int networkid){
+		ChatUser user = users.get(userid);
+		//If this is a new user, create it
+		if (user == null){
+			user = new ChatUser(userid, username, networkid);
+			users.put(userid, user);
+		}
+		//Update this user's info
+		else{
+			user.name = username;
+			user.networkID = networkid;
+		}
+		//Send this update to GUI clients
 		Command updater = new Command(
 			ChatClient.className, "updateUser",
 			new String[]{"int", "java.lang.String", "int"},
 			new Object[]{userid, username, networkid}
 		);
-		for (ChatUser user: clients.values())
-			Communicator.request(user.client, updater, false);
+		for (ChatUser usr: clients.values())
+			Communicator.request(usr.client, updater, false);
 	}
 	public static class ChatUser implements Serializable{
 		public static final String

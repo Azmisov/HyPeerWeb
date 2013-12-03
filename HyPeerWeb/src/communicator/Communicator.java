@@ -159,7 +159,7 @@ public class Communicator extends Thread{
 					if (node != null)
 						return node;
 				}
-				return null;
+			//Segments are also nodes, so if NODE fails, check SEGMENT
 			case SEGMENT:
 				for (HyPeerWebSegment segment : HyPeerWebSegment.segmentList) {
 					if (segment.UID == raw_uid)

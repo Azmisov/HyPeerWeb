@@ -183,7 +183,10 @@ public class Node implements Serializable, Comparable<Node>{
 		sec.L.setFold(first);
 		sec.L.addNeighbor(first);
 		//Host will be on executing machine
-		sec.getHostSegment().nodes.put(1, sec);
+		//If we're doing an addSegment op, there will be no host
+		HyPeerWebSegment host = sec.getHostSegment();
+		if (host != null)
+			host.nodes.put(1, sec);
 		//Update data for the first node
 		first.executeRemotely(new NodeListener(
 			className, "_ONE_editFirstNode",
@@ -214,7 +217,9 @@ public class Node implements Serializable, Comparable<Node>{
 	protected static void _MANY_add_finalize(Node child, NodeListener listener){
 		//Add to the host's node list
 		HyPeerWebSegment host = (HyPeerWebSegment) child.getHostSegment();
-		host.nodes.put(child.getWebId(), child);
+		//Host could be null if we're adding a new segment (addSegment)
+		if (host != null)
+			host.nodes.put(child.getWebId(), child);
 		if (listener != null)
 			listener.callback(child);
 	}

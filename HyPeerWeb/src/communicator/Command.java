@@ -88,8 +88,11 @@ public class Command implements Serializable{
 				method.setAccessible(true);
 			Object target = null;
 			//If the target isn't a static method, resolve the UID
-			if (!Modifier.isStatic(method.getModifiers()))
+			if (!Modifier.isStatic(method.getModifiers())){
 				target = Communicator.resolveId(targetClass, UID);
+				if (target == null)
+					System.err.println("Failed to resolve UID for remote object: "+targetClass+": "+UID);
+			}
 			return method.invoke(target, paramVals);
 		} catch (Exception e){
 			System.err.println("Command: Failed to execute "+className+"."+methodName);
