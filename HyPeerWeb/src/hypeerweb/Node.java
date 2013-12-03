@@ -658,7 +658,7 @@ public class Node implements Serializable, Comparable<Node>{
 	}
 	@Override
 	public boolean equals(Object obj) {
-		if (obj == null || getClass() != obj.getClass())
+		if (obj == null || !(obj instanceof Node))
 			return false;
 		return this.webID == ((Node) obj).getWebId();
 	}
