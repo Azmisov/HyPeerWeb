@@ -366,7 +366,7 @@ public class HyPeerWebSegment<T extends Node> extends Node{
 		if (isEmpty())
 			listener.callback(null);
 		//Delegate this method to a segment that actually has nodes
-		if (isSegmentEmpty())
+		else if (isSegmentEmpty())
 			getNonemptySegment().getNode(webId, approximate, listener);
 		else{
 			Node n = nodes.get(webId);

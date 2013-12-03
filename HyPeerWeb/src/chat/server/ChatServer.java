@@ -89,6 +89,7 @@ public class ChatServer extends JFrame{
 			System.err.println("Client handshake failed");
 			return;
 		}
+		
 		//Generate a userID that has not been taken already
 		int newUser;
 		do{
@@ -96,8 +97,10 @@ public class ChatServer extends JFrame{
 		} while (users.containsKey(newUser));
 		ChatUser user = new ChatUser(newUser, "user"+newUser, segment.getWebId());
 		user.client = client;
+		
 		//Broadcast this user update to all segments & userListeners
 		updateUser(user.id, user.name, user.networkID);
+		
 		//Send the new client the node cache and user list
 		Command register = new Command(
 			ChatClient.className, "registerServer",
@@ -105,6 +108,7 @@ public class ChatServer extends JFrame{
 			new Object[]{Communicator.getAddress(), cache, user, users.values().toArray(new ChatUser[users.size()])}
 		);
 		Communicator.request(client, register, false);
+		
 		//Add new client to our list
 		users.put(newUser, user);
 		clients.put(newUser, user);
@@ -116,7 +120,8 @@ public class ChatServer extends JFrame{
 	public static void unregisterClient(int userID){
 		users.remove(userID);
 		clients.remove(userID);
-		//TODO, broadcast this user update to all other segments
+		//Broadcast user removal
+		updateUser(userID, null, 0);
 	}
 	
 	//NETWORK
@@ -270,48 +275,68 @@ public class ChatServer extends JFrame{
 	 * @param recipientID who should receive the message (-1 to give to everyone)
 	 * @param message the message
 	 */
-	public static void sendMessage(final int senderID, final int recipientID, final String message){
-		if(recipientID == -1){
-			(new BroadcastVisitor(new Node.Listener() {
-				@Override
-				public void callback(Node n) {
-					ChatServer server = (ChatServer) n.getData("ChatServer");
-					for(ChatUser user : server.clients.values())
-						user.client.receiveMessage(senderID, -1, message);
-				}
-			})).begin(segment);
+	public static void sendMessage(int senderID, int recipientID, String message){
+		if (recipientID == -1){
+			//Public message
+			new BroadcastVisitor(new NodeListener(
+				ChatServer.className, "_sendMessagePublic",
+				new String[]{"int", "java.lang.String"},
+				new Object[]{senderID, message}
+			)).visit(segment);
 		}
 		else{
-			segment.getNode(users.get(recipientID).networkID, new Node.Listener(){
-				@Override
-				public void callback(Node n) {
-					ChatServer server = (ChatServer) n.getData("ChatServer");
-					ChatClient client = server.clients.get(recipientID).client;
-					client.receiveMessage(senderID, recipientID, message);
-				}
-			});
+			//Private message
+			segment.getNode(users.get(recipientID).networkID, false, new NodeListener(
+				ChatServer.className, "_sendMessagePrivate",
+				new String[]{"int", "int", "java.lang.String"},
+				new Object[]{senderID, recipientID, message}
+			));
 		}
+	}
+	protected static void _sendMessagePublic(Node n, int senderID, String message){
+		Command receiver = new Command(
+			ChatClient.className, "receiveMessage",
+			new String[]{"int", "int", "java.lang.String"},
+			new Object[]{senderID, -1, message}
+		);
+		for (ChatUser user: clients.values())
+			Communicator.request(user.client, receiver, false);
+	}
+	protected static void _sendMessagePrivate(Node n, int senderID, int recipientID, String message){
+		RemoteAddress client = clients.get(recipientID).client;
+		Command receiver = new Command(
+			ChatClient.className, "receiveMessage",
+			new String[]{"int", "int", "java.lang.String"},
+			new Object[]{senderID, recipientID, message}
+		);
+		Communicator.request(client, receiver, false);
 	}
 	
 	//USERS
 	/**
 	 * Changes a user's name
 	 * @param userID the user's id we want to update
-	 * @param name new name for this user
+	 * @param name new name for this user (null to remove user)
 	 */
-	public static void updateUser(final int userid, String username, final int networkid){
+	public static void updateUser(int userid, String username, int networkid){
 		if (username != null && users.containsKey(userid)){
 			users.get(userid).name = username;
 			//broadcast name change
-			new BroadcastVisitor(new Node.Listener() {
-				@Override
-				public void callback(Node n) {
-					ChatServer server = (ChatServer) n.getData("ChatServer");
-					for(ChatUser user : server.clients.values())
-						user.client.updateUser(userid, networkName, networkid);
-				}
-			}).begin(segment);
+			new BroadcastVisitor(new NodeListener(
+				ChatServer.className, "_updateUser",
+				new String[]{"int", "java.lang.String", "int"},
+				new Object[]{userid, username, networkid}
+			)).visit(segment);
 		}
+	}
+	protected static void _updateUser(Node n, int userid, String username, int networkid){
+		Command updater = new Command(
+			ChatClient.className, "updateUser",
+			new String[]{"int", "java.lang.String", "int"},
+			new Object[]{userid, username, networkid}
+		);
+		for (ChatUser user: clients.values())
+			Communicator.request(user.client, updater, false);
 	}
 	public static class ChatUser implements Serializable{
 		public static final String

@@ -27,13 +27,10 @@ public class Communicator extends Thread{
 	//Counter for local object ids
 	private static int LOCAL_ID_COUNTER = Integer.MIN_VALUE;
 	//Proxies that have been registered with the communicator
-	private static enum ProxyType{NODE, LINKS, SEGMENT, CLIENT, SERVER};
+	private static enum ProxyType{NODE, LINKS};
 	private static final HashMap<Class<?>, ProxyType> validProxies = new HashMap(){{
 		put(Node.class, ProxyType.NODE);
-		//put(Links.class, 1);
-		//put(HyPeerWebSegment.class, 2);
-		//put(ChatClient.class, 3);
-		//put(ChatServer.class, 4);
+		put(Links.class, ProxyType.LINKS);
 	}};
 	
 	/**
@@ -164,9 +161,6 @@ public class Communicator extends Thread{
 				}
 				return null;
 			case LINKS:
-			case SEGMENT:
-			case CLIENT:
-			case SERVER:
 			default:
 				return null;
 		}

@@ -183,7 +183,7 @@ public class ChatTab extends JPanel{
 	/**
 	 * Updates a user's alias in the chatroom
 	 * @param userid the ID of the user we want to update
-	 * @param username new chat user alias
+	 * @param username new chat user alias (null to remove user)
 	 */
 	public void updateUser(int userid, String username, int networkid){
 		ChatUser cu = ChatClient.chatUsers.get(userid);
@@ -200,16 +200,21 @@ public class ChatTab extends JPanel{
 			cu = new ChatUser(userid, username, networkid);
 			ChatClient.chatUsers.put(userid, cu);
 			//Can't send messages to yourself
-			if (userid != ChatClient.activeUser.id)
+			if (userid != ChatClient.activeUser.id){
 				chatUsersLst.addElement(cu);
-			writeStatus("<b>"+username+"</b> is online");
+				if (ChatClient.isConnected())
+					writeStatus("<b>"+username+"</b> is online");
+			}
+			else writeStatus("Your chat alias is <b>"+username+"</b>");
 		}
 		else{
 			//Always update the networkid
 			cu.networkID = networkid;
 			//Update existing username
 			if (!cu.name.equals(username)){
-				writeStatus("<b>"+cu.name+"</b> is now known as <b>"+username+"</b>");
+				if (userid == ChatClient.activeUser.id)
+					writeStatus("You are now known as <b>"+username+"</b>");
+				else writeStatus("<b>"+cu.name+"</b> is now known as <b>"+username+"</b>");
 				cu.name = username;
 				//Notify the user list
 				//Active user won't be in the user list
@@ -263,7 +268,10 @@ public class ChatTab extends JPanel{
 					recipientID = ((ChatUser) chatUsersLst.getSelectedItem()).id;
 				ChatClient.sendMessage(ChatClient.activeUser.id, recipientID, mess);
 			}
-			receiveMessage(ChatClient.activeUser.id, recipientID, mess);
+			//We may want to do an immediate update, for the current user
+			//It isn't necessary though, at the moment, for public messages
+			if (privateMessage)
+				receiveMessage(ChatClient.activeUser.id, recipientID, mess);
 		}
 		chatBox.setText(null);
 	}

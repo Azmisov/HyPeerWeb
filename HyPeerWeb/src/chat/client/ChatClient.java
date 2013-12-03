@@ -57,8 +57,11 @@ public class ChatClient extends JFrame{
 	private static final NodeInfo nodeInfo = new NodeInfo();
 	private static final JTable connectList = new JTable(nodeInfo);
 	private static final ListTab listTab = new ListTab();
-	private static final JTextField txtSubnetName = new JTextField();
-	private static final JTextField txtChatAlias = new JTextField();
+	private static final JTextField
+		txtSubnetName = new JTextField(),
+		txtChatAlias = new JTextField(),
+		txtIP = new JTextField("Address"),
+		txtPort = new JTextField("Port");
 	private static ArrayList<JPanel> boxes;
 		
 	private ChatClient(){
@@ -96,7 +99,7 @@ public class ChatClient extends JFrame{
 		tabs.addTab("Node Graph", graph);
 		tabs.addTab("Node List", listTab);
 	}
-	public JPanel initActionBar(){
+	private JPanel initActionBar(){
 		JPanel bar = new JPanel();
 		boxes = new ArrayList(){{
 			add(initNetworkBox());
@@ -127,7 +130,7 @@ public class ChatClient extends JFrame{
 		
 		return bar;
 	}
-	public JPanel initNetworkBox(){
+	private JPanel initNetworkBox(){
 		//Create a network
 		JButton btnCreate = new JButton("Create Network");
 		btnCreate.addActionListener(new ActionListener(){
@@ -143,24 +146,48 @@ public class ChatClient extends JFrame{
 		btnSpawn.addActionListener(new ActionListener(){
 			@Override
 			public void actionPerformed(ActionEvent e){
-				System.out.println("TODO, parse ip and port");
-				setConnected(true);
+				RemoteAddress addr = parseGUIAddress();
+				//Make sure spawning address exists
+				if (addr != null){
+					if (!Communicator.handshake(ChatServer.className, addr)){
+						showPopup(
+							JOptionPane.ERROR_MESSAGE,
+							"This remote address does not refer to a chat server!"
+						);
+					}
+					else ChatServer.startServerProcess(addr, Communicator.getAddress());
+				}
 			}
 		});
 		JButton btnLeech = new JButton("Leech");
 		btnLeech.addActionListener(new ActionListener(){
 			@Override
 			public void actionPerformed(ActionEvent e){
-				System.out.println("TODO, parse ip and port");
+				RemoteAddress addr = parseGUIAddress();
+				//Make sure leeching address exists
+				if (addr != null){
+					if (!Communicator.handshake(ChatServer.className, addr)){
+						showPopup(
+							JOptionPane.ERROR_MESSAGE,
+							"This remote address does not refer to a chat server!"
+						);
+					}
+					//Register with this server
+					else{
+						Command register = new Command(
+							ChatServer.className, "registerClient",
+							new String[]{RemoteAddress.className},
+							new Object[]{Communicator.getAddress()}
+						);
+						Communicator.request(addr, register, false);
+					}
+				}
 			}
 		});
 		
 		//Network connection configuration
-		final String t1 = "Address", t2 = "Port";
-		final JTextField txtIP = new JTextField(t1);
-		final JTextField txtPort = new JTextField(t2);
-		smartTextField(t1, txtIP);
-		smartTextField(t2, txtPort);
+		smartTextField(txtIP);
+		smartTextField(txtPort);
 		CompoundBorder txtPad = new CompoundBorder(
 			txtIP.getBorder(),
 			(new EmptyBorder(2, 2, 2, 2))
@@ -200,7 +227,7 @@ public class ChatClient extends JFrame{
 		
 		return box;
 	}
-	public JPanel initConnectionBox(){		
+	private JPanel initConnectionBox(){		
 		//Segment name
 		JLabel lblSeg = new JLabel("Subnet Name:");
 		lblSeg.setFont(bold);
@@ -273,7 +300,7 @@ public class ChatClient extends JFrame{
 		
 		return box;
 	}
-	public JPanel initNodeBox(){
+	private JPanel initNodeBox(){
 		//Initialize elements
 		JButton addNode = new JButton("Add");
 		JButton deleteNode = new JButton("Delete");
@@ -288,11 +315,7 @@ public class ChatClient extends JFrame{
 			@Override
 			public void actionPerformed(ActionEvent e) {
 				if (isConnected()){
-					Command adder = new Command(
-					ChatServer.className, "addNode",
-					new String[]{},
-					new Object[]{}
-					);
+					Command adder = new Command(ChatServer.className, "addNode");
 					Communicator.request(server, adder, false);
 				}
 			}
@@ -300,11 +323,11 @@ public class ChatClient extends JFrame{
 		deleteNode.addActionListener(new ActionListener(){
 			@Override
 			public void actionPerformed(ActionEvent e){
-				if (selected != null){
+				if (isConnected() && selected != null){
 					Command deleter = new Command(
 					ChatServer.className, "removeNode",
-					new String[]{"int"},
-					new Object[]{selected.getWebId()}
+						new String[]{"int"},
+						new Object[]{selected.getWebId()}
 					);
 					Communicator.request(server, deleter, false);
 				}
@@ -347,7 +370,22 @@ public class ChatClient extends JFrame{
 		
 		return box;
 	}
-	private void smartTextField(final String defVal, final JTextField txt){
+	//Utility methods
+	private RemoteAddress parseGUIAddress(){
+		String ip = txtIP.getText(), port = txtPort.getText();
+		try{
+			int portInt = Integer.parseInt(port);
+			RemoteAddress addr = new RemoteAddress(ip, portInt, 0);
+			return addr;
+		} catch (NumberFormatException e){
+			showPopup(JOptionPane.ERROR_MESSAGE, "Invalid port number");
+		} catch (Exception e){
+			showPopup(JOptionPane.ERROR_MESSAGE, e.getMessage());
+		}
+		return null;
+	}
+	private void smartTextField(final JTextField txt){
+		final String defVal = txt.getText();
 		txt.addFocusListener(new FocusListener(){
 			@Override
 			public void focusGained(FocusEvent e) {
@@ -361,6 +399,11 @@ public class ChatClient extends JFrame{
 			}
 		});
 	}
+	private void showPopup(int popupType, String message){
+		JOptionPane.showMessageDialog(
+			instance, message, popupType == JOptionPane.ERROR_MESSAGE ? "Error" : "Notification", popupType
+		);
+	}
 	//</editor-fold>
 	
 	//ACTIONS
@@ -368,11 +411,11 @@ public class ChatClient extends JFrame{
 		return nodeCache != null;
 	}
 	protected static void sendMessage(int userID, int recipientID, String message){
-		if (server != null){
+		if (isConnected()){
 			Command sender = new Command(
-			ChatServer.className, "sendMessage",
-			new String[]{"int", "int", "java.lang.String"},
-			new Object[]{userID, recipientID, message}
+				ChatServer.className, "sendMessage",
+				new String[]{"int", "int", "java.lang.String"},
+				new Object[]{userID, recipientID, message}
 			);
 			Communicator.request(server, sender, false);
 		}
@@ -396,7 +439,6 @@ public class ChatClient extends JFrame{
 	//LISTENERS
 	public static void registerServer(RemoteAddress addr, NodeCache cache, ChatUser active, ChatUser[] users){
 		server = addr;
-		nodeCache = cache;
 		chatUsers.clear();
 		activeUser = active;
 		updateUser(active.id, active.name, active.networkID);
@@ -405,6 +447,8 @@ public class ChatClient extends JFrame{
 		//Update GUI components
 		txtChatAlias.setText(active.name);
 		setConnected(true);
+		//Finally, connect to the HyPeerWeb cache
+		nodeCache = cache;
 	}
 	public static void updateNetworkName(String newName){
 		txtSubnetName.setText(newName);
