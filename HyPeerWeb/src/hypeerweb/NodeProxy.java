@@ -10,22 +10,22 @@ public class NodeProxy extends Node{
 
     public NodeProxy(Node node){
 		super(node.webID, node.height);
-		L = new LinksProxy(node.getLinks());
+		L = new LinksProxy(node.L);
 		raddr = new RemoteAddress(node.UID);
     }
 
 	//NODE OPERATIONS
 	@Override
-	protected Node addChild(Node child) {
-		return (Node) request("addChild",new String[] {Node.className}, new Object[] {child}, true);
+	protected void addChild(Node child, final NodeListener listener) {
+		request("addChild", new String[] {Node.className, NodeListener.className}, new Object[] {child, listener}, false);
 	}
 	@Override
-	protected boolean replaceNode(Node toReplace) {
-		return (boolean) request("replaceNode", new String[] {Node.className}, new Object[] {toReplace}, true);
+	protected void replaceNode(Node toReplace) {
+		request("replaceNode", new String[] {Node.className}, new Object[] {toReplace}, false);
 	}
 	@Override
-	protected Node disconnectNode() {
-		return (Node) request("disconnectNode", null, null, true);
+	protected void disconnectNode(NodeListener listener) {
+		request("disconnectNode", new String[] {NodeListener.className}, new Object[] {listener}, false);
 	}
 	@Override
 	protected Node findValidNode(Criteria x, int levels, boolean recursive) {
@@ -43,6 +43,10 @@ public class NodeProxy extends Node{
     public void accept(AbstractVisitor p0){
 		request("accept", new String[]{"hypeerweb.visitors.AbstractVisitor"}, new Object[]{p0}, false);
     }
+	@Override
+	public void executeRemotely(NodeListener listener) {
+		request("executeRemotely", new String[] {NodeListener.className}, new Object[] {listener}, false);
+	}
 	
 	//GETTERS
 	@Override
@@ -68,6 +72,10 @@ public class NodeProxy extends Node{
 	@Override
 	public HyPeerWebSegment getHostSegment(){
 		return (HyPeerWebSegment) request("getHostSegment");
+	}
+	@Override
+	public Node getParent() {
+		return (Node) request("getParent");
 	}
 	
 	//SETTERS
