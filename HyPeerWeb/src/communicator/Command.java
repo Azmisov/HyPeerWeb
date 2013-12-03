@@ -13,7 +13,7 @@ public class Command implements Serializable{
 	//The class in which the method is defined.
 	protected final String className;
 	//The name of the method to be invoked.
-	protected final String methodName;
+	public final String methodName;
 	//Fully qualified parameter class names (or raw primitive name: "int", "boolean", etc)
 	protected String[] paramTypes;
 	//The actual parameters to be used when the method is invoked.

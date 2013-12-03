@@ -47,7 +47,7 @@ public class HyPeerWebSegment<T extends Node> extends Node{
 	 * @param height the node height, if it has one
 	 */
 	public HyPeerWebSegment(String dbname, long seed, int webID, int height){
-		super(0, 0);
+		super(webID, height);
 		this.dbname = dbname;
 		this.seed = seed;
 		nodes = new TreeMap();
@@ -177,8 +177,8 @@ public class HyPeerWebSegment<T extends Node> extends Node{
 		//Only one node
 		HAS_ONE {
 			@Override
-			public void addNode(final HyPeerWebSegment web, final Node sec, final NodeListener listener){
-				final Node first = web.getFirstSegmentNode();
+			public void addNode(HyPeerWebSegment web, Node sec, NodeListener listener){
+				Node first = web.getFirstSegmentNode();
 				//Always modify heights before you start changing links
 				//Doing so will result in less network communications
 				first.setHeight(1);
@@ -202,7 +202,7 @@ public class HyPeerWebSegment<T extends Node> extends Node{
 		//More than one node
 		HAS_MANY {
 			@Override
-			public void addNode(HyPeerWebSegment web, final Node n, final NodeListener listener){
+			public void addNode(HyPeerWebSegment web, Node n, NodeListener listener){
 				//Find a random node to start insertion search from
 				web.getRandomNode(new NodeListener(
 					Node.className, "_MANY_add_random",
@@ -211,7 +211,7 @@ public class HyPeerWebSegment<T extends Node> extends Node{
 				));
 			}
 			@Override
-			public void removeNode(HyPeerWebSegment web, final Node n, final NodeListener listener){
+			public void removeNode(HyPeerWebSegment web, Node n, NodeListener listener){
 				
 				web.getRandomNode(new NodeListener(
 					Node.className, "_MANY_remove_random",

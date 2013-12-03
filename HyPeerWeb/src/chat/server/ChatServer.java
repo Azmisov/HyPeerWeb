@@ -162,7 +162,6 @@ public class ChatServer{
 				spawner = null;
 			}
 			else{
-				//*
 				Command spawn = new Command(
 					ChatServer.className, "_spawn",
 					new String[]{RemoteAddress.className, HyPeerWebSegment.className},
@@ -196,7 +195,7 @@ public class ChatServer{
 			new Object[]{rem}
 		));
 	}
-	protected static void _spawnSendData(Node n, RemoteAddress rem){
+	protected static void _spawnSendData(Node n, RemoteAddress rem){		
 		Command transfer = new Command(
 			ChatServer.className, "_spawnReceiveData",
 			new String[]{NodeCache.className, ChatUser.classNameArr},

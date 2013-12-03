@@ -88,10 +88,12 @@ public class HyPeerWebSegmentProxy extends HyPeerWebSegment{
 	//SETTERS
 	@Override
 	public void setWebID(int id) {
+		webID = id;
 		request("setWebID", new String[] {"int"}, new Object[] {id}, false);
 	}
 	@Override
 	protected void setHeight(int h) {
+		height = h;
 		request("setHeight", new String[] {"int"}, new Object[] {h}, false);
 	}
 	@Override

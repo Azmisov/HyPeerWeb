@@ -8,7 +8,7 @@ import hypeerweb.Node;
  * to run on the same machine the node is on
  */
 public class BroadcastVisitor extends AbstractVisitor{
-	private int blacklist = -1;
+	private int blacklist = -2;
 
 	/**
 	 * Create a new broadcast visitor
