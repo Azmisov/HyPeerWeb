@@ -50,7 +50,7 @@ public class Node implements Serializable, Comparable<Node>{
 	 * @param child the Node to add as a child
 	 * @param listener the add node callback
 	 */
-	protected void addChild(Node child, final NodeListener listener){
+	protected void addChild(Node child, NodeListener listener){
 		//Get new height and child's WebID
 		int childHeight = height+1,
 			childWebID = (1 << height) | webID;
@@ -197,7 +197,8 @@ public class Node implements Serializable, Comparable<Node>{
 		//Broadcast state change and execute callback
 		//Host will be on the executing machine
 		first.getHostSegment().changeState(HAS_MANY);
-		listener.callback(sec);
+		if (listener != null)
+			listener.callback(sec);
 	}
 	protected static void _MANY_add_random(Node ranNode, Node child, NodeListener listener){
 		//Find a valid insertion point and add the child
@@ -214,7 +215,8 @@ public class Node implements Serializable, Comparable<Node>{
 		//Add to the host's node list
 		HyPeerWebSegment host = (HyPeerWebSegment) child.getHostSegment();
 		host.nodes.put(child.getWebId(), child);
-		listener.callback(child);
+		if (listener != null)
+			listener.callback(child);
 	}
 	protected static void _MANY_remove_random(Node ranNode, Node remove, NodeListener listener){
 		/*		

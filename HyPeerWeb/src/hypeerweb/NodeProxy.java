@@ -16,7 +16,7 @@ public class NodeProxy extends Node{
 
 	//NODE OPERATIONS
 	@Override
-	protected void addChild(Node child, final NodeListener listener) {
+	protected void addChild(Node child, NodeListener listener) {
 		request("addChild", new String[] {Node.className, NodeListener.className}, new Object[] {child, listener}, false);
 	}
 	@Override

@@ -93,8 +93,14 @@ public class Command implements Serializable{
 			return method.invoke(target, paramVals);
 		} catch (Exception e){
 			System.err.println("Command: Failed to execute "+className+"."+methodName);
-			//e.printStackTrace();
-			e.getCause().printStackTrace();
+			if (e.getCause() != null)
+				e.getCause().printStackTrace();
+			else{
+				//This is a reflection error
+				System.err.println("Reflection on: "+methodName+"("+Arrays.toString(paramTypes)+")");
+				System.err.println("With parameters: "+Arrays.toString(paramVals));
+				e.printStackTrace();
+			}
 			return e;
 		}
 	}

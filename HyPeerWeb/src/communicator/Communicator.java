@@ -27,10 +27,10 @@ public class Communicator extends Thread{
 	//Counter for local object ids
 	private static int LOCAL_ID_COUNTER = Integer.MIN_VALUE;
 	//Proxies that have been registered with the communicator
-	private static enum ProxyType{NODE, LINKS};
+	private static enum ProxyType{NODE, SEGMENT};
 	private static final HashMap<Class<?>, ProxyType> validProxies = new HashMap(){{
 		put(Node.class, ProxyType.NODE);
-		put(Links.class, ProxyType.LINKS);
+		put(HyPeerWebSegment.class, ProxyType.SEGMENT);
 	}};
 	
 	/**
@@ -154,13 +154,18 @@ public class Communicator extends Thread{
 			return null;
 		switch (type){
 			case NODE:
-				for(HyPeerWebSegment segment : HyPeerWebSegment.segmentList) {
+				for (HyPeerWebSegment segment : HyPeerWebSegment.segmentList) {
 					Node node = segment.getSegmentNodeByUID(raw_uid);
-					if(node != null)
+					if (node != null)
 						return node;
 				}
 				return null;
-			case LINKS:
+			case SEGMENT:
+				for (HyPeerWebSegment segment : HyPeerWebSegment.segmentList) {
+					if (segment.UID == raw_uid)
+						return segment;
+				}
+				return null;
 			default:
 				return null;
 		}

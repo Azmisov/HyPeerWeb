@@ -90,7 +90,7 @@ public class LinksProxy extends Links{
 	@Override
 	public Object readResolve() throws ObjectStreamException {
 		if (raddr.onSameMachineAs(Communicator.getAddress()))
-			return ((Node)Communicator.resolveId(Node.class, raddr.UID)).L.UID;
+			return ((Node) Communicator.resolveId(Node.class, raddr.UID)).L;
 		return this;
 	}
 }

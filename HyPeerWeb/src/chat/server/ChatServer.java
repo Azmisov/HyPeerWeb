@@ -14,7 +14,10 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Random;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import javax.swing.JFrame;
+import javax.swing.JOptionPane;
 import javax.swing.JScrollPane;
 import javax.swing.JTextPane;
 
@@ -26,6 +29,7 @@ public class ChatServer{
 	public static final int UID = Communicator.assignId();
 	//Chat servers are singletons
 	private static ChatServer instance;
+	private static boolean spawningComplete = false;
 	//Inception web
 	private static HyPeerWebSegment<HyPeerWebSegment<Node>> segment;
 	private static String networkName = "";
@@ -39,6 +43,7 @@ public class ChatServer{
 	
 	private ChatServer(){
 		segment = new HyPeerWebSegment("InceptionWeb.db", -1);
+		segment.addNode(new HyPeerWebSegment("HyPeerWeb.db", -1), null);
 		Communicator.startup(0);
 	}
 	/**
@@ -73,10 +78,11 @@ public class ChatServer{
 		do{
 			newUser = randomName.nextInt(9999);
 		} while (users.containsKey(newUser));
-		ChatUser user = new ChatUser(newUser, "user"+newUser, segment.getWebId());
+		ChatUser user = new ChatUser(newUser, "user"+newUser, segment.getFirstSegmentNode().getWebId());
 		user.client = client;
 		
 		//Broadcast this user update to all segments & userListeners
+		users.put(newUser, user);
 		updateUser(user.id, user.name, user.networkID);
 		
 		//Send the new client the node cache and user list
@@ -88,7 +94,6 @@ public class ChatServer{
 		Communicator.request(client, register, false);
 		
 		//Add new client to our list
-		users.put(newUser, user);
 		clients.put(newUser, user);
 	}
 	/**
@@ -157,19 +162,69 @@ public class ChatServer{
 	 * @param leecher address of the leeching client
 	 */
 	public void initialize(RemoteAddress spawner, RemoteAddress leecher){
+		//Spawn this network from another
 		if (spawner != null){
-			System.out.println("TODO, intialize spawner here");
-			/* TODO:
-				Join the network by creating another node in "segment"
-				Fetch the following from another segment in the InceptionWeb
-				- cache
-				- chatUsers
-			*/
+			//Make sure the spawner exists
+			if (!Communicator.handshake(ChatServer.className, spawner)){
+				System.err.println("Spawning address does not refer to a chat server!");
+				System.err.println("Creating a new network instead...");
+				spawner = null;
+			}
+			else{
+				//*
+				Command spawn = new Command(
+					ChatServer.className, "_spawn",
+					new String[]{RemoteAddress.className, HyPeerWebSegment.className},
+					new Object[]{Communicator.getAddress(), segment.getFirstSegmentNode()}
+				);
+				Communicator.request(spawner, spawn, false);
+				//Wait until the data comes back before proceeding
+				//*
+				synchronized (ChatServer.instance){
+					while (!spawningComplete){
+						try {
+							ChatServer.instance.wait();
+						} catch (InterruptedException ex) {
+							System.err.println("Error waiting for spawn completion");
+						}
+					}
+				}
+				//*/
+			}
 		}
-		else cache = new NodeCache();
+		//This is a new network; no spawning necessary
+		if (spawner == null)
+			cache = new NodeCache();
 		//Auto-register client
 		if (leecher != null)
 			registerClient(leecher);
+	}
+	protected static void _spawn(RemoteAddress rem, HyPeerWebSegment seg){
+		//Listener will execute on this segment/server
+		segment.addNode(seg, new NodeListener(
+			ChatServer.className, "_spawnSendData",
+			new String[]{RemoteAddress.className},
+			new Object[]{rem}
+		));
+	}
+	protected static void _spawnSendData(Node n, RemoteAddress rem){
+		Command transfer = new Command(
+			ChatServer.className, "_spawnReceiveData",
+			new String[]{NodeCache.className, ChatUser.classNameArr},
+			new Object[]{cache, users.values().toArray(new ChatUser[users.size()])}
+		);
+		Communicator.request(rem, transfer, false);
+	}
+	protected static void _spawnReceiveData(NodeCache spawn_cache, ChatUser[] spawn_users){
+		cache = spawn_cache;
+		for (ChatUser usr: spawn_users)
+			users.put(usr.id, usr);
+		
+		//Notify thread that spawning is complete
+		spawningComplete = true;
+		synchronized (ChatServer.instance){
+			ChatServer.instance.notify();
+		}
 	}
 	/**
 	 * Disconnect from the network

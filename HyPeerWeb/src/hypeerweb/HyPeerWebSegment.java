@@ -3,6 +3,7 @@ package hypeerweb;
 import communicator.NodeListener;
 import hypeerweb.visitors.SendVisitor;
 import hypeerweb.visitors.BroadcastVisitor;
+import java.io.ObjectStreamException;
 import java.util.ArrayList;
 import java.util.Random;
 import java.util.TreeMap;
@@ -134,13 +135,15 @@ public class HyPeerWebSegment<T extends Node> extends Node{
 				//broadcast state change to HAS_ONE
 				web.changeState(HAS_ONE);
 				//run callback
-				listener.callback(n);
+				if (listener != null)
+					listener.callback(n);
 			}
 			@Override
 			public void removeNode(HyPeerWebSegment web, Node n, NodeListener listener){
 				//Throw an error; this shouldn't happen
 				web.changeState(CORRUPT);
-				listener.callback(null);
+				if (listener != null)
+					listener.callback(null);
 			}
 		},
 		//Only one node
@@ -164,7 +167,8 @@ public class HyPeerWebSegment<T extends Node> extends Node{
 				web.nodesByUID.clear();
 				//broadcast state change to HAS_NONE
 				web.changeState(HAS_NONE);
-				listener.callback(n);
+				if (listener != null)
+					listener.callback(n);
 			}
 		},
 		//More than one node
@@ -405,5 +409,15 @@ public class HyPeerWebSegment<T extends Node> extends Node{
 	}
 	public void restore() throws Exception{
 		//NOT IMPLEMENTED
+	}
+	
+	//CLASS OVERRIDES
+	@Override
+	public Object writeReplace() throws ObjectStreamException {
+		return new HyPeerWebSegmentProxy(this);
+	}
+	@Override
+	public Object readResolve() throws ObjectStreamException {
+		return this;
 	}
 }
