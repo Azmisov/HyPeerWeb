@@ -399,7 +399,7 @@ public class ChatClient extends JFrame{
 			}
 		});
 	}
-	private void showPopup(int popupType, String message){
+	protected static void showPopup(int popupType, String message){
 		JOptionPane.showMessageDialog(
 			instance, message, popupType == JOptionPane.ERROR_MESSAGE ? "Error" : "Notification", popupType
 		);

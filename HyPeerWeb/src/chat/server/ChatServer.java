@@ -21,7 +21,7 @@ import javax.swing.JTextPane;
 /**
  * Handles communications in the chat network
  */
-public class ChatServer extends JFrame{
+public class ChatServer{
 	public static final String className = ChatServer.class.getName();
 	public static final int UID = Communicator.assignId();
 	//Chat servers are singletons
@@ -39,29 +39,7 @@ public class ChatServer extends JFrame{
 	
 	private ChatServer(){
 		segment = new HyPeerWebSegment("InceptionWeb.db", -1);
-
-		setSize(500, 350);
-		setLocationRelativeTo(null);
-		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-		
-		//Console GUI
-		JScrollPane consoleScroll = new JScrollPane(
-			JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED,
-			JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED
-		);
-		JTextPane console = new JTextPane();
-		consoleScroll.setViewportView(console);
-		this.setVisible(true);
-		
-		MessageConsole m = new MessageConsole(console);
-		m.redirectErr();
-		m.redirectOut();
-		m.setMessageLines(500);
-
-		add(consoleScroll);
-		
 		Communicator.startup(0);
-		setTitle("HyPeerWeb Chat Server: "+Communicator.getAddress().port);
 	}
 	/**
 	 * Gets an instance of the server on this computer
@@ -132,7 +110,9 @@ public class ChatServer extends JFrame{
 	 */
 	public static void startServerProcess(RemoteAddress spawner, RemoteAddress leecher){
 		try {
-			ArrayList<String> args = new ArrayList(Arrays.asList(new String[]{Main.jvm, "-cp", Main.executable, Main.className}));
+			ArrayList<String> args = new ArrayList(Arrays.asList(
+				new String[]{Main.jvm, "-cp", Main.executable, Main.className, "-gui"}
+			));
 			if (spawner == null)
 				args.add("-new");
 			else{
@@ -146,10 +126,8 @@ public class ChatServer extends JFrame{
 			System.out.println("Starting a new child server process...");
 			Process x = new ProcessBuilder(args).start();
 			new StreamGobbler(x.getErrorStream(), "Server Error").start();
-		} catch (Exception e) {
+		} catch (IOException e) {
 			System.err.println("Failed to start a new JVM process!");
-			System.err.println(e);
-			System.err.println(e.getMessage());
 		}
 	}
 	private static class StreamGobbler extends Thread {
@@ -168,14 +146,14 @@ public class ChatServer extends JFrame{
 				while ((line = br.readLine()) != null)
 					System.err.println(type + " > " + line);
 			}
-			catch (IOException ioe) {
-				ioe.printStackTrace();
+			catch (IOException ioe){
+				System.err.println("Failed to capture server's error stream");
 			}
 		}
 	}
 	/**
 	 * Initialize this server from an existing server
-	 * @param spawner address of the spawning server
+	 * @param spawner address of the spawning server (null to create new network)
 	 * @param leecher address of the leeching client
 	 */
 	public void initialize(RemoteAddress spawner, RemoteAddress leecher){

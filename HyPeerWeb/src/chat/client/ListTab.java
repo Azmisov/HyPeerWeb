@@ -41,19 +41,19 @@ public class ListTab extends JPanel{
 		deleteAll.setBorder(btnBorder);
 		segmentPanel.add(deleteAll);
 		
-		final JTextField validationResult = new JTextField();
-		validationResult.setPreferredSize(new Dimension(120,25));
 		JButton validateButton = new JButton("Validate");
 		validateButton.setBorder(btnBorder);
         validateButton.addActionListener(new ActionListener(){
 			@Override
 			public void actionPerformed(ActionEvent e){
 				boolean pass = ChatClient.nodeCache == null || (new Validator(ChatClient.nodeCache)).validate();
-				validationResult.setText(pass ? "Validation Passed!" : "Validation Failed!");
+				ChatClient.showPopup(
+					pass ? JOptionPane.INFORMATION_MESSAGE : JOptionPane.ERROR_MESSAGE,
+					pass ? "Validation Passed!" : "Validation Failed!"
+				);
 			}
         });
 		segmentPanel.add(validateButton);
-		segmentPanel.add(validationResult);
 		this.add(segmentPanel, BorderLayout.NORTH);
 		
         table = new JTable(tabModel);

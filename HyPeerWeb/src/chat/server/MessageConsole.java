@@ -17,14 +17,9 @@ import javax.swing.text.*;
  *  You can limit the number of lines to hold in the Document.
  */
 public class MessageConsole{
-	private JTextComponent textComponent;
-	private Document document;
-	private boolean isAppend;
+	private final JTextComponent textComponent;
+	private final Document document;
 	private DocumentListener limitLinesListener;
-
-	public MessageConsole(JTextComponent textComponent){
-		this(textComponent, true);
-	}
 
 	/*
 	 *	Use the text component specified as a simply console to display
@@ -33,10 +28,9 @@ public class MessageConsole{
 	 *  The messages can either be appended to the end of the console or
 	 *  inserted as the first line of the console.
 	 */
-	public MessageConsole(JTextComponent textComponent, boolean isAppend){
+	public MessageConsole(JTextComponent textComponent){
 		this.textComponent = textComponent;
 		this.document = textComponent.getDocument();
-		this.isAppend = isAppend;
 		textComponent.setEditable( false );
 	}
 
@@ -89,7 +83,7 @@ public class MessageConsole{
 		if (limitLinesListener != null)
 			document.removeDocumentListener( limitLinesListener );
 
-		limitLinesListener = new LineLimitListener(lines, isAppend);
+		limitLinesListener = new LineLimitListener(lines);
 		document.addDocumentListener( limitLinesListener );
 	}
 
@@ -102,8 +96,8 @@ public class MessageConsole{
 	class ConsoleOutputStream extends ByteArrayOutputStream{
 		private final String EOL = System.getProperty("line.separator");
 		private SimpleAttributeSet attributes;
-		private PrintStream printStream;
-		private StringBuffer buffer = new StringBuffer(80);
+		private final PrintStream printStream;
+		private final StringBuffer buffer = new StringBuffer(80);
 		private boolean isFirstLine;
 
 		/*
@@ -116,9 +110,7 @@ public class MessageConsole{
 			}
 
 			this.printStream = printStream;
-
-			if (isAppend)
-				isFirstLine = true;
+			isFirstLine = true;
 		}
 
 		/*
@@ -131,16 +123,12 @@ public class MessageConsole{
 		 *  The message will be treated differently depending on whether the line
 		 *  will be appended or inserted into the Document
 		 */
+		@Override
 		public void flush(){
 			String message = toString();
-
-			if (message.length() == 0) return;
-
-			if (isAppend)
-			    handleAppend(message);
-			else
-			    handleInsert(message);
-
+			if (message.length() == 0)
+				return;
+			handleAppend(message);
 			reset();
 		}
 
@@ -159,18 +147,6 @@ public class MessageConsole{
 			}
 
 		}
-		/*
-		 *  We don't want to merge the new message with the existing message
-		 *  so the line will be inserted as:
-		 *
-		 *  message + newLine
-		 */
-		private void handleInsert(String message){
-			buffer.append(message);
-
-			if (EOL.equals(message))
-				clearBuffer();
-		}
 
 		/*
 		 *  The message and the newLine have been added to the buffer in the
@@ -188,15 +164,9 @@ public class MessageConsole{
 			String line = buffer.toString();
 
 			try{
-				if (isAppend){
-					int offset = document.getLength();
-					document.insertString(offset, line, attributes);
-					textComponent.setCaretPosition( document.getLength() );
-				}
-				else{
-					document.insertString(0, line, attributes);
-					textComponent.setCaretPosition( 0 );
-				}
+				int offset = document.getLength();
+				document.insertString(offset, line, attributes);
+				textComponent.setCaretPosition( document.getLength() );
 			}
 			catch (BadLocationException ble) {}
 
