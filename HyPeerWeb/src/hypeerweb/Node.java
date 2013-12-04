@@ -125,7 +125,7 @@ public class Node implements Serializable, Comparable<Node>{
 	 * @return true, if the replacement was successful
 	 * @author isaac
 	 */
-	protected void replaceNode(Node toReplace){
+	protected void replaceNode(Node toReplace, NodeListener listener){
 		int oldWebID = this.webID;
 		//Swap out connections
 		//We're probably going to have to modify this so it works with proxies.
@@ -140,6 +140,7 @@ public class Node implements Serializable, Comparable<Node>{
 		height = toReplace.getHeight();
 		//Notify all connections that their reference has changed
 		L.broadcastUpdate(toReplace, this);
+		listener.callback(toReplace);
 	}
 	/**
 	 * Disconnects an edge node to replace a node that
@@ -172,6 +173,7 @@ public class Node implements Serializable, Comparable<Node>{
 		//TODO, group these into mass node updates
 		//Reverse the fold state; we will always have a fold - guaranteed
 		L.getFold().getFoldState().reverseFolds(parent, this);
+		listener.callback(this);
 	}
 	
 	//MASS NODE UPDATES
@@ -223,28 +225,26 @@ public class Node implements Serializable, Comparable<Node>{
 		if (listener != null)
 			listener.callback(child);
 	}
-	protected static void _MANY_remove_random(Node ranNode, Node remove, NodeListener listener){
-		/*		
+	protected static void _MANY_remove_random(Node ranNode, Node remove, NodeListener listener){	
 		//Find a valid disconnect point
-		ranNode.findDisconnectNode().disconnectNode(new NodeListener(){
-			className, "_MANY_remove_disconnect", 
-		});
-		*/
+		ranNode.findDisconnectNode().disconnectNode(new NodeListener(
+			className, "_MANY_remove_disconnect",
+			new String[]{Node.className, NodeListener.className},
+			new Object[]{remove, listener}
+		));
 	}
-	protected static void _MANY_remove_disconnect(Node removed, Node replaced, NodeListener listener){
-		/*
+	protected static void _MANY_remove_disconnect(Node replaced, Node removed, NodeListener listener){
 		//Remove node from list of nodes
-		web.nodes.remove(replace.getWebId());
+		//This remove is called on the same machine
+		removed.getHostSegment().nodes.remove(replaced.getWebId());
 		//Replace the node to be deleted
-		if (!n.equals(replace)){
-			int newWebID = n.getWebId();
-			web.nodes.remove(newWebID);
-			web.nodes.put(newWebID, replace);
-			!replace.replaceNode(n)
+		if (!removed.equals(replaced)){
+			int newWebID = removed.getWebId();
+			removed.getHostSegment().nodes.remove(newWebID);
+			removed.getHostSegment().nodes.put(newWebID, replaced);
+			replaced.replaceNode(removed, listener);
 		}
-		web.changeState(HAS_MANY);
 		listener.callback(removed);
-		*/
 	}
 	
 	//FIND VALID NODES
