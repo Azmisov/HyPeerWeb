@@ -213,6 +213,12 @@ public class ChatServer{
 		synchronized (ChatServer.instance){
 			ChatServer.instance.notify();
 		}
+		System.out.println("SPAWNED NODE = ");
+		System.out.println(segment.getWebId());
+		System.out.println(segment.getHeight());
+		System.out.println(Arrays.toString(segment.L.getNeighbors()));
+		System.out.println(segment.state);
+		System.out.println(segment.inceptionState);
 	}
 	/**
 	 * Disconnect from the network

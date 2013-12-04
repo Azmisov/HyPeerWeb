@@ -17,7 +17,7 @@ public class HyPeerWebSegment<T extends Node> extends Node{
 	//HyPeerWebSegment attributes
 	protected final TreeMap<Integer, T> nodes;
 	private final TreeMap<Integer, T> nodesByUID;
-	private HyPeerWebState
+	public HyPeerWebState
 		state = HyPeerWebState.HAS_NONE,
 		inceptionState = HyPeerWebState.HAS_ONE;
 	private boolean isInceptionWeb = false;
@@ -139,6 +139,8 @@ public class HyPeerWebSegment<T extends Node> extends Node{
 			new String[]{HyPeerWebState.className},
 			new Object[]{state}
 		));
+		//Change the inception's state, since we're adding another node
+		inceptionState = HyPeerWebState.HAS_MANY;
 		//Now run the add operation
 		inceptionweb.addNode(segment, listener);
 	}
@@ -204,6 +206,7 @@ public class HyPeerWebSegment<T extends Node> extends Node{
 			@Override
 			public void addNode(HyPeerWebSegment web, Node n, NodeListener listener){
 				//Find a random node to start insertion search from
+				System.out.println("HAS_MANY executing");
 				web.getRandomNode(new NodeListener(
 					Node.className, "_MANY_add_random",
 					new String[]{Node.className, NodeListener.className},
@@ -212,17 +215,7 @@ public class HyPeerWebSegment<T extends Node> extends Node{
 			}
 			@Override
 			public void removeNode(HyPeerWebSegment web, Node n, NodeListener listener){
-				
-				web.getRandomNode(new NodeListener(
-					Node.className, "_MANY_remove_random",
-					new String[]{Node.className, NodeListener.className},
-					new Object[]{n, listener}
-				));
-				
-				if (web.getSegmentSize() == 1)
-					web.changeState(HAS_ONE);
-				
-				/*//If the HyPeerWeb has more than two nodes, remove normally
+				//If the HyPeerWeb has more than two nodes, remove normally
 				int size = web.getSegmentSize();
 				Node last;
 				if (size > 2 ||
@@ -245,13 +238,14 @@ public class HyPeerWebSegment<T extends Node> extends Node{
 				//If the entire HyPeerWeb has only two nodes
 				else{
 					//removing node 0
-					if(n.getWebId() == 0){
+					if (n.getWebId() == 0){
 						Node replace = n.L.getFold(); //gets node 1
 						if (replace == null)
 							web.changeState(CORRUPT);
 						//Remove node from list of nodes
 						web.nodes.remove(0);
 						//Replace the node to be deleted
+						replace.executeRemotely(listener);
 						replace.L.removeNeighbor(n);
 						replace.L.setFold(null);
 						replace.setWebID(0);
@@ -268,7 +262,7 @@ public class HyPeerWebSegment<T extends Node> extends Node{
 						other.setHeight(0);
 					}
 					web.changeState(HAS_ONE);
-				}*/				
+				}		
 			}
 		},
 		//Network is corrupt; a segment failed to perform an operation
@@ -327,9 +321,6 @@ public class HyPeerWebSegment<T extends Node> extends Node{
 				))).visit(seg.getFirstSegmentNode());
 			}
 		}
-	}
-	protected static void _changeInceptionState(Node n, HyPeerWebState state){
-		((HyPeerWebSegment) n).inceptionState = state;
 	}
 	protected static void _inheritState(Node n, HyPeerWebState state){
 		HyPeerWebSegment seg = (HyPeerWebSegment) n;
