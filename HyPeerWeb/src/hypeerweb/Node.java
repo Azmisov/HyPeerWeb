@@ -224,12 +224,10 @@ public class Node implements Serializable, Comparable<Node>{
 			listener.callback(child);
 	}
 	protected static void _MANY_remove_random(Node ranNode, Node remove, NodeListener listener){
-		/*		
 		//Find a valid disconnect point
 		ranNode.findDisconnectNode().disconnectNode(new NodeListener(){
 			className, "_MANY_remove_disconnect", 
 		});
-		*/
 	}
 	protected static void _MANY_remove_disconnect(Node removed, Node replaced, NodeListener listener){
 		/*
