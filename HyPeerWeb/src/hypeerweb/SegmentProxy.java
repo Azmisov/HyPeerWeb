@@ -12,10 +12,10 @@ import java.util.ArrayList;
  * Oh goodness. I can't believe I'm doing this
  * @author isaac
  */
-public class HyPeerWebSegmentProxy extends HyPeerWebSegment{
+public class SegmentProxy extends Segment{
 	private final RemoteAddress raddr;
 	
-	public HyPeerWebSegmentProxy(HyPeerWebSegment seg){
+	public SegmentProxy(Segment seg){
 		super(seg.dbname, -1, seg.webID, seg.height);
 		L = new LinksProxy(seg.L);
 		raddr = new RemoteAddress(seg.UID);
@@ -77,8 +77,8 @@ public class HyPeerWebSegmentProxy extends HyPeerWebSegment{
 		return (FoldState) request("getFoldState");
 	}
 	@Override
-	public HyPeerWebSegment getHostSegment(){
-		return (HyPeerWebSegment) request("getHostSegment");
+	public Segment getHostSegment(){
+		return (Segment) request("getHostSegment");
 	}
 	@Override
 	public Node getParent() {
@@ -120,7 +120,7 @@ public class HyPeerWebSegmentProxy extends HyPeerWebSegment{
 	@Override
 	public Object readResolve() throws ObjectStreamException {
 		if (raddr.onSameMachineAs(Communicator.getAddress()))
-			return Communicator.resolveId(HyPeerWebSegment.class, raddr.UID);
+			return Communicator.resolveId(Segment.class, raddr.UID);
 		return this;
 	}
 }

@@ -70,8 +70,8 @@ public class NodeProxy extends Node{
 		return (FoldState) request("getFoldState");
 	}
 	@Override
-	public HyPeerWebSegment getHostSegment(){
-		return (HyPeerWebSegment) request("getHostSegment");
+	public Segment getHostSegment(){
+		return (Segment) request("getHostSegment");
 	}
 	@Override
 	public Node getParent() {

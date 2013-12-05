@@ -1,6 +1,6 @@
 package chat.client;
 
-import hypeerweb.NodeCache.Node;
+import hypeerweb.HyPeerWebCache.Node;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;

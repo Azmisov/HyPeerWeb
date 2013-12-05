@@ -2,7 +2,7 @@ package hypeerweb;
 
 import communicator.Communicator;
 import communicator.NodeListener;
-import static hypeerweb.HyPeerWebSegment.HyPeerWebState.*;
+import static hypeerweb.Segment.HyPeerWebState.*;
 import hypeerweb.visitors.AbstractVisitor;
 import java.io.ObjectStreamException;
 import java.io.Serializable;
@@ -186,7 +186,7 @@ public class Node implements Serializable, Comparable<Node>{
 		sec.L.addNeighbor(first);
 		//Host will be on executing machine
 		//If we're doing an addSegment op, there will be no host
-		HyPeerWebSegment host = sec.getHostSegment();
+		Segment host = sec.getHostSegment();
 		if (host != null)
 			host.nodes.put(1, sec);
 		//Update data for the first node
@@ -218,7 +218,7 @@ public class Node implements Serializable, Comparable<Node>{
 	}
 	protected static void _MANY_add_finalize(Node child, NodeListener listener){
 		//Add to the host's node list
-		HyPeerWebSegment host = (HyPeerWebSegment) child.getHostSegment();
+		Segment host = (Segment) child.getHostSegment();
 		//Host could be null if we're adding a new segment (addSegment)
 		if (host != null)
 			host.nodes.put(child.getWebId(), child);
@@ -634,10 +634,10 @@ public class Node implements Serializable, Comparable<Node>{
 	//NETWORKING
 	/**
 	 * Get the segment that holds this node, if any
-	 * @return a HyPeerWebSegment containing this node
+	 * @return a Segment containing this node
 	 */
-	public HyPeerWebSegment getHostSegment(){
-		for (HyPeerWebSegment s: HyPeerWebSegment.segmentList){
+	public Segment getHostSegment(){
+		for (Segment s: Segment.segmentList){
 			if (s.getSegmentNodeByUID(UID) != null)
 				return s;
 		}
@@ -674,6 +674,6 @@ public class Node implements Serializable, Comparable<Node>{
 	}
 	@Override
 	public int hashCode() {
-		return 51 + this.webID;
+		return new Integer(this.webID).hashCode();
 	}
 }

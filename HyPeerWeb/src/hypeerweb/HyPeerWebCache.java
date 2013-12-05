@@ -14,8 +14,8 @@ import java.util.HashMap;
  * Node objects may not reflect what the actual values are
  * @author isaac
  */
-public class NodeCache implements HyPeerWebInterface, Serializable{
-	public static final String className = NodeCache.class.getName();
+public class HyPeerWebCache implements HyPeerWebInterface, Serializable{
+	public static final String className = HyPeerWebCache.class.getName();
 	public enum SyncType{ADD, REMOVE, REPLACE}
 	public final TreeMap<Integer, Node> nodes = new TreeMap();
 	public final HashMap<Integer, HashSet<Node>> segments = new HashMap();
@@ -25,7 +25,7 @@ public class NodeCache implements HyPeerWebInterface, Serializable{
 	 * overwrite any data of the same networkID
 	 * @param cache the cache to merge with
 	 */
-	public void merge(NodeCache cache){
+	public void merge(HyPeerWebCache cache){
 		//Overwrite data with same network ID
 		for (Integer netID: cache.segments.keySet()){
 			HashSet<Node> refs = segments.get(netID);
@@ -53,7 +53,7 @@ public class NodeCache implements HyPeerWebInterface, Serializable{
 	}
 	/**
 	 * Adds a cached node to the cache
-	 * @param faux a NodeCache.Node
+	 * @param faux a HyPeerWebCache.Node
 	 * @param sync whether to gather a list of modified nodes,
 	 * based on the new links shown of the added node
 	 * @return a list of nodes that need to be synced, if "sync" was enabled
@@ -97,7 +97,7 @@ public class NodeCache implements HyPeerWebInterface, Serializable{
 	}
 	/**
 	 * Removes a cached node from the cache
-	 * @param faux a NodeCache.Node
+	 * @param faux a HyPeerWebCache.Node
 	 * @param sync whether to gather a list of modified nodes,
 	 * based on the links of the removed node
 	 * @return a list of nodes that need to be synced, if "sync" was enabled
@@ -115,17 +115,17 @@ public class NodeCache implements HyPeerWebInterface, Serializable{
 	}
 	
 	/**
-	 * Replaces the node with the faux node; the node to replace
+	 * Replaces the node with the faux node; the faux node
 	 * should not be a proxy node (but this is not a requirement);
-	 * you should create a cached node and remove it, instead of a proxy node
-	 * @param real the node to replace
-	 * @param faux the replacement node
+	 * you should create a cached node and replace it, instead of a proxy node
+	 * @param webID the webID of the node to replace
+	 * @param real the replacement node
 	 * @param sync whether to gather a list of modified nodes,
 	 * based on the links of the replaced node
 	 * @return a list of nodes that need to be synced, if "sync" was enabled
 	 */
-	public int[] replaceNode(hypeerweb.Node real, Node faux, boolean sync){
-		return replaceNode(real.getWebId(), faux, sync);
+	public int[] replaceNode(int webID, hypeerweb.Node real, boolean sync){
+		return replaceNode(webID, nodes.get(real.getWebId()), sync);
 	}
 	/**
 	 * Replaces the node of "webID" with the faux node
@@ -216,7 +216,7 @@ public class NodeCache implements HyPeerWebInterface, Serializable{
 		}
 		return dirty;
 	}
-	private int[] convertToPrimitive(HashSet<Integer> set){
+	private static int[] convertToPrimitive(HashSet<Integer> set){
 		//Get rid of -1, since this is just a place-holder
 		set.remove(-1);
 		Integer[] obj = set.toArray(new Integer[set.size()]);
@@ -264,7 +264,7 @@ public class NodeCache implements HyPeerWebInterface, Serializable{
 		public Node(hypeerweb.Node real){
 			webID = real.getWebId();
 			height = real.getHeight();
-			HyPeerWebSegment host = real.getHostSegment();
+			Segment host = real.getHostSegment();
 			networkID = host != null ? host.getWebId() : -1;
 			//Folds
 			hypeerweb.Node temp;
@@ -405,6 +405,16 @@ public class NodeCache implements HyPeerWebInterface, Serializable{
 				return 0;
 			int nh = node.getHeight();
 			return (height == nh ? webID < id : height < nh) ? -1 : 1;
+		}
+		@Override
+		public boolean equals(Object obj){
+			if (obj == null || !(obj instanceof Node))
+				return false;
+			return this.webID == ((Node) obj).webID;
+		}
+		@Override
+		public int hashCode(){
+			return new Integer(this.webID).hashCode();
 		}
 		@Override
 		public String toString(){

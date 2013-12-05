@@ -3,8 +3,8 @@ package chat.client;
 import chat.server.ChatServer;
 import chat.server.ChatServer.ChatUser;
 import communicator.*;
-import hypeerweb.NodeCache;
-import hypeerweb.NodeCache.Node;
+import hypeerweb.HyPeerWebCache;
+import hypeerweb.HyPeerWebCache.*;
 import java.awt.*;
 import java.awt.event.*;
 import java.util.ArrayList;
@@ -44,7 +44,7 @@ public class ChatClient extends JFrame{
 	private static RemoteAddress server;
 	protected static ChatClient instance;
 	protected static ChatUser activeUser;						//The user associated with this client
-	protected static NodeCache nodeCache = null;				//List of all nodes in HyPeerWeb
+	protected static HyPeerWebCache nodeCache = null;			//List of all nodes in HyPeerWeb
 	private static Node selected;								//The selected node
 	private static String subnetName;
 	//List of all chat users
@@ -437,7 +437,7 @@ public class ChatClient extends JFrame{
 	}
 	
 	//LISTENERS
-	public static void registerServer(RemoteAddress addr, NodeCache cache, ChatUser active, ChatUser[] users){
+	public static void registerServer(RemoteAddress addr, HyPeerWebCache cache, ChatUser active, ChatUser[] users){
 		server = addr;
 		chatUsers.clear();
 		activeUser = active;
@@ -458,21 +458,16 @@ public class ChatClient extends JFrame{
 	public static void updateUser(int userid, String username, int networkid){
 		chat.updateUser(userid, username, networkid);
 	}
-	public static void updateNodeCache(Node affectedNode, NodeCache.SyncType type, Node[] updatedNodes){
-		if (nodeCache != null){
-			switch (type){
-				case ADD:
-					nodeCache.addNode(affectedNode, false);
-					break;
-				case REMOVE:
-					nodeCache.removeNode(affectedNode, false);
-					break;
-			}
-			for (NodeCache.Node node : updatedNodes)
-				nodeCache.addNode(node, false);
+	public static void updateNodeCache(int[] removedNodes, Node[] addedNodes){
+		if (isConnected()){
+			//Always remove nodes before adding
+			//That way, we can replace a node by first removing the old
+			for (int webID: removedNodes)
+				nodeCache.removeNode(webID, false);
+			for (Node node: addedNodes)
+				nodeCache.addNode(node, false);			
 			//todo update listtab, graphtab, nodeinfo
 			listTab.draw();
-			
 		}
 	}
 	public static void receiveMessage(int senderID, int recipientID, String mess){

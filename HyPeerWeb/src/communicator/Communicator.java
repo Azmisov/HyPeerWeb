@@ -31,7 +31,7 @@ public class Communicator extends Thread{
 	private static final HashMap<Class<?>, ProxyType> validProxies = new HashMap(){{
 		put(Node.class, ProxyType.NODE);
 		put(Links.class, ProxyType.LINKS);
-		put(HyPeerWebSegment.class, ProxyType.SEGMENT);
+		put(Segment.class, ProxyType.SEGMENT);
 	}};
 	
 	/**
@@ -156,14 +156,14 @@ public class Communicator extends Thread{
 		switch (type){
 			case LINKS:
 			case NODE:
-				for (HyPeerWebSegment segment : HyPeerWebSegment.segmentList) {
+				for (Segment segment : Segment.segmentList) {
 					Node node = segment.getSegmentNodeByUID(raw_uid);
 					if (node != null)
 						return type == ProxyType.LINKS ? node.L : node;
 				}
 			//Segments are also nodes, so if NODE fails, check SEGMENT
 			case SEGMENT:
-				for (HyPeerWebSegment segment : HyPeerWebSegment.segmentList) {
+				for (Segment segment : Segment.segmentList) {
 					if (segment.UID == raw_uid)
 						return type == ProxyType.LINKS ? segment.L : segment;
 				}

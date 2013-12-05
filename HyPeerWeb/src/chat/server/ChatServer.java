@@ -13,6 +13,7 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Random;
 
 /**
@@ -25,10 +26,10 @@ public class ChatServer{
 	private static ChatServer instance;
 	private static boolean spawningComplete = false;
 	//Inception web
-	private static HyPeerWebSegment<Node> segment;
+	private static Segment<Node> segment;
 	private static String networkName = "";
 	//Node cache for the entire HyPeerWeb
-	private static NodeCache cache;
+	private static HyPeerWebCache cache;
 	//Cached list of all users
 	private static final Random randomName = new Random();
 	private static final HashMap<Integer, ChatUser> users = new HashMap();
@@ -36,7 +37,7 @@ public class ChatServer{
 	private static final HashMap<Integer, ChatUser> clients = new HashMap();
 	
 	private ChatServer(){
-		segment = new HyPeerWebSegment("HyPeerWeb.db", -1);
+		segment = new Segment("HyPeerWeb.db", -1);
 		Communicator.startup(0);
 	}
 	/**
@@ -79,7 +80,7 @@ public class ChatServer{
 		//Send the new client the node cache and user list
 		Command register = new Command(
 			ChatClient.className, "registerServer",
-			new String[]{RemoteAddress.className, NodeCache.className, ChatUser.className, ChatUser.classNameArr},
+			new String[]{RemoteAddress.className, HyPeerWebCache.className, ChatUser.className, ChatUser.classNameArr},
 			new Object[]{Communicator.getAddress(), cache, user, users.values().toArray(new ChatUser[users.size()])}
 		);
 		Communicator.request(client, register, false);
@@ -164,7 +165,7 @@ public class ChatServer{
 			else{
 				Command spawn = new Command(
 					ChatServer.className, "_spawn",
-					new String[]{RemoteAddress.className, HyPeerWebSegment.className},
+					new String[]{RemoteAddress.className, Segment.className},
 					new Object[]{Communicator.getAddress(), segment}
 				);
 				Communicator.request(spawner, spawn, false);
@@ -182,12 +183,12 @@ public class ChatServer{
 		}
 		//This is a new network; no spawning necessary
 		if (spawner == null)
-			cache = new NodeCache();
+			cache = new HyPeerWebCache();
 		//Auto-register client
 		if (leecher != null)
 			registerClient(leecher);
 	}
-	protected static void _spawn(RemoteAddress rem, HyPeerWebSegment seg){
+	protected static void _spawn(RemoteAddress rem, Segment seg){
 		//Listener will execute on this segment/server
 		segment.addSegment(seg, new NodeListener(
 			ChatServer.className, "_spawnSendData",
@@ -198,12 +199,12 @@ public class ChatServer{
 	protected static void _spawnSendData(Node n, RemoteAddress rem){		
 		Command transfer = new Command(
 			ChatServer.className, "_spawnReceiveData",
-			new String[]{NodeCache.className, ChatUser.classNameArr},
+			new String[]{HyPeerWebCache.className, ChatUser.classNameArr},
 			new Object[]{cache, users.values().toArray(new ChatUser[users.size()])}
 		);
 		Communicator.request(rem, transfer, false);
 	}
-	protected static void _spawnReceiveData(NodeCache spawn_cache, ChatUser[] spawn_users){
+	protected static void _spawnReceiveData(HyPeerWebCache spawn_cache, ChatUser[] spawn_users){
 		cache = spawn_cache;
 		for (ChatUser usr: spawn_users)
 			users.put(usr.id, usr);
@@ -249,31 +250,34 @@ public class ChatServer{
 	 */
 	public static void addNode(){
 		hypeerweb.Node newNode = new hypeerweb.Node(0, 0);
-		segment.addNode(newNode, new NodeListener() {
-			@Override
-			public void callback(Node n) {
-				resyncCache(n, NodeCache.SyncType.ADD);
-			}
-		});
+		segment.addNode(newNode, new NodeListener(
+			className, "_addNode"
+		));
+	}
+	protected static void _addNode(Node newNode){
+		int[] cache.addNode(newNode, true);
+		resyncCache(n, HyPeerWebCache.SyncType.ADD);
 	}
 	/**
 	 * Deletes a node from the HyPeerWeb and tells the nodeListeners about it.
 	 * @param webID the webID of the node to delete
 	 */
 	public static void removeNode(int webID){
-		segment.removeNode(webID, new NodeListener(){
-			@Override
-			public void callback(Node n) {
-				resyncCache(n, NodeCache.SyncType.REMOVE);
-			}
-		});
+		segment.removeNode(webID, new NodeListener(
+			className, "_removeNode"
+		));
+	}
+	protected static void _removeNode(Node removed, Node replaced, int oldWebID){
+		int[] dirty1 = cache.removeNode(removed, true),
+			  dirty2 = cache.replaceNode(oldWebID, replaced, true);
+		
 	}
 	/**
 	 * Resyncs the node cache to the actual data in the HyPeerWeb
 	 * @param n the Node that changed
 	 * @param type the change type
 	 */
-	private static void resyncCache(Node n, NodeCache.SyncType type){
+	private static void resyncCache(Node n, int replaceWebID, HyPeerWebCache.SyncType type){
 		//These are a list of dirty nodes in our cache
 		int[] dirty = new int[1];
 		switch (type){
@@ -283,14 +287,16 @@ public class ChatServer{
 			case REMOVE:
 				dirty = cache.removeNode(n, true);
 				break;
+			case REPLACE:
+				dirty = cache.replaceNode(replaceWebID, null, spawningComplete)
 		}
 		//Retrieve all dirty nodes
-		NodeCache.Node clean[] = new NodeCache.Node[dirty.length];
+		HyPeerWebCache.Node clean[] = new HyPeerWebCache.Node[dirty.length];
 		//populate clean array
-		for(NodeCache.Node node : clean)
+		for(HyPeerWebCache.Node node : clean)
 			cache.addNode(node, false);
 		//Notify all listeners that the cache changed
-		for(ChatUser user : clients.values())
+		for (ChatUser user : clients.values())
 			user.client.updateNodeCache(cache.nodes.get(n.getWebId()), type, clean);
 	}
 	
