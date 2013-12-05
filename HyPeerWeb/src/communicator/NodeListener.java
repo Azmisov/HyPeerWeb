@@ -10,6 +10,8 @@ import hypeerweb.Node;
  */
 public class NodeListener extends Command{
 	public static final String className = NodeListener.class.getName();
+	private boolean isRemote = false;
+	private RemoteAddress origin;
 	
 	/**
 	 * Create a new node listener
@@ -39,6 +41,15 @@ public class NodeListener extends Command{
 		super(cname, mname, ptypes, pvals);
 		addParameter(Node.className);
 	}
+	/**
+	 * Should this listener be executed on the machine that created it?
+	 * @param enabled true, to enable remote execution
+	 */
+	public NodeListener setRemote(boolean enabled){
+		isRemote = enabled;
+		origin = enabled ? Communicator.getAddress() : null;
+		return this;
+	}
 	
 	/**
 	 * Runs the callback on this node
@@ -46,7 +57,9 @@ public class NodeListener extends Command{
 	 */
 	public void callback(Node n){
 		setParameter(0, n);
-		execute();
+		//Should we execute this callback remotely?
+		if (!isRemote) execute();
+		else Communicator.request(origin, this, false);
 		setParameter(0, null);
 	}
 }

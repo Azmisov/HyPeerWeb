@@ -100,3 +100,4 @@ Questions:
 - can we cache fold-state? in node proxies
 - what if we send a node across the net that used localhost for IP?
 - make sure id/height caching is working properly
+- how do we guarantee NodeListener.callback(null) executes on the original machine?

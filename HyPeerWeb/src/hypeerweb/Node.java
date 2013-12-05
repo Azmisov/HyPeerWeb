@@ -650,6 +650,16 @@ public class Node implements Serializable, Comparable<Node>{
 	public void executeRemotely(NodeListener listener){
 		listener.callback(this);
 	}
+	/**
+	 * Convert this node to a cached one; NOTE: only use
+	 * this to convert single nodes; to convert many nodes
+	 * at once, use Segment.getCache()
+	 * @return a cached version of this node
+	 */
+	public HyPeerWebCache.Node convertToCached(){
+		HyPeerWebCache c = new HyPeerWebCache();
+		return c.createCachedNode(this);
+	}
 	
 	//CLASS OVERRIDES
 	public Object writeReplace() throws ObjectStreamException {

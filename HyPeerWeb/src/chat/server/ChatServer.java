@@ -13,7 +13,8 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.List;
+import java.util.HashSet;
+import java.util.Map.Entry;
 import java.util.Random;
 
 /**
@@ -30,6 +31,8 @@ public class ChatServer{
 	private static String networkName = "";
 	//Node cache for the entire HyPeerWeb
 	private static HyPeerWebCache cache;
+	private static final ArrayList<Integer> syncRequests = new ArrayList();
+	private static final ArrayList<SyncRequest> syncResults = new ArrayList();
 	//Cached list of all users
 	private static final Random randomName = new Random();
 	private static final HashMap<Integer, ChatUser> users = new HashMap();
@@ -255,8 +258,8 @@ public class ChatServer{
 		));
 	}
 	protected static void _addNode(Node newNode){
-		int[] cache.addNode(newNode, true);
-		resyncCache(n, HyPeerWebCache.SyncType.ADD);
+		HyPeerWebCache.Node clean = newNode.convertToCached();
+		syncCache(cache.addNode(clean, true), clean, null);
 	}
 	/**
 	 * Deletes a node from the HyPeerWeb and tells the nodeListeners about it.
@@ -268,36 +271,111 @@ public class ChatServer{
 		));
 	}
 	protected static void _removeNode(Node removed, Node replaced, int oldWebID){
-		int[] dirty1 = cache.removeNode(removed, true),
-			  dirty2 = cache.replaceNode(oldWebID, replaced, true);
-		
+		HashSet<Integer> dirty = cache.removeNode(removed.convertToCached(), true);
+		//Replaced node is both an addedNode and a removedNode
+		HyPeerWebCache.Node cleanReplace = replaced.convertToCached();
+		dirty.addAll(cache.replaceNode(oldWebID, cleanReplace, true));
+		syncCache(dirty, cleanReplace, new int[]{removed.getWebId(), oldWebID});
 	}
 	/**
 	 * Resyncs the node cache to the actual data in the HyPeerWeb
-	 * @param n the Node that changed
-	 * @param type the change type
+	 * @param addedNodes nodes that have been added or changed
+	 * @param prefetched a node that has been updated, but has already been cached
+	 * @param removedNodes nodes that have been removed
 	 */
-	private static void resyncCache(Node n, int replaceWebID, HyPeerWebCache.SyncType type){
-		//These are a list of dirty nodes in our cache
-		int[] dirty = new int[1];
-		switch (type){
-			case ADD:
-				dirty = cache.addNode(n, true);
-				break;
-			case REMOVE:
-				dirty = cache.removeNode(n, true);
-				break;
-			case REPLACE:
-				dirty = cache.replaceNode(replaceWebID, null, spawningComplete)
+	private static void syncCache(HashSet<Integer> addedNodes, HyPeerWebCache.Node prefetched, int[] removedNodes){
+		//We need to retrieve cached versions of all addedNodes
+		//Group them by networkID, and then delegate each segment to build a cache
+		HashMap<Integer, ArrayList<Integer>> grouped = new HashMap();
+		for (Integer id: addedNodes){
+			//If the cache is missing an id, we're out of sync
+			HyPeerWebCache.Node cached = cache.nodes.get(id);
+			if (cached == null)
+				System.err.println("Warning! HyPeerWeb cache is out of sync!");
+			else{
+				int netID = cached.getNetworkId();
+				ArrayList<Integer> lst = grouped.get(netID);
+				boolean create = lst == null;
+				if (create)
+					lst = new ArrayList();
+				lst.add(id);
+				if (create)
+					grouped.put(netID, lst);
+			}
 		}
+		
+		//Get an index to hold this sync request
+		int reqSize = syncRequests.size(),
+			request_id = reqSize,
+			numGroups = grouped.size();
+		for (int i=0; i<reqSize; i++){
+			if (syncRequests.get(i) == 0){
+				syncRequests.set(i, numGroups);
+				request_id = i;
+			}
+		}
+		if (request_id == reqSize)
+			syncRequests.add(numGroups);
+		SyncRequest req = new SyncRequest(prefetched, removedNodes);
+		syncResults.set(request_id, req);
+		
 		//Retrieve all dirty nodes
-		HyPeerWebCache.Node clean[] = new HyPeerWebCache.Node[dirty.length];
-		//populate clean array
-		for(HyPeerWebCache.Node node : clean)
-			cache.addNode(node, false);
-		//Notify all listeners that the cache changed
-		for (ChatUser user : clients.values())
-			user.client.updateNodeCache(cache.nodes.get(n.getWebId()), type, clean);
+		ArrayList<HyPeerWebCache.Node> clean = new ArrayList();
+		NodeListener retrieve = new NodeListener(
+			className, "_syncCache_send",
+			new String[]{RemoteAddress.className, "int[]", "int"},
+			new Object[]{Communicator.getAddress(), null, request_id}
+		);
+		for (Entry<Integer, ArrayList<Integer>> entry: grouped.entrySet()){
+			//Convert parameters
+			ArrayList<Integer> lst = entry.getValue();
+			int netID = entry.getKey();
+			int[] dirty = new int[lst.size()];
+			for (int i=0, l=lst.size(); i<l; i++)
+				dirty[i] = lst.get(i).intValue();
+			//Execute the retrieval command
+			retrieve.setParameter(2, dirty);
+			SendVisitor visit = new SendVisitor(netID, retrieve);
+		}
+	}
+	protected static void _syncCache_send(Node n, RemoteAddress origin, int[] dirty, int request_id){
+		Communicator.request(origin, new Command(
+			className, "_syncCache_retrieve",
+			new String[]{HyPeerWebCache.nodeClassNameArr, "int"},
+			new Object[]{segment.getCache(dirty), request_id}
+		), false);
+	}
+	protected static void _syncCache_retrieve(HyPeerWebCache.Node[] clean, int request_id){
+		SyncRequest req = syncResults.get(request_id);
+		req.clean.addAll(Arrays.asList(clean));
+		//If this is the last request, broadcast the updated cache
+		int req_left = syncRequests.get(request_id);
+		if (req_left == 1){
+			//Build the update command
+			HyPeerWebCache.Node[] final_clean = req.clean.toArray(new HyPeerWebCache.Node[req.clean.size()]);
+			Command syncify = new Command(
+				ChatClient.className, "updateNodeCache",
+				new String[]{"int[]", HyPeerWebCache.nodeClassNameArr},
+				new Object[]{req.removed, final_clean}
+			);
+			//Notify all listeners that the cache changed
+			for (ChatUser user : clients.values())
+				Communicator.request(user.client, syncify, false);
+			//Update the server's cache
+			for (int webID: req.removed)
+				cache.removeNode(webID, false);
+			for (HyPeerWebCache.Node node: final_clean)
+				cache.addNode(node, false);
+		}
+		syncRequests.set(request_id, req_left-1);
+	}
+	private static class SyncRequest{
+		public final ArrayList<HyPeerWebCache.Node> clean = new ArrayList();
+		public final int[] removed;
+		public SyncRequest(HyPeerWebCache.Node prefetched, int[] removed){
+			clean.add(prefetched);
+			this.removed = removed;
+		}
 	}
 	
 	//CHAT

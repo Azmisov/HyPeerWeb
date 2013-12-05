@@ -1,5 +1,6 @@
 package hypeerweb;
 
+import communicator.Command;
 import communicator.NodeListener;
 import hypeerweb.visitors.SendVisitor;
 import hypeerweb.visitors.BroadcastVisitor;
@@ -61,7 +62,8 @@ public class Segment<T extends Node> extends Node{
 	/**
 	 * Removes the node of specified webid
 	 * @param webid the webid of the node to remove
-	 * @param listener the removal callback
+	 * @param listener the removal callback; this will execute on the machine
+	 * that the removed node is on, unless remote execution is enabled
 	 */
 	public void removeNode(int webid, NodeListener listener){
 		//Execute removeNode on the segment that contains "webid"
@@ -111,7 +113,8 @@ public class Segment<T extends Node> extends Node{
 	 * Note: webID, height, and Links (L) will be altered; all other
 	 * attributes will remain the same, however
 	 * @param node a pre-initialized Node
-	 * @param listener add node callback
+	 * @param listener add node callback; this will execute on the machine
+	 * that "node" is on, unless remote execution is enabled
 	 */
 	public void addNode(T node, NodeListener listener){
 		//Add node to UID list, so proxies can be resolved during the add process
@@ -363,30 +366,6 @@ public class Segment<T extends Node> extends Node{
 		return nodes.isEmpty();
 	}
 	/**
-	 * Criteria for a non-empty HyPeerWeb segment
-	 */
-	private static final Criteria nonemptyCriteria = new Criteria(){
-		@Override
-		public Node check(Node origin, Node friend) {
-			return ((Segment) friend).isSegmentEmpty() ? null : friend;
-		}
-	};
-	/**
-	 * Looks for a Segment that is not empty
-	 * @return the segment found
-	 */
-	public Segment getNonemptySegment(){
-		//There are no non-empty segments
-		if (isEmpty()) return null;
-		else{
-			//Recursively look through all neighbors, searching for a node
-			//that is not empty; this is terribly inefficient, but we don't
-			//know a better way to do it (at least not yet)
-			//findValidNode will always check current node first
-			return (Segment) findValidNode(nonemptyCriteria, -1, false);
-		}
-	}
-	/**
 	 * Looks for a node with this UID in this segment
 	 * @param UID the UID of the node to search for
 	 * @return the node with this UID; null, if it doesn't exist
@@ -427,6 +406,45 @@ public class Segment<T extends Node> extends Node{
 				SendVisitor visitor = new SendVisitor(webId, approximate, listener);
 				visitor.visit(getFirstSegmentNode());
 			}
+		}
+	}
+	/**
+	 * Retrieves the segment with the specified webid
+	 * @param webId the id of the segment to retrieve
+	 * @param approximate should we get the exact segment with webID, or just the
+	 * closest segment to that webID
+	 * @param listener retrieval callback
+	 */
+	public void getSegment(int webId, boolean approximate, NodeListener listener){
+		if (this.webID == webId)
+			listener.callback(this);
+		else{
+			SendVisitor visitor = new SendVisitor(webId, approximate, listener);
+			visitor.visit(this);
+		}
+	}
+	/**
+	 * Criteria for a non-empty HyPeerWeb segment
+	 */
+	private static final Criteria nonemptyCriteria = new Criteria(){
+		@Override
+		public Node check(Node origin, Node friend) {
+			return ((Segment) friend).isSegmentEmpty() ? null : friend;
+		}
+	};
+	/**
+	 * Looks for a Segment that is not empty
+	 * @return the segment found
+	 */
+	public Segment getNonemptySegment(){
+		//There are no non-empty segments
+		if (isEmpty()) return null;
+		else{
+			//Recursively look through all neighbors, searching for a node
+			//that is not empty; this is terribly inefficient, but we don't
+			//know a better way to do it (at least not yet)
+			//findValidNode will always check current node first
+			return (Segment) findValidNode(nonemptyCriteria, -1, false);
 		}
 	}
 	/**

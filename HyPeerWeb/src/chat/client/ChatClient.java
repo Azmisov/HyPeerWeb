@@ -465,7 +465,7 @@ public class ChatClient extends JFrame{
 			for (int webID: removedNodes)
 				nodeCache.removeNode(webID, false);
 			for (Node node: addedNodes)
-				nodeCache.addNode(node, false);			
+				nodeCache.addNode(node, false);
 			//todo update listtab, graphtab, nodeinfo
 			listTab.draw();
 		}
