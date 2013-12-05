@@ -450,7 +450,7 @@ public class GraphTab extends JPanel{
 						radius += radDelta;
 						hue += hueDelta;
 						//Give each dimension its own color
-						Color linkCol = new Color(Color.HSBtoRGB(hue, 1, 1));
+						Color linkCol = Color.getHSBColor(hue, 1, 1);
 						//Loop through all nodes in this dimension
 						ArrayList<DrawData> dimData = new ArrayList();
 						while (index < keys.length && keys[index] < maxDID){

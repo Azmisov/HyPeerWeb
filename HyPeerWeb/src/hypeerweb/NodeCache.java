@@ -7,46 +7,170 @@ import java.util.HashSet;
 import java.util.TreeMap;
 import hypeerweb.validator.HyPeerWebInterface;
 import hypeerweb.validator.NodeInterface;
+import java.util.HashMap;
 
 /**
  * Lightweight cache of a HyPeerWeb's nodes
  * Node objects may not reflect what the actual values are
- * @author inygaard
+ * @author isaac
  */
 public class NodeCache implements HyPeerWebInterface, Serializable{
 	public static final String className = NodeCache.class.getName();
-	public enum SyncType {ADD, REMOVE, REPLACE}
-	public TreeMap<Integer, Node> nodes = new TreeMap();
-	public HashSet<Integer> segments = new HashSet();
+	public enum SyncType{ADD, REMOVE, REPLACE}
+	public final TreeMap<Integer, Node> nodes = new TreeMap();
+	public final HashMap<Integer, HashSet<Node>> segments = new HashMap();
 	
+	/**
+	 * Merge a cache with this cache; the merging cache will
+	 * overwrite any data of the same networkID
+	 * @param cache the cache to merge with
+	 */
 	public void merge(NodeCache cache){
+		//Overwrite data with same network ID
+		for (Integer netID: cache.segments.keySet()){
+			HashSet<Node> refs = segments.get(netID);
+			if (refs != null){
+				for (Node n: refs)
+					nodes.remove(n.webID);
+			}
+		}
 		nodes.putAll(cache.nodes);
+		segments.putAll(cache.segments);
 	}
 	
+	/**
+	 * Adds a real HyPeerWeb node to the cache; this node
+	 * should not be a proxy node (but this is not a requirement);
+	 * you should create a cached node and add it, instead of a proxy node
+	 * @param real the HyPeerWeb node
+	 * @param sync whether to gather a list of modified nodes,
+	 * based on the new links shown of the added node
+	 * @return a list of nodes that need to be synced, if "sync" was enabled
+	 */
 	public int[] addNode(hypeerweb.Node real,  boolean sync){
 		Node n = new Node(real);
 		return addNode(n, sync);
 	}
+	/**
+	 * Adds a cached node to the cache
+	 * @param faux a NodeCache.Node
+	 * @param sync whether to gather a list of modified nodes,
+	 * based on the new links shown of the added node
+	 * @return a list of nodes that need to be synced, if "sync" was enabled
+	 */
 	public int[] addNode(Node faux, boolean sync){
-		int[] syncNodes = null;
-		if (sync)
-			 syncNodes = sync(faux, SyncType.ADD);
+		int[] syncNodes = sync ? sync(faux) : null;
 		nodes.put(faux.webID, faux);
+		//Add to segments list
+		HashSet<Node> set = segments.get(faux.networkID);
+		boolean create = set == null;
+		if (create)
+			set = new HashSet();
+		set.add(faux);
+		if (create)
+			segments.put(faux.networkID, set);
+		//Return list of dirty nodes
 		return syncNodes;
 	}
 	
+	/**
+	 * Removes a real HyPeerWeb node from the cache; this node
+	 * should not be a proxy node (but this is not a requirement);
+	 * you should create a cached node and remove it, instead of a proxy node
+	 * @param real the HyPeerWeb node
+	 * @param sync whether to gather a list of modified nodes,
+	 * based on the links of the removed node
+	 * @return a list of nodes that need to be synced, if "sync" was enabled
+	 */
 	public int[] removeNode(hypeerweb.Node real, boolean sync){
-		return removeNode(nodes.get(real.webID), sync);
+		return removeNode(real.getWebId(), sync);
 	}
+	/**
+	 * Removes a node with the specified webID
+	 * @param webID the webID of the node to remove
+	 * @param sync whether to gather a list of modified nodes,
+	 * based on the links of the removed node
+	 * @return a list of nodes that need to be synced, if "sync" was enabled
+	 */
+	public int[] removeNode(int webID, boolean sync){
+		return removeNode(nodes.get(webID), sync);
+	}
+	/**
+	 * Removes a cached node from the cache
+	 * @param faux a NodeCache.Node
+	 * @param sync whether to gather a list of modified nodes,
+	 * based on the links of the removed node
+	 * @return a list of nodes that need to be synced, if "sync" was enabled
+	 */
 	public int[] removeNode(Node faux, boolean sync){
-		int[] syncNodes = null;
-		if (sync)
-			syncNodes = sync(faux, SyncType.REMOVE);
+		int[] syncNodes = sync ? sync(faux) : null;
 		nodes.remove(faux.webID);
+		//Remove from segments list
+		HashSet<Node> set = segments.get(faux.networkID);
+		set.remove(faux);
+		if (set.isEmpty())
+			segments.remove(faux.networkID);
+		//Return a list of dirty nodes
 		return syncNodes;
 	}
 	
-	private int[] sync(Node faux, SyncType type){
+	/**
+	 * Replaces the node with the faux node; the node to replace
+	 * should not be a proxy node (but this is not a requirement);
+	 * you should create a cached node and remove it, instead of a proxy node
+	 * @param real the node to replace
+	 * @param faux the replacement node
+	 * @param sync whether to gather a list of modified nodes,
+	 * based on the links of the replaced node
+	 * @return a list of nodes that need to be synced, if "sync" was enabled
+	 */
+	public int[] replaceNode(hypeerweb.Node real, Node faux, boolean sync){
+		return replaceNode(real.getWebId(), faux, sync);
+	}
+	/**
+	 * Replaces the node of "webID" with the faux node
+	 * @param webID the webID of the node to replace
+	 * @param faux the replacement node
+	 * @param sync whether to gather a list of modified nodes,
+	 * based on the links of the replaced node
+	 * @return a list of nodes that need to be synced, if "sync" was enabled
+	 */
+	public int[] replaceNode(int webID, Node faux, boolean sync){
+		return replaceNode(nodes.get(webID), faux, sync);
+	}
+	/**
+	 * Replaces a cached node with another
+	 * @param old the the cached node to replace
+	 * @param faux the replacement node
+	 * @param sync whether to gather a list of modified nodes,
+	 * based on the links of the replaced node
+	 * @return a list of nodes that need to be synced, if "sync" was enabled
+	 */
+	public int[] replaceNode(Node old, Node faux, boolean sync){		
+		//Replace node is special in that the webID has changed
+		//So, instead of using sync() to get the symmetric difference,
+		//all of the old node's links are dirty
+		int[] syncNodes = null;
+		if (sync){
+			HashSet<Integer> dirty = new HashSet();
+			dirty.add(old.f);
+			dirty.add(old.sf);
+			dirty.add(old.isf);
+			for (int x: old.n) dirty.add(x);
+			for (int x: old.sn) dirty.add(x);
+			for (int x: old.isn) dirty.add(x);
+			syncNodes = convertToPrimitive(dirty);
+		}
+		
+		//Replace the node
+		removeNode(old, false);
+		addNode(faux, false);
+		
+		return syncNodes;
+	}
+	
+	//Gather a list of nodes that need to be updated
+	private int[] sync(Node faux){
 		Node cache = nodes.get(faux.webID);
 		//Compare the cached version and the faux/proxy/real version
 		HashSet<Integer> dirty = new HashSet();
@@ -64,20 +188,9 @@ public class NodeCache implements HyPeerWebInterface, Serializable{
 		dirty.addAll(syncNeighbors(cache.sn, faux.sn));
 		dirty.addAll(syncNeighbors(cache.isn, faux.isn));
 		
-		//Don't fetch "faux.webID" or "-1"
+		//Don't fetch "faux.webID" since we already have it
 		dirty.remove(faux.webID);
-		dirty.remove(-1);
-		
-		//TODO: account for different SyncType's
-		//i.e., replace sync type?
-				//todo remove dirty nodes
-		
-		Integer[] obj = dirty.toArray(new Integer[dirty.size()]);
-		int[] ret = new int[obj.length];
-		for (int i=0; i<obj.length; i++)
-			ret[i] = obj[i].intValue();
-		
-		return ret;
+		return convertToPrimitive(dirty);
 	}
 	private ArrayList<Integer> syncNeighbors(int[] cacheN, int[] fauxN){
 		//Assuming the two arrays are sorted,
@@ -103,6 +216,41 @@ public class NodeCache implements HyPeerWebInterface, Serializable{
 		}
 		return dirty;
 	}
+	private int[] convertToPrimitive(HashSet<Integer> set){
+		//Get rid of -1, since this is just a place-holder
+		set.remove(-1);
+		Integer[] obj = set.toArray(new Integer[set.size()]);
+		int[] ret = new int[obj.length];
+		for (int i=0; i<obj.length; i++)
+			ret[i] = obj[i].intValue();
+		return ret;
+	}
+	
+	/**
+	 * Update the cache to reflect a new network ID; if the new ID already
+	 * exists in the cache, the entries in the segment map will be merged
+	 * @param oldID the old id
+	 * @param newID the new id
+	 */
+	public void changeNetworkID(int oldID, int newID){
+		//Retrieve the old and new segment entries
+		if (oldID == newID) return;
+		HashSet<Node> oldSeg = segments.get(oldID), newSeg;
+		if (oldSeg == null) return;
+		newSeg = segments.get(newID);
+		//Create a new hashset object, if newSeg doesn't exist
+		boolean create = newSeg == null;
+		if (create)
+			newSeg = new HashSet();
+		//Change the network ID
+		for (Node n: oldSeg){
+			n.networkID = newID;
+			newSeg.add(n);
+		}
+		//Add to segment list, if it's a new entry
+		if (create)
+			segments.put(newID, newSeg);
+	}
 	
 	public class Node implements NodeInterface, Serializable{
 		//Network id
@@ -116,6 +264,8 @@ public class NodeCache implements HyPeerWebInterface, Serializable{
 		public Node(hypeerweb.Node real){
 			webID = real.getWebId();
 			height = real.getHeight();
+			HyPeerWebSegment host = real.getHostSegment();
+			networkID = host != null ? host.getWebId() : -1;
 			//Folds
 			hypeerweb.Node temp;
 			if ((temp = real.L.getFold()) != null)
@@ -146,25 +296,43 @@ public class NodeCache implements HyPeerWebInterface, Serializable{
 		public Node getFold(){
 			return nodes.get(f);
 		}
+		public int getRawFold(){
+			return f;
+		}
 		@Override
 		public Node getSurrogateFold(){
 			return nodes.get(sf);
+		}
+		public int getRawSurrogateFold(){
+			return sf;
 		}
 		@Override
 		public Node getInverseSurrogateFold(){
 			return nodes.get(isf);
 		}
+		public int getRawInverseSurrogateFold(){
+			return isf;
+		}
 		@Override
 		public Node[] getNeighbors(){
 			return mapToCached(n);
+		}
+		public int[] getRawNeighbors(){
+			return n;
 		}
 		@Override
 		public Node[] getSurrogateNeighbors(){
 			return mapToCached(sn);
 		}
+		public int[] getRawSurrogateNeighbors(){
+			return sn;
+		}
 		@Override
 		public Node[] getInverseSurrogateNeighbors(){
 			return mapToCached(isn);
+		}
+		public int[] getRawInverseSurrogateNeighbors(){
+			return isn;
 		}
 		
 		//SPECIALIZED GETTERS

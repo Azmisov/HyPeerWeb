@@ -397,6 +397,7 @@ public class Node implements Serializable, Comparable<Node>{
 	 * @return the neighbor with webID lower than this node
 	 */
 	public Node getParent() {
+		//NOTE: Any changes should be duplicated in NodeCache.Node
 		if (webID == 0)
 			return null;
 		int parID = webID & ~Integer.highestOneBit(webID);
@@ -411,6 +412,7 @@ public class Node implements Serializable, Comparable<Node>{
 	 * @return a list of children nodes
 	 */
 	public ArrayList<Node> getTreeChildren(){
+		//NOTE: Any changes should be duplicated in NodeCache.Node
 		HashSet<Integer>
 				generatedNeighbors = new HashSet(),
 				generatedInverseSurrogates = new HashSet();
@@ -443,6 +445,7 @@ public class Node implements Serializable, Comparable<Node>{
 	 * @return null if there is no parent, 
 	 */
 	public Node getTreeParent(){
+		//NOTE: Any changes should be duplicated in NodeCache.Node
 		if (webID == 0) return null;
 		//This algorithm is just the reverse of getTreeChildren()
 		//First check for a neighbor with the correct ID

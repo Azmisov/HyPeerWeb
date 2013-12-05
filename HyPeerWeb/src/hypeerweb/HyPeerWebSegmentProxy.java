@@ -27,8 +27,8 @@ public class HyPeerWebSegmentProxy extends HyPeerWebSegment{
 		request("addChild", new String[] {Node.className, NodeListener.className}, new Object[] {child, listener}, false);
 	}
 	@Override
-	protected void replaceNode(Node toReplace) {
-		request("replaceNode", new String[] {Node.className}, new Object[] {toReplace}, false);
+	protected void replaceNode(Node toReplace, NodeListener listener) {
+		request("replaceNode", new String[] {Node.className, NodeListener.className}, new Object[] {toReplace, listener}, false);
 	}
 	@Override
 	protected void disconnectNode(NodeListener listener) {
