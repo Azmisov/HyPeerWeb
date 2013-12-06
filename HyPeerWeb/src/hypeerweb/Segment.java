@@ -183,6 +183,12 @@ public class Segment<T extends Node> extends Node{
 		HAS_ONE {
 			@Override
 			public void addNode(Segment web, Node sec, NodeListener listener){
+				//Go get the segment that contains the first node, we'll start editing from there
+				web.getNode(0, false, new NodeListener(
+					Node.className, "_ONE_add_zero",
+					new String[]{Node.className, NodeListener.className},
+					new Object[]{sec, listener}
+				));
 				Node first = web.getFirstSegmentNode();
 				//Always modify heights before you start changing links
 				//Doing so will result in less network communications

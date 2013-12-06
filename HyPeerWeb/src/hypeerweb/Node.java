@@ -177,6 +177,35 @@ public class Node implements Serializable, Comparable<Node>{
 	}
 	
 	//MASS NODE UPDATES
+	protected static void _ONE_add_zeroid(Node zero, Node one, NodeListener listener){
+		//Update node zero to have connections
+		zero.L.setFold(one);
+		zero.L.addNeighbor(one);
+		//Broadcast state change and execute callback
+		//Host will be on the executing machine
+		zero.getHostSegment().changeState(HAS_MANY);
+	}
+	protected static void _ONE_add_oneid(Node one, Node zero, NodeListener listener){
+		//Update data for the new second node
+		one.resetLinks();
+		one.setHeight(1);
+		one.setWebID(1);
+		one.L.setFold(zero);
+		one.L.addNeighbor(zero);
+		//Host will be on executing machine
+		//If we're doing an addSegment op, there will be no host
+		Segment host = sec.getHostSegment();		
+		if (host != null)
+			host.nodes.put(1, sec);
+		//Update data for the first node
+		first.executeRemotely(new NodeListener(
+			className, "_ONE_editFirstNode",
+			new String[]{className, NodeListener.className},
+			new Object[]{sec, listener}
+		));
+		if (listener != null)
+			listener.callback(one);
+	}
 	protected static void _ONE_editSecondNode(Node sec, Node first, NodeListener listener){
 		//Update data for the new second node
 		sec.resetLinks();
