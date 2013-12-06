@@ -13,7 +13,6 @@ import javax.swing.event.ListSelectionListener;
 import javax.swing.event.TableModelListener;
 import javax.swing.table.*;
 import hypeerweb.validator.Validator;
-import java.util.Arrays;
 
 /**
  * List all nodes in HyPeerWeb, categorized by
@@ -41,6 +40,12 @@ public class ListTab extends JPanel{
 		EmptyBorder btnBorder = new EmptyBorder(7, 10, 7, 10);
 		JButton deleteAll = new JButton("Clear HyPeerWeb");
 		deleteAll.setBorder(btnBorder);
+		deleteAll.addActionListener(new ActionListener(){
+			@Override
+			public void actionPerformed(ActionEvent e){
+				ChatClient.removeAllNodes();
+			}
+		});
 		segmentPanel.add(deleteAll);
 		
 		JButton validateButton = new JButton("Validate");
