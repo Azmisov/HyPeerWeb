@@ -62,4 +62,16 @@ public class NodeListener extends Command{
 		else Communicator.request(origin, this, false);
 		setParameter(0, null);
 	}
+	
+	public void callback(Node n1, Node n2, int i){
+		setParameter(0, n1);
+		setParameter(1, n2);
+		setParameter(2, i);
+		//Should we execute this callback remotely?
+		if (!isRemote) execute();
+		else Communicator.request(origin, this, false);
+		setParameter(0, null);
+		setParameter(1, null);
+		setParameter(2, null);
+	}
 }

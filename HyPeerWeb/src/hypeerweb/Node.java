@@ -205,6 +205,14 @@ public class Node implements Serializable, Comparable<Node>{
 		if (listener != null)
 			listener.callback(sec);
 	}
+	protected static void _TWO_remove(Node tostay, Node removed, NodeListener listener){
+		tostay.L.removeAllNeighbors();
+		tostay.L.setFold(null);
+		tostay.setWebID(0);
+		tostay.setHeight(0);
+		tostay.getHostSegment().changeState(HAS_ONE);
+		removed.executeRemotely(listener);
+	}
 	protected static void _MANY_add_random(Node ranNode, Node child, NodeListener listener){
 		//Find a valid insertion point and add the child
 		ranNode.findInsertionNode().addChild(child, new NodeListener(
@@ -234,6 +242,7 @@ public class Node implements Serializable, Comparable<Node>{
 		));
 	}
 	protected static void _MANY_remove_disconnect(Node replaced, Node removed, NodeListener listener){
+		int oldWebId = replaced.webID;
 		//Remove node from list of nodes
 		//This remove is called on the same machine
 		removed.getHostSegment().nodes.remove(replaced.getWebId());
@@ -244,7 +253,7 @@ public class Node implements Serializable, Comparable<Node>{
 			removed.getHostSegment().nodes.put(newWebID, replaced);
 			replaced.replaceNode(removed, listener);
 		}
-		listener.callback(removed);
+		listener.callback(removed, replaced, oldWebId);
 	}
 	
 	//FIND VALID NODES

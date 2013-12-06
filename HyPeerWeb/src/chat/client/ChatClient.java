@@ -458,6 +458,9 @@ public class ChatClient extends JFrame{
 		//Finally, connect to the HyPeerWeb cache
 		nodeCache = cache;
 	}
+	public static void changeServer(RemoteAddress address){
+		server = address;
+	}
 	public static void updateNetworkName(String newName){
 		txtSubnetName.setText(newName);
 		subnetName = newName;

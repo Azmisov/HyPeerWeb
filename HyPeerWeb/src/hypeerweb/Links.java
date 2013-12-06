@@ -168,6 +168,14 @@ public class Links implements Serializable {
 	protected void removeNeighbor(Node n){
 		update(n, null, Type.NEIGHBOR);
 	}
+	
+	/**
+	 * Removes all neighbors from the node
+	 */
+	protected void removeAllNeighbors(){
+		highest.removeAll(neighbors);
+		neighbors.clear();
+	}
 	/**
 	 * Adds a Surrogate Neighbor
 	 * @param sn the new node
