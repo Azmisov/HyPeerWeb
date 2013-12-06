@@ -3,8 +3,9 @@ package chat.client;
 import chat.server.ChatServer;
 import chat.server.ChatServer.ChatUser;
 import communicator.*;
-import hypeerweb.HyPeerWebCache;
-import hypeerweb.HyPeerWebCache.*;
+import hypeerweb.SegmentCache;
+import hypeerweb.SegmentCache.*;
+import hypeerweb.NodeCache;
 import java.awt.*;
 import java.awt.event.*;
 import java.util.ArrayList;
@@ -44,8 +45,8 @@ public class ChatClient extends JFrame{
 	private static RemoteAddress server;
 	protected static ChatClient instance;
 	protected static ChatUser activeUser;						//The user associated with this client
-	protected static HyPeerWebCache nodeCache = null;			//List of all nodes in HyPeerWeb
-	private static Node selected;								//The selected node
+	protected static SegmentCache nodeCache = null;			//List of all nodes in HyPeerWeb
+	private static NodeCache selected;								//The selected node
 	private static String subnetName;
 	//List of all chat users
 	protected static HashMap<Integer, ChatUser> chatUsers = new HashMap();
@@ -420,7 +421,7 @@ public class ChatClient extends JFrame{
 			Communicator.request(server, sender, false);
 		}
 	}
-	protected static void setSelectedNode(Node n){
+	protected static void setSelectedNode(NodeCache n){
 		selected = n;
 		nodeSelect.setValue(n == null ? -1 : n.getWebId());
 		nodeInfo.updateInfo(n);
@@ -437,7 +438,7 @@ public class ChatClient extends JFrame{
 	}
 	
 	//LISTENERS
-	public static void registerServer(RemoteAddress addr, HyPeerWebCache cache, ChatUser active, ChatUser[] users){
+	public static void registerServer(RemoteAddress addr, SegmentCache cache, ChatUser active, ChatUser[] users){
 		server = addr;
 		chatUsers.clear();
 		activeUser = active;
@@ -458,16 +459,21 @@ public class ChatClient extends JFrame{
 	public static void updateUser(int userid, String username, int networkid){
 		chat.updateUser(userid, username, networkid);
 	}
-	public static void updateNodeCache(int[] removedNodes, Node[] addedNodes){
+	public static void updateNodeCache(int[] removedNodes, NodeCache[] addedNodes){
 		if (isConnected()){
 			//Always remove nodes before adding
 			//That way, we can replace a node by first removing the old
-			for (int webID: removedNodes)
-				nodeCache.removeNode(webID, false);
-			for (Node node: addedNodes)
-				nodeCache.addNode(node, false);
+			if (removedNodes != null){
+				for (int webID: removedNodes)
+					nodeCache.removeNode(webID, false);
+			}
+			if (addedNodes != null){
+				for (NodeCache node: addedNodes)
+					nodeCache.addNode(node, false);
+			}
 			//todo update listtab, graphtab, nodeinfo
 			listTab.draw();
+			graph.draw();
 		}
 	}
 	public static void receiveMessage(int senderID, int recipientID, String mess){
@@ -476,34 +482,34 @@ public class ChatClient extends JFrame{
 	
 	private static class NodeInfo extends AbstractTableModel{
 		ArrayList<String[]> data = new ArrayList();
-		public void updateInfo(Node n){
+		public void updateInfo(NodeCache n){
 			data.clear();
 			if (n != null){
-				Node temp;
-				if ((temp = n.getFold()) != null)
+				int temp;
+				if ((temp = n.getRawFold()) != -1)
 					addInfo("F:",temp);
-				if ((temp = n.getSurrogateFold()) != null)
+				if ((temp = n.getRawFold()) != -1)
 					addInfo("SF:",temp);
-				if ((temp = n.getInverseSurrogateFold()) != null)
+				if ((temp = n.getRawInverseSurrogateFold()) != -1)
 					addInfo("ISF:",temp);
-				Node[] temp2;
-				if ((temp2 = n.getNeighbors()).length > 0)
+				int[] temp2;
+				if ((temp2 = n.getRawNeighbors()).length > 0)
 					addInfo("Ns:",temp2);
-				if ((temp2 = n.getSurrogateNeighbors()).length > 0)
+				if ((temp2 = n.getRawSurrogateNeighbors()).length > 0)
 					addInfo("SNs:",temp2);
-				if ((temp2 = n.getInverseSurrogateNeighbors()).length > 0)
+				if ((temp2 = n.getRawInverseSurrogateNeighbors()).length > 0)
 					addInfo("ISNs:",temp2);
 			}
 			fireTableStructureChanged();
 			connectList.getColumnModel().getColumn(0).setPreferredWidth(12);
 		}
-		private void addInfo(String name, Node n){
-			data.add(new String[]{boldify(name), String.valueOf(n.getWebId())});
+		private void addInfo(String name, int n){
+			data.add(new String[]{boldify(name), String.valueOf(n)});
 		}
-		private void addInfo(String name, Node[] n){
+		private void addInfo(String name, int[] n){
 			StringBuilder sb = new StringBuilder();
 			for (int i=0; i<n.length; i++){
-				sb.append(n[i].getWebId());
+				sb.append(n[i]);
 				if (i+1 != n.length)
 					sb.append(",");
 			}

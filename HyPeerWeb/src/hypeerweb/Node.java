@@ -656,8 +656,8 @@ public class Node implements Serializable, Comparable<Node>{
 	 * at once, use Segment.getCache()
 	 * @return a cached version of this node
 	 */
-	public HyPeerWebCache.Node convertToCached(){
-		HyPeerWebCache c = new HyPeerWebCache();
+	public NodeCache convertToCached(){
+		SegmentCache c = new SegmentCache();
 		return c.createCachedNode(this);
 	}
 	

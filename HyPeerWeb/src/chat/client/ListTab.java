@@ -1,6 +1,6 @@
 package chat.client;
 
-import hypeerweb.HyPeerWebCache.Node;
+import hypeerweb.NodeCache;
 import java.awt.BorderLayout;
 import java.awt.Dimension;
 import java.awt.event.ActionEvent;
@@ -13,6 +13,7 @@ import javax.swing.event.ListSelectionListener;
 import javax.swing.event.TableModelListener;
 import javax.swing.table.*;
 import hypeerweb.validator.Validator;
+import java.util.Arrays;
 
 /**
  * List all nodes in HyPeerWeb, categorized by
@@ -24,6 +25,7 @@ public class ListTab extends JPanel{
 	private static MyTableModel tabModel = new MyTableModel();
 	private static JComboBox segmentBox;
 	private static segmentModel segModel = new segmentModel();
+	private static NodeCache[] nodeList;
 	
 	public ListTab(){
 		super(new BorderLayout());
@@ -46,7 +48,7 @@ public class ListTab extends JPanel{
         validateButton.addActionListener(new ActionListener(){
 			@Override
 			public void actionPerformed(ActionEvent e){
-				boolean pass = ChatClient.nodeCache == null || (new Validator(ChatClient.nodeCache)).validate();
+				boolean pass = !ChatClient.isConnected() || (new Validator(ChatClient.nodeCache)).validate();
 				ChatClient.showPopup(
 					pass ? JOptionPane.INFORMATION_MESSAGE : JOptionPane.ERROR_MESSAGE,
 					pass ? "Validation Passed!" : "Validation Failed!"
@@ -87,6 +89,7 @@ public class ListTab extends JPanel{
 	}
 	
 	public void draw(){
+		nodeList = (NodeCache[]) ChatClient.nodeCache.getOrderedListOfNodes();
 		table.repaint();
 		segModel.updateSegments();
 		segmentBox.repaint();
@@ -139,10 +142,10 @@ public class ListTab extends JPanel{
 				return null;
 			
 			String result = "";
-			Node node = (Node) ChatClient.nodeCache.nodes.values().toArray()[rowIndex];
+			NodeCache node = nodeList[rowIndex];
 			int selection = segModel.getSelection();
 			
-			if(selection == -1 || selection == node.getNetworkId()){
+			if (selection == -1 || selection == node.getNetworkId()){
 				switch(columnIndex){
 					case 0:
 						result = "1";
@@ -154,28 +157,28 @@ public class ListTab extends JPanel{
 						result += node.getHeight();
 						break;
 					case 3:
-						for(Node n : node.getNeighbors())
-							result += n.getWebId() + " ";
+						for(int n : node.getRawNeighbors())
+							result += n + " ";
 						break;
 					case 4:
-						for(Node n : node.getSurrogateNeighbors())
-							result += n.getWebId() + " ";
+						for(int n : node.getRawSurrogateNeighbors())
+							result += n + " ";
 						break;
 					case 5:
-						for(Node n : node.getInverseSurrogateNeighbors())
-							result += n.getWebId() + " ";
+						for(int n : node.getRawInverseSurrogateNeighbors())
+							result += n + " ";
 						break;
 					case 6:
-						if(node.getFold() != null)
-							result += node.getFold().getWebId();
+						if(node.getRawFold() != -1)
+							result += node.getRawFold();
 						break;
 					case 7:
-						if(node.getSurrogateFold() != null)
-							result += node.getSurrogateFold().getWebId();
+						if(node.getRawSurrogateFold() != -1)
+							result += node.getRawSurrogateFold();
 						break;
 					case 8:
-						if(node.getInverseSurrogateFold() != null)
-							result += node.getInverseSurrogateFold().getWebId();
+						if(node.getRawInverseSurrogateFold() != -1)
+							result += node.getRawInverseSurrogateFold();
 						break;
 				}
 			}	
@@ -263,7 +266,7 @@ public class ListTab extends JPanel{
 		public void valueChanged(ListSelectionEvent e) {
 			ListSelectionModel lsm = (ListSelectionModel)e.getSource();
 			int index = lsm.getMinSelectionIndex();
-			Node n = (Node) ChatClient.nodeCache.nodes.values().toArray()[index];
+			NodeCache n = (NodeCache) ChatClient.nodeCache.nodes.values().toArray()[index];
 			ChatClient.setSelectedNode(n);	
 		}
 	}

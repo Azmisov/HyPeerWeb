@@ -47,7 +47,7 @@ public class HyPeerWebTest {
 			web.removeAllNodes(new SyncListener(){
 				@Override
 				public void callback(Node n){
-					HyPeerWebCache.Node temp;
+					NodeCache temp;
 					int old_size = 0;
 					boolean halt;
 					for (int i=1; i<=MAX_SIZE; i++){
@@ -61,7 +61,7 @@ public class HyPeerWebTest {
 									STOP_TESTS = true;
 								}
 								if (final_i % TEST_EVERY == 0){
-									HyPeerWebCache cache = web.getCache(0);
+									SegmentCache cache = web.getCache(0);
 									Validator x = new Validator(cache);
 									try{
 										if (!x.validate()){
@@ -130,7 +130,7 @@ public class HyPeerWebTest {
 	@Test
 	public void testRemoveRandom() throws Exception {
 		begin("REMOVING RANDOM");
-		HyPeerWebCache.Node temp, rand;
+		SegmentCache.Node temp, rand;
 		int old_size = getSize();
 		for (int i=1; i<=MAX_SIZE; i++){
 			rand = getRandom();
@@ -146,7 +146,7 @@ public class HyPeerWebTest {
 	public void testSendValid() throws Exception {
 		//Test send node
 		begin("SENDING VALID");
-		HyPeerWebCache.Node f1, f2, found;
+		SegmentCache.Node f1, f2, found;
 		for (int j=0; j<SEND_TESTS; j++){
 			f1 = getRandom();
 			do{
@@ -184,7 +184,7 @@ public class HyPeerWebTest {
 	public void testBroadcast() throws Exception {
 		begin("TESTING BROADCAST");
 		for (int i=0; i<BROADCAST_TESTS; i++){
-			HyPeerWebCache.Node origin = getRandom();
+			SegmentCache.Node origin = getRandom();
 			//System.out.println("Starting with:"+origin);
 			ListNodesVisitor x = new ListNodesVisitor(ListNodesVisitorListener);
 			//TODO: Figure out how to get a node
@@ -197,7 +197,7 @@ public class HyPeerWebTest {
 				}
 			}
 			assertTrue(x.getNodeList().size() == getSize());
-			for(HyPeerWebCache.Node n : x.getNodeList()) {
+			for(SegmentCache.Node n : x.getNodeList()) {
 				//TODO: Figure out how to get a node
 				assertTrue(web.getNode(n.getWebId()) != null);
 			}

@@ -461,8 +461,8 @@ public class Segment<T extends Node> extends Node{
 	 * @param networkID the ID for the new cache
 	 * @return a node cache object
 	 */
-	public HyPeerWebCache getCache(){
-		HyPeerWebCache c = new HyPeerWebCache();
+	public SegmentCache getCache(){
+		SegmentCache c = new SegmentCache();
 		for (Node n: nodes.values())
 			c.addNode(n, false);
 		return c;
@@ -472,14 +472,14 @@ public class Segment<T extends Node> extends Node{
 	 * @param fetch the list of webID's to cache
 	 * @return a list of cached nodes
 	 */
-	public HyPeerWebCache.Node[] getCache(int[] fetch){
-		HyPeerWebCache temp = new HyPeerWebCache();
+	public NodeCache[] getCache(int[] fetch){
+		SegmentCache temp = new SegmentCache();
 		for (int id: fetch){
 			Node n = nodes.get(id);
 			if (n != null)
 				temp.addNode(n, false);
 		}
-		return temp.nodes.values().toArray(new HyPeerWebCache.Node[temp.nodes.size()]);
+		return temp.nodes.values().toArray(new NodeCache[temp.nodes.size()]);
 	}
 	public void store() throws Exception{
 		//TODO: NOT IMPLEMENTED

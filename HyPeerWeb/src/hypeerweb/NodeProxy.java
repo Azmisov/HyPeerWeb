@@ -78,8 +78,8 @@ public class NodeProxy extends Node{
 		return (Node) request("getParent");
 	}
 	@Override
-	public HyPeerWebCache.Node convertToCached(){
-		return (HyPeerWebCache.Node) request("convertToCached");
+	public NodeCache convertToCached(){
+		return (NodeCache) request("convertToCached");
 	}
 	
 	//SETTERS

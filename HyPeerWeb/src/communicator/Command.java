@@ -9,15 +9,16 @@ import java.util.Arrays;
  * Implements the Command pattern in such a way that the command can be sent over a socket.
  * @author Scott Woodfield
  */
-public class Command implements Serializable{	
+public class Command implements Serializable{
+	public static final String className = Command.class.getName();
 	//The class in which the method is defined.
-	protected final String className;
+	protected final String clazz;
 	//The name of the method to be invoked.
 	public final String methodName;
 	//Fully qualified parameter class names (or raw primitive name: "int", "boolean", etc)
 	protected String[] paramTypes;
 	//The actual parameters to be used when the method is invoked.
-	protected Object[] paramVals;
+	public Object[] paramVals;
 	//Indicates whether a result is expected.
 	protected boolean sync;
 	//localObjectId of the object of target object
@@ -40,7 +41,7 @@ public class Command implements Serializable{
 	 * @param pvals the actual parameters to be used when invoking the method.
 	 */
 	public Command(String cname, String mname, String[] ptypes, Object[] pvals){
-		className = cname;
+		clazz = cname;
 		methodName = mname;
 		paramTypes = ptypes == null ? new String[0] : ptypes;
 		paramVals = pvals == null ? new Object[0] : pvals;
@@ -71,6 +72,14 @@ public class Command implements Serializable{
 	public void setParameter(int index, Object o){
 		paramVals[index] = o;
 	}
+	/**
+	 * Retrieve a parameter value
+	 * @param index parameter index
+	 * @return Object at this parameter
+	 */
+	public Object getParameter(int index){
+		return paramVals[index];
+	}
 	
 	/**
 	 * Executes this method on the indicated object.
@@ -78,7 +87,7 @@ public class Command implements Serializable{
 	 */
 	public Object execute(){
 		try{
-			Class<?> targetClass = resolveClassName(className);
+			Class<?> targetClass = resolveClassName(clazz);
 			Class<?>[] parameterTypes = new Class<?>[paramTypes.length];
 			for (int i = 0; i < paramTypes.length; i++)
 				parameterTypes[i] = resolveClassName(paramTypes[i]);
@@ -95,7 +104,7 @@ public class Command implements Serializable{
 			}
 			return method.invoke(target, paramVals);
 		} catch (Exception e){
-			System.err.println("Command: Failed to execute "+className+"."+methodName);
+			System.err.println("Command: Failed to execute "+clazz+"."+methodName);
 			if (e.getCause() != null)
 				e.getCause().printStackTrace();
 			else{

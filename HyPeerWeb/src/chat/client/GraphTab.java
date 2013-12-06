@@ -1,6 +1,6 @@
 package chat.client;
 
-import hypeerweb.HyPeerWebCache.Node;
+import hypeerweb.NodeCache;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -15,7 +15,6 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Objects;
-import java.util.TreeMap;
 import java.util.TreeSet;
 import javax.swing.*;
 import javax.swing.event.ChangeEvent;
@@ -30,7 +29,7 @@ import javax.swing.event.ChangeListener;
  * @author isaac
  */
 public class GraphTab extends JPanel{
-	private Node activeNode;	//the selected node; may not be in graph
+	private NodeCache activeNode;	//the selected node; may not be in graph
 	//Drawing stuff
 	private static final int maxSizeX = 550, maxSizeY = 600;
 	private static boolean useLabels = true, useBinary = false;	
@@ -147,7 +146,7 @@ public class GraphTab extends JPanel{
 	public void draw(){
 		graph.draw();
 	}
-	public void select(Node n){
+	public void select(NodeCache n){
 		/*
 		//This node is already selected
 		if (graph.selected.getKey() == n)
@@ -177,7 +176,7 @@ public class GraphTab extends JPanel{
 				links = new TreeSet();
 				helpers = new ArrayList();
 				
-				Node n = getActiveNode();
+				NodeCache n = getActiveNode();
 				if (n == null) return;
 				
 				//Start off with the active node
@@ -204,22 +203,22 @@ public class GraphTab extends JPanel{
 						if (p.skew == -1)
 							p.skew = Math.random()*Math.PI;						
 						int parID = p.n.getWebId();
-						ArrayList<Node> childs = new ArrayList();
-						ArrayList<Node> potential = new ArrayList();
+						ArrayList<NodeCache> childs = new ArrayList();
+						ArrayList<NodeCache> potential = new ArrayList();
 
 						//Create links
-						for(Node node : p.n.getNeighbors())
+						for(NodeCache node : p.n.getNeighbors())
 							potential.add(node);
-						for (Node x: p.n.getNeighbors())
+						for (NodeCache x: p.n.getNeighbors())
 							linksPot.add(new DrawLink(p.n, x));
-						for(Node node : p.n.getSurrogateNeighbors())
+						for(NodeCache node : p.n.getSurrogateNeighbors())
 							potential.add(node);
-						for (Node x: p.n.getSurrogateNeighbors())
+						for (NodeCache x: p.n.getSurrogateNeighbors())
 							linksPot.add(new DrawLink(p.n, x, DrawLink.Type.DOTTED));
 
 						//Only add potential children if they are a direct child
 						//of the parent or not a direct child of any other parent
-						for (Node c: potential){
+						for (NodeCache c: potential){
 							//Make sure this hasn't been drawn already
 							if (!nodes.containsKey(c)){
 								int webID = c.getWebId(),
@@ -247,7 +246,7 @@ public class GraphTab extends JPanel{
 						links.add(l);
 				}
 			}
-			private Node getActiveNode(){
+			private NodeCache getActiveNode(){
 				return ChatClient.nodeCache.nodes.get((int) select.getValue());
 			}
 			
@@ -288,7 +287,7 @@ public class GraphTab extends JPanel{
 				btnParent.addActionListener(new ActionListener(){
 					@Override
 					public void actionPerformed(ActionEvent e) {
-						Node n = getActiveNode();
+						NodeCache n = getActiveNode();
 						if (n != null){
 							n = n.getParent();
 							if (n != null)
@@ -312,7 +311,7 @@ public class GraphTab extends JPanel{
 				links = new TreeSet();
 				helpers = new ArrayList();
 				
-				Node n = getActiveNode();
+				NodeCache n = getActiveNode();
 				if (n == null) return;
 				
 				//Start out with node in middle
@@ -331,10 +330,10 @@ public class GraphTab extends JPanel{
 			private void drawBranch(DrawData p, double angleOffset, double angle, int radius, int level){
 				//Create links
 				int idx = Integer.highestOneBit(p.n.getWebId());
-				ArrayList<Node> childs = new ArrayList();
-				for(Node node : p.n.getTreeChildren())
+				ArrayList<NodeCache> childs = new ArrayList();
+				for(NodeCache node : p.n.getTreeChildren())
 					childs.add(node);
-				for (Node c: childs){
+				for (NodeCache c: childs){
 					boolean isSurr = Integer.highestOneBit(c.getWebId()) < idx;
 					links.add(new DrawLink(p.n, c, isSurr ? DrawLink.Type.DOTTED : DrawLink.Type.SOLID));
 				}
@@ -353,7 +352,7 @@ public class GraphTab extends JPanel{
 					}
 				}
 			}
-			private Node getActiveNode(){
+			private NodeCache getActiveNode(){
 				return ChatClient.nodeCache.nodes.get((int) select.getValue());
 			}
 			
@@ -394,7 +393,7 @@ public class GraphTab extends JPanel{
 				btnParent.addActionListener(new ActionListener(){
 					@Override
 					public void actionPerformed(ActionEvent e) {
-						Node n = getActiveNode();
+						NodeCache n = getActiveNode();
 						if (n != null){
 							n = n.getParent();
 							if (n != null)
@@ -416,13 +415,13 @@ public class GraphTab extends JPanel{
 				links = new TreeSet();
 				helpers = new ArrayList();
 				
-				TreeMap<Integer, Node> all = ChatClient.nodeCache.nodes;
-				Node[] vals = all.values().toArray(new Node[all.size()]);
+				HashMap<Integer, NodeCache> all = ChatClient.nodeCache.nodes;
+				NodeCache[] vals = all.values().toArray(new NodeCache[all.size()]);
 				Integer[] keys = all.keySet().toArray(new Integer[all.size()]);
 				HashSet<DrawLink> linksPot = new HashSet();
 				Point2D origin = new Point2D.Double(maxSizeX/2, maxSizeY/2);
 				
-				Node temp;
+				NodeCache temp;
 				//Hue counters
 				double hueDelta = 1/(double)(maxDim-minDim+1);
 				float hue = 0;
@@ -455,10 +454,10 @@ public class GraphTab extends JPanel{
 						ArrayList<DrawData> dimData = new ArrayList();
 						while (index < keys.length && keys[index] < maxDID){
 							//Create potential links
-							Node val = vals[index];
-							for (Node x: val.getNeighbors())
+							NodeCache val = vals[index];
+							for (NodeCache x: val.getNeighbors())
 								linksPot.add(new DrawLink(val, x, DrawLink.Type.SOLID, linkCol));
-							for (Node x: val.getSurrogateNeighbors())
+							for (NodeCache x: val.getSurrogateNeighbors())
 								linksPot.add(new DrawLink(val, x, DrawLink.Type.DOTTED, linkCol));
 							//Compute location
 							double angle = (maxDID-keys[index])*delta;
@@ -525,7 +524,7 @@ public class GraphTab extends JPanel{
 		//TODO, petrie projection
 		//PETRIE ("Petrie Polygon", RotateMode.ROTATE);
 		
-		public static HashMap<Node, DrawData> nodes;
+		public static HashMap<NodeCache, DrawData> nodes;
 		public static TreeSet<DrawLink> links;
 		public static ArrayList<DrawData> helpers;
 		
@@ -542,11 +541,11 @@ public class GraphTab extends JPanel{
 		public abstract void draw();	
 		public abstract JToolBar getToolbar();
 		private static ArrayList<DrawData> drawCircle(
-			ArrayList<Node> childs, DrawData parent, Point2D origin,
+			ArrayList<NodeCache> childs, DrawData parent, Point2D origin,
 			double angle, double delta, double radius, int level
 		){
 			ArrayList<DrawData> res = new ArrayList();
-			for (Node c: childs){
+			for (NodeCache c: childs){
 				DrawData data = new DrawData(c, parent, null, -1, level, new Point2D.Double(
 					(radius*Math.cos(angle)) + origin.getX(),
 					(radius*Math.sin(angle)) + origin.getY()
@@ -565,18 +564,18 @@ public class GraphTab extends JPanel{
 	}
 	private static class DrawLink implements Comparable{
 		public static enum Type {SOLID, DOTTED};
-		public Node origin;
-		public Node friend;
+		public NodeCache origin;
+		public NodeCache friend;
 		public Type type;
 		public Color color;
 
-		public DrawLink(Node origin, Node friend){
+		public DrawLink(NodeCache origin, NodeCache friend){
 			this(origin, friend, Type.SOLID);
 		}
-		public DrawLink(Node origin, Node friend, Type type){
+		public DrawLink(NodeCache origin, NodeCache friend, Type type){
 			this(origin, friend, type, type == Type.SOLID ? Color.RED : Color.GREEN);
 		}
-		public DrawLink(Node origin, Node friend, Type type, Color color){
+		public DrawLink(NodeCache origin, NodeCache friend, Type type, Color color){
 			this.origin = origin;
 			this.friend = friend;
 			this.type = type;
@@ -615,12 +614,12 @@ public class GraphTab extends JPanel{
 		public static int nodeSize = 7;			//Node size, in pixels
 		public ArrayList<DrawData> children;		//Children of current drawdata
 		public DrawData parent;					//Parent of current drawdata (if level != 0)
-		public Node n;							//Node associated with this data
+		public NodeCache n;							//Node associated with this data
 		public double skew;						//Rotation skew angle
 		public int level;						//Level that this was drawn at
 		public Point2D coord;					//Coordinates on screen
 
-		public DrawData(Node n, DrawData parent, ArrayList<DrawData> children, double skew, int level, Point2D coord){
+		public DrawData(NodeCache n, DrawData parent, ArrayList<DrawData> children, double skew, int level, Point2D coord){
 			this.n = n;
 			this.parent = parent;
 			this.children = children;
