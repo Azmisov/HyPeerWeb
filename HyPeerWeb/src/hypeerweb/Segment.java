@@ -146,6 +146,20 @@ public class Segment<T extends Node> extends Node{
 		//Now run the add operation
 		inceptionweb.addNode(segment, listener);
 	}
+	/**
+	 * Removes a segment from the HyPeerWeb
+	 * @param segment the segment to be removed
+	 * @param listener remove segment callback
+	 */
+	public void removeSegment(Segment<T> segment, NodeListener listener){
+		Segment<Segment<T>> inceptionweb = new Segment(null, seed);
+		inceptionweb.state = inceptionState;
+		inceptionweb.isInceptionWeb = true;
+		inceptionweb.nodes.put(this.webID, this);
+		inceptionweb.nodesByUID.put(this.UID, this);
+		
+		inceptionweb.removeNode(segment, listener);
+	}
 	
 	//HYPEERWEB STATE
 	/**
