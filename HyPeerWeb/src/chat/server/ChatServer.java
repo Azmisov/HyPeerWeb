@@ -371,6 +371,7 @@ public class ChatServer{
 		}
 		
 	}
+	([hypeerweb.Node, communicator.RemoteAddress, [I, int])
 	protected static void _syncCache_send(Node n, RemoteAddress origin, int[] dirty, int request_id){
 		Communicator.request(origin, new Command(
 			className, "_syncCache_retrieve",
