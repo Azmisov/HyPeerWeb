@@ -61,7 +61,7 @@ public class HyPeerWebTest {
 									STOP_TESTS = true;
 								}
 								if (final_i % TEST_EVERY == 0){
-									SegmentCache cache = web.getCache(0);
+									SegmentCache cache = web.getCache();
 									Validator x = new Validator(cache);
 									try{
 										if (!x.validate()){

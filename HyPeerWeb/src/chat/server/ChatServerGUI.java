@@ -1,6 +1,10 @@
 package chat.server;
 
 import communicator.Communicator;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
+import java.awt.event.WindowListener;
+import java.awt.event.WindowStateListener;
 import javax.swing.JFrame;
 import javax.swing.JScrollPane;
 import javax.swing.JTextPane;
@@ -34,5 +38,12 @@ public class ChatServerGUI extends JFrame{
 		add(consoleScroll);
 		
 		System.out.println("Server is listening on "+Communicator.getAddress());
+		
+		addWindowListener(new WindowAdapter() {
+			@Override
+			public void windowClosing(WindowEvent e) {
+				ChatServer.disconnect();
+			}
+		});
 	}
 }
