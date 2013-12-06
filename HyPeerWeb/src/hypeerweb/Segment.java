@@ -1,6 +1,5 @@
 package hypeerweb;
 
-import communicator.Command;
 import communicator.NodeListener;
 import hypeerweb.visitors.SendVisitor;
 import hypeerweb.visitors.BroadcastVisitor;
@@ -240,31 +239,17 @@ public class Segment<T extends Node> extends Node{
 				}
 				//If the entire HyPeerWeb has only two nodes
 				else{
-					//removing node 0
-					if (n.getWebId() == 0){
-						Node replace = n.L.getFold(); //gets node 1
-						if (replace == null)
-							web.changeState(CORRUPT);
-						//Remove node from list of nodes
-						web.nodes.remove(0);
-						//Replace the node to be deleted
-						replace.executeRemotely(listener);
-						replace.L.removeNeighbor(n);
-						replace.L.setFold(null);
-						replace.setWebID(0);
-						replace.setHeight(0);
-					}
-					//removing node 1
+					Node replace = n.L.getFold(); //gets node 1
+					if (replace == null)
+						web.changeState(CORRUPT);
+					//Remove node from list of nodes
 					else{
-						Node other = n.L.getFold();
-						if (other == null)
-							web.changeState(CORRUPT);
-						web.nodes.remove(1);
-						other.L.removeNeighbor(n);
-						other.L.setFold(null);
-						other.setHeight(0);
+						replace.executeRemotely(new NodeListener(
+							Node.className, "_TWO_remove",
+							new String[]{Node.className, NodeListener.className},
+							new Object[]{n, listener}
+						));
 					}
-					web.changeState(HAS_ONE);
 				}		
 			}
 		},
