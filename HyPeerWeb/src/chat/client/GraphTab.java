@@ -205,14 +205,11 @@ public class GraphTab extends JPanel{
 						int parID = p.n.getWebId();
 						ArrayList<NodeCache> childs = new ArrayList();
 						ArrayList<NodeCache> potential = new ArrayList();
-
-						//Create links
-						for(NodeCache node : p.n.getNeighbors())
-							potential.add(node);
+						
+						potential.addAll(Arrays.asList(p.n.getNeighbors()));
+						potential.addAll(Arrays.asList(p.n.getSurrogateNeighbors()));
 						for (NodeCache x: p.n.getNeighbors())
 							linksPot.add(new DrawLink(p.n, x));
-						for(NodeCache node : p.n.getSurrogateNeighbors())
-							potential.add(node);
 						for (NodeCache x: p.n.getSurrogateNeighbors())
 							linksPot.add(new DrawLink(p.n, x, DrawLink.Type.DOTTED));
 
