@@ -299,6 +299,19 @@ public class ChatServer{
 		dirty.addAll(cache.replaceNode(oldWebID, cleanReplace, true));
 		syncCache(dirty, cleanReplace, new int[]{removed.getWebId(), oldWebID});
 	}
+	public static void removeAllNodes(){
+		segment.removeAllNodes(new NodeListener(
+			className, "_removeAllNodes"
+		));
+	}
+	public static void _removeAllNodes(Node n){
+		cache = new SegmentCache();
+		Command updater = new Command(
+			ChatClient.className, "_removeAllNodes"
+		);
+		for (ChatUser usr: clients.values())
+			Communicator.request(usr.client, updater, false);
+	}
 	/**
 	 * Resyncs the node cache to the actual data in the HyPeerWeb
 	 * @param addedNodes nodes that have been added or changed
