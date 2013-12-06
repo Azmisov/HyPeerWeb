@@ -103,9 +103,11 @@ public class Segment<T extends Node> extends Node{
 	protected static void _removeAllNodes(Node n, NodeListener listener){
 		Segment seg = (Segment) n;
 		//Clear node lists
+		seg.state = HyPeerWebState.HAS_NONE;
 		seg.nodes.clear();
 		seg.nodesByUID.clear();
-		listener.callback(n);
+		if (listener != null)
+			listener.callback(n);
 	}
 	/**
 	 * Adds a node to the HyPeerWeb, using a pre-initialized Node;

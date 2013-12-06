@@ -39,7 +39,6 @@ public class NodeListener extends Command{
 	 */
 	public NodeListener(String cname, String mname, String[] ptypes, Object[] pvals){
 		super(cname, mname, ptypes, pvals);
-		addParameter(Node.className);
 	}
 	/**
 	 * Should this listener be executed on the machine that created it?
@@ -56,22 +55,27 @@ public class NodeListener extends Command{
 	 * @param n the node to callback on
 	 */
 	public void callback(Node n){
-		setParameter(0, n);
+		if (addedParamCount != 1)
+			insertParameter(0, Node.className, n);
+		else setParameter(0, n);
 		//Should we execute this callback remotely?
 		if (!isRemote) execute();
 		else Communicator.request(origin, this, false);
-		setParameter(0, null);
 	}
 	
 	public void callback(Node n1, Node n2, int i){
-		setParameter(0, n1);
-		setParameter(1, n2);
-		setParameter(2, i);
+		if (addedParamCount != 3){
+			insertParameter(0, Node.className, n1);
+			insertParameter(1, Node.className, n2);
+			insertParameter(2, "int", i);
+		}
+		else{
+			setParameter(0, n1);
+			setParameter(1, n2);
+			setParameter(2, i);
+		}
 		//Should we execute this callback remotely?
 		if (!isRemote) execute();
 		else Communicator.request(origin, this, false);
-		setParameter(0, null);
-		setParameter(1, null);
-		setParameter(2, null);
 	}
 }

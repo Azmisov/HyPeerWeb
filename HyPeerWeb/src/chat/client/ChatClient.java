@@ -436,7 +436,14 @@ public class ChatClient extends JFrame{
 			//TODO, reset other stuff here
 		}
 	}
-	
+	protected static void removeAllNodes(){
+		if (isConnected()){
+			Command clearer = new Command(
+				ChatServer.className, "removeAllNodes"
+			);
+			Communicator.request(server, clearer, false);
+		}
+	}
 	//LISTENERS
 	public static void registerServer(RemoteAddress addr, SegmentCache cache, ChatUser active, ChatUser[] users){
 		server = addr;
@@ -481,6 +488,11 @@ public class ChatClient extends JFrame{
 	}
 	public static void receiveMessage(int senderID, int recipientID, String mess){
 		chat.receiveMessage(senderID, recipientID, mess);
+	}
+	public static void _removeAllNodes(){
+		nodeCache = new SegmentCache();
+		listTab.draw();
+		graph.draw();
 	}
 	
 	private static class NodeInfo extends AbstractTableModel{

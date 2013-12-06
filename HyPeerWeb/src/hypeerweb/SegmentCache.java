@@ -105,7 +105,9 @@ public class SegmentCache implements HyPeerWebInterface, Serializable{
 		//Return a list of dirty nodes
 		return syncNodes;
 	}
-	
+	public void removeAllNodes(){
+		nodes.clear();
+	}
 	/**
 	 * Replaces the node of "webID" with the faux node
 	 * @param webID the webID of the node to replace
