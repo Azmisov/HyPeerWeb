@@ -233,6 +233,28 @@ public class ChatServer{
 		//wanted to quit, all of the segments would have to quit.  Now I can 
 		//see why.  Sending all of the nodes on this segment to live somewhere
 		//else would be difficult.
+		
+		Segment conn = (Segment) segment.L.getLowestLink();
+		
+		segment.removeSegment(segment, null);
+	}
+	
+	public static void _receiveData(NodeCache cache, ChatUser[] rusers, RemoteAddress[] addresses){
+		for(int i=0;i<rusers.length;i++){
+			rusers[i].client = addresses[i];
+			clients.put(rusers[i].id, rusers[i]);
+		}
+		//TODO change user network ID
+		//TODO add cache to this.cache
+		Command changeServer = new Command(
+			ChatClient.className, "changeServer",
+			new String[]{RemoteAddress.className},
+			new Object[]{Communicator.getAddress()}
+		);
+		for (int i=0;i<addresses.length;i++){
+			Communicator.request(addresses[i], changeServer, false);
+		}
+		//TODO 
 	}
 	/**
 	 * Shutdown all servers in this network
