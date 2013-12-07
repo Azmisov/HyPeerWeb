@@ -43,10 +43,6 @@ public class NodeProxy extends Node{
     public void accept(AbstractVisitor p0){
 		request("accept", new String[]{"hypeerweb.visitors.AbstractVisitor"}, new Object[]{p0}, false);
     }
-	@Override
-	public void executeRemotely(NodeListener listener) {
-		request("executeRemotely", new String[] {NodeListener.className}, new Object[] {listener}, false);
-	}
 	
 	//GETTERS
 	@Override
@@ -70,16 +66,8 @@ public class NodeProxy extends Node{
 		return (FoldState) request("getFoldState");
 	}
 	@Override
-	public Segment getHostSegment(){
-		return (Segment) request("getHostSegment");
-	}
-	@Override
 	public Node getParent() {
 		return (Node) request("getParent");
-	}
-	@Override
-	public NodeCache convertToCached(){
-		return (NodeCache) request("convertToCached");
 	}
 	
 	//SETTERS
@@ -100,6 +88,24 @@ public class NodeProxy extends Node{
 	@Override
 	public void setData(String key, Object val) {
 		request("setData", new String[] {"java.lang.String", "java.lang.Object"}, new Object[] {key, val}, false);
+	}
+	
+	//NETWORKING
+	@Override
+	public Segment getHostSegment(){
+		return (Segment) request("getHostSegment");
+	}
+	@Override
+	public NodeCache convertToCached(){
+		return (NodeCache) request("convertToCached");
+	}
+	@Override
+	public void executeRemotely(NodeListener listener) {
+		request("executeRemotely", new String[] {NodeListener.className}, new Object[] {listener}, false);
+	}
+	@Override
+	public RemoteAddress getAddress(){
+		return raddr;
 	}
 	
 	private Object request(String name){

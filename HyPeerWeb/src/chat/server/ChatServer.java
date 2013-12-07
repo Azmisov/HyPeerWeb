@@ -40,7 +40,7 @@ public class ChatServer{
 	private static final HashMap<Integer, ChatUser> clients = new HashMap();
 	
 	private ChatServer(){
-		segment = new Segment("HyPeerWeb.db", -1);
+		segment = new Segment("HyPeerWeb.db", 2);
 		Communicator.startup(0);
 	}
 	/**
@@ -206,7 +206,6 @@ public class ChatServer{
 	}
 	protected static void _spawnReceiveData(Node n, SegmentCache spawn_cache, ChatUser[] spawn_users){
 		cache = spawn_cache;
-		System.out.println("Getting spawned users, count = "+spawn_users.length);
 		for (ChatUser usr: spawn_users)
 			users.put(usr.id, usr);
 		
@@ -215,12 +214,6 @@ public class ChatServer{
 		synchronized (ChatServer.instance){
 			ChatServer.instance.notify();
 		}
-		System.out.println("SPAWNED NODE = ");
-		System.out.println(segment.getWebId());
-		System.out.println(segment.getHeight());
-		System.out.println(Arrays.toString(segment.L.getNeighbors()));
-		System.out.println(segment.state);
-		System.out.println(segment.inceptionState);
 	}
 	/**
 	 * Disconnect from the network
@@ -343,12 +336,11 @@ public class ChatServer{
 			else{
 				int netID = cached.getNetworkId();
 				ArrayList<Integer> lst = grouped.get(netID);
-				boolean create = lst == null;
-				if (create)
+				if (lst == null){
 					lst = new ArrayList();
-				lst.add(id);
-				if (create)
 					grouped.put(netID, lst);
+				}
+				lst.add(id);					
 			}
 		}
 		
@@ -397,7 +389,6 @@ public class ChatServer{
 		}
 		
 	}
-	//([hypeerweb.Node, communicator.RemoteAddress, [I, int])
 	protected static void _syncCache_send(Node n, RemoteAddress origin, int[] dirty, int request_id){
 		Communicator.request(origin, new Command(
 			className, "_syncCache_retrieve",
@@ -582,7 +573,8 @@ public class ChatServer{
 	}
 	public static void _debug(){
 		System.err.println("PRINTING SERVER DATA");
-		System.out.println(segment.convertToCached());
+		System.out.println(segment.inceptionState);
+		System.out.println(segment.convertToCached());		
 		System.err.println("--------------------");
 	}
 }

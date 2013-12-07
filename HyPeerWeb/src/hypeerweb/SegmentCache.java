@@ -67,12 +67,11 @@ public class SegmentCache implements HyPeerWebInterface, Serializable{
 		nodes.put(faux.webID, faux);
 		//Add to segments list
 		HashSet<NodeCache> set = segments.get(faux.networkID);
-		boolean create = set == null;
-		if (create)
+		if (set == null){
 			set = new HashSet();
-		set.add(faux);
-		if (create)
 			segments.put(faux.networkID, set);
+		}
+		set.add(faux);	
 		//Return list of dirty nodes
 		return syncNodes;
 	}
@@ -217,17 +216,15 @@ public class SegmentCache implements HyPeerWebInterface, Serializable{
 		if (oldSeg == null) return;
 		newSeg = segments.get(newID);
 		//Create a new hashset object, if newSeg doesn't exist
-		boolean create = newSeg == null;
-		if (create)
+		if (newSeg == null){
 			newSeg = new HashSet();
+			segments.put(newID, newSeg);
+		}
 		//Change the network ID
 		for (NodeCache n: oldSeg){
 			n.networkID = newID;
 			newSeg.add(n);
-		}
-		//Add to segment list, if it's a new entry
-		if (create)
-			segments.put(newID, newSeg);
+		}			
 	}
 	//Helper method for creating a cached node; should not be run with proxy nodes
 	protected NodeCache createCachedNode(hypeerweb.Node real){

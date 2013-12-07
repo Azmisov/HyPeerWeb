@@ -101,3 +101,5 @@ Questions:
 - what if we send a node across the net that used localhost for IP?
 - make sure id/height caching is working properly
 - how do we guarantee NodeListener.callback(null) executes on the original machine?
+- make Segment.state/Command.methodName stuff private/protected again
+- change server seed back to -1

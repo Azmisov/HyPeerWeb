@@ -2,11 +2,14 @@ package hypeerweb;
 
 import communicator.Communicator;
 import communicator.NodeListener;
+import communicator.RemoteAddress;
 import static hypeerweb.Segment.HyPeerWebState.*;
 import hypeerweb.visitors.AbstractVisitor;
 import java.io.ObjectStreamException;
 import java.io.Serializable;
 import java.util.*;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * The Node class
@@ -139,7 +142,7 @@ public class Node implements Serializable, Comparable<Node>{
 		webID = toReplace.getWebId();
 		height = toReplace.getHeight();
 		//Notify all connections that their reference has changed
-		L.broadcastUpdate(toReplace, this);
+		L.broadcastReplacement(toReplace, this);
 		listener.callback(toReplace);
 	}
 	/**
@@ -187,10 +190,6 @@ public class Node implements Serializable, Comparable<Node>{
 			new String[]{Node.className, NodeListener.className},
 			new Object[]{zero, listener}
 		));
-		
-		//Update node zero to have connections
-		zero.L.setFold(one);
-		zero.L.addNeighbor(one);
 	}
 	protected static void _ONE_add_one(Node one, Node zero, NodeListener listener){
 		//Update data for the new second node
@@ -495,12 +494,9 @@ public class Node implements Serializable, Comparable<Node>{
 	 * Sets the Height of the Node and updates all pointers
 	 * @param h The new height
 	 */
-	protected void setHeight(int h) {
-		//First remove the old key
-		L.broadcastUpdate(this, null);
-		height = h;
-		//Now add back in with the new key
-		L.broadcastUpdate(null, this);
+	protected void setHeight(int h){
+		//Links will handle all the gruesome pain it is to change height
+		L.broadcastNewHeight(this, h);
 	}
 	/**
 	 * Switches the Fold State pattern state
@@ -626,6 +622,13 @@ public class Node implements Serializable, Comparable<Node>{
 	 */
 	public NodeCache convertToCached(){
 		return new NodeCache(this, null);
+	}
+	/**
+	 * Get the address this node is on
+	 * @return RemoteAddress specifying the host machine
+	 */
+	public RemoteAddress getAddress(){
+		return Communicator.getAddress();
 	}
 	
 	//CLASS OVERRIDES
