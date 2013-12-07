@@ -2,10 +2,10 @@ package hypeerweb;
 
 import java.io.Serializable;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashSet;
 import hypeerweb.validator.HyPeerWebInterface;
 import hypeerweb.validator.NodeInterface;
+import java.io.ObjectStreamException;
 import java.util.HashMap;
 import java.util.Map.Entry;
 
@@ -18,8 +18,9 @@ public class SegmentCache implements HyPeerWebInterface, Serializable{
 	public static final String className = SegmentCache.class.getName();
 	public static final String nodeClassNameArr = NodeCache[].class.getName();
 	public enum SyncType{ADD, REMOVE, REPLACE}
-	public final HashMap<Integer, NodeCache> nodes = new HashMap();
-	public final HashMap<Integer, HashSet<NodeCache>> segments = new HashMap();
+	//Since this will get serialized, we can't keep double references
+	public HashMap<Integer, NodeCache> nodes = new HashMap();
+	public HashMap<Integer, HashSet<NodeCache>> segments = new HashMap();
 	
 	/**
 	 * Merge a cache with this cache; the merging cache will
@@ -71,7 +72,8 @@ public class SegmentCache implements HyPeerWebInterface, Serializable{
 			set = new HashSet();
 			segments.put(faux.networkID, set);
 		}
-		set.add(faux);	
+		set.remove(faux);
+		set.add(faux);
 		//Return list of dirty nodes
 		return syncNodes;
 	}
@@ -234,9 +236,7 @@ public class SegmentCache implements HyPeerWebInterface, Serializable{
 	//VALIDATOR
 	@Override
 	public NodeInterface[] getOrderedListOfNodes() {
-		NodeCache[] unsorted = nodes.values().toArray(new NodeCache[nodes.size()]);
-		Arrays.sort(unsorted);
-		return unsorted;
+		return nodes.values().toArray(new NodeCache[nodes.size()]);
 	}
 	@Override
 	public NodeInterface getNode(int webId) {
@@ -249,4 +249,16 @@ public class SegmentCache implements HyPeerWebInterface, Serializable{
             builder.append(n);
         return builder.toString();
     }
+	
+	//SERIALIZATION
+	public Object readResolve() throws ObjectStreamException {
+		nodes.clear();
+		for (HashSet<NodeCache> set: segments.values()){
+			for (NodeCache node: set){
+				node.parent = this;
+				nodes.put(node.webID, node);
+			}
+		}
+		return this;
+	}
 }

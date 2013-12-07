@@ -40,7 +40,7 @@ public class ChatServer{
 	private static final HashMap<Integer, ChatUser> clients = new HashMap();
 	
 	private ChatServer(){
-		segment = new Segment("HyPeerWeb.db", 2);
+		segment = new Segment("HyPeerWeb.db", -1);
 		Communicator.startup(0);
 	}
 	/**

@@ -22,8 +22,6 @@ import javax.swing.table.AbstractTableModel;
  * The Graphical User Interface for the Chat Client
  * TODO:
  *	- listener on close to clean-up, delete InceptionSegment, etc.
- *  - add buttons for actions sidebar (e.g. addNode, disconnect, deleteNode, etc)
- *  - write code for GraphTab/ListTab
  * @author isaac
  */
 public class ChatClient extends JFrame{
@@ -99,6 +97,14 @@ public class ChatClient extends JFrame{
 		tabs.addTab("Chat", chat);
 		tabs.addTab("Node Graph", graph);
 		tabs.addTab("Node List", listTab);
+		
+		//Close listener, disconnect and then close
+		addWindowListener(new WindowAdapter() {
+			@Override
+			public void windowClosing(WindowEvent e) {
+				unregister();
+			}
+		});
 	}
 	private JPanel initActionBar(){
 		JPanel bar = new JPanel();
@@ -272,6 +278,12 @@ public class ChatClient extends JFrame{
 		//Disconnect button
 		JButton btnDisconnect = new JButton("Disconnect");
 		btnDisconnect.setPreferredSize(new Dimension(actionBarWidth, 25));
+		btnDisconnect.addActionListener(new ActionListener(){
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				unregister();
+			}
+		});
 		//Shutdown button
 		JButton btnShutdown = new JButton("Shutdown");
 		//Debug button
@@ -454,6 +466,29 @@ public class ChatClient extends JFrame{
 			Communicator.request(server, clearer, false);
 		}
 	}
+	private static void unregister(){
+		if (isConnected()){
+			Command unregister = new Command(
+				ChatServer.className, "unregisterClient",
+				new String[]{"int"},
+				new Object[]{activeUser.id}
+			);
+			Communicator.request(server, unregister, false);
+		}
+		disconnect();
+	}
+	private static void disconnect(){
+		setConnected(false);
+		chat.writeStatus("You have been disconnected from the network");
+	}
+	private static void redrawTabs(){
+		//todo update listtab, graphtab, nodeinfo
+		//todo synchronize selection between tabs
+		//todo tell list-tab's scroll pane that it's height changed; right now, it isn't updating
+		listTab.draw();
+		graph.draw();
+	}
+	
 	//LISTENERS
 	public static void registerServer(RemoteAddress addr, SegmentCache cache, ChatUser active, ChatUser[] users){
 		server = addr;
@@ -467,16 +502,14 @@ public class ChatClient extends JFrame{
 		setConnected(true);
 		//Finally, connect to the HyPeerWeb cache
 		nodeCache = cache;
+		redrawTabs();
 	}
 	public static void changeServer(RemoteAddress address){
 		if (address != null){
 			server = address;
 			chat.writeStatus("You have been transferred to a new network");
 		}
-		else{
-			setConnected(false);
-			chat.writeStatus("You have been disconnected from the network");
-		}
+		else disconnect();
 	}
 	public static void updateNetworkName(String newName){
 		txtSubnetName.setText(newName);
@@ -498,9 +531,7 @@ public class ChatClient extends JFrame{
 				for (NodeCache node: addedNodes)
 					nodeCache.addNode(node, false);
 			}
-			//todo update listtab, graphtab, nodeinfo
-			listTab.draw();
-			graph.draw();
+			redrawTabs();
 		}
 	}
 	public static void receiveMessage(int senderID, int recipientID, String mess){
@@ -508,8 +539,7 @@ public class ChatClient extends JFrame{
 	}
 	public static void _removeAllNodes(){
 		nodeCache = new SegmentCache();
-		listTab.draw();
-		graph.draw();
+		redrawTabs();
 	}
 	
 	private static class NodeInfo extends AbstractTableModel{

@@ -153,7 +153,7 @@ public class ListTab extends JPanel{
 			if (selection == -1 || selection == node.getNetworkId()){
 				switch(columnIndex){
 					case 0:
-						result = "1";
+						result += node.getNetworkId();
 						break;
 					case 1:
 						result += node.getWebId();
