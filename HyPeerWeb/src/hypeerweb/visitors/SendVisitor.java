@@ -1,34 +1,24 @@
 package hypeerweb.visitors;
 
+import communicator.NodeListener;
 import hypeerweb.Node;
 
 /**
- * Navigates from one node to another
+ * Navigates from one node to another; listener callback is
+ * guaranteed to run on the same machine the node is on
  */
-public class SendVisitor implements VisitorInterface{
-	/**
-	 * The webID that we are searching for
-	 */
-	protected int targetWebId;
-	/**
-	 * Should we find an exact match for the targetWebID?
-	 */
-	protected boolean approximateMatch;
-	private Node finalNode;
+public class SendVisitor extends AbstractVisitor{
+	//Attributes we will store in the visitor data
+	private final int target;
+	private final boolean approximate;
 	
-	/**
-	 * Navigate to the node with webID = 0, with
-	 * approximateMatch disabled
-	 */
-	public SendVisitor(){
-		this(0, false);
-	}
 	/**
 	 * Navigate to the specified node, with approximateMatch disabled
 	 * @param targetWebId the WebID of the node to navigate to
+	 * @param listener the command to execute on the target node
 	 */
-	public SendVisitor(int targetWebId){
-		this(targetWebId, false);
+	public SendVisitor(int targetWebId, NodeListener listener){
+		this(targetWebId, false, listener);
 	}
 	/**
 	 * Creates a new Send operation visitor
@@ -36,10 +26,12 @@ public class SendVisitor implements VisitorInterface{
 	 * @param approximateMatch if false, it will try to find an exact match to targetWebId;
 	 * if true, it will try to find a node that is close to targetWebID and may not
 	 * get all the way to the node (e.g. use this to get random nodes)
+	 * @param listener the command to execute on the target node
 	 */
-	public SendVisitor(int targetWebId, boolean approximateMatch){
-		this.targetWebId = targetWebId;
-		this.approximateMatch = approximateMatch;
+	public SendVisitor(int targetWebId, boolean approximateMatch, NodeListener listener){
+		super(listener);
+		target = targetWebId;
+		approximate = approximateMatch;
 	}
 
 	/**
@@ -47,39 +39,16 @@ public class SendVisitor implements VisitorInterface{
 	 * @param n the node to visit
 	 */
 	@Override
-	public void visit(Node n) {
-		if (n.getWebId() == targetWebId){
-			finalNode = n;
-			performTargetOperation(n);
-		}
+	public final void visit(Node n){
+		//We found a match!
+		if (n.getWebId() == target)
+			callback.callback(n);
+		//Otherwise, get the next closest node
 		else{
-			performIntermediateOperation(n);
-			Node next = n.getCloserNode(targetWebId, approximateMatch);
-			if (next != null)
-				next.accept(this);
-			else if (approximateMatch){
-				finalNode = n;
-				performTargetOperation(n);
-			}
+			Node next = n.getCloserNode(target, approximate);
+			if (next != null) next.accept(this);
+			//Pass null, if we couldn't find the node
+			else callback.callback(approximate ? n : null);
 		}
 	}
-	
-	/**
-	 * Gets the last node that was visited
-	 * @return the last node visited; null, if the last node was not found
-	 */
-	public Node getFinalNode(){
-		return finalNode;
-	}
-	
-	/**
-	 * Perform an operation on the target node (the one we were searching for)
-	 * @param node the node we are visiting
-	 */
-	protected void performTargetOperation(Node node){}
-	/**
-	 * Perform an operation on an intermediate node
-	 * @param node the node we are visiting
-	 */
-	protected void performIntermediateOperation(Node node){}
 }

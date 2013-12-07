@@ -1,51 +1,49 @@
 package hypeerweb.visitors;
 
+import communicator.NodeListener;
 import hypeerweb.Node;
-import java.util.List;
 
 /**
- * Broadcast Visitor
- * @author Josh
+ * Broadcast Visitor; listener callback is guaranteed
+ * to run on the same machine the node is on
  */
-public class BroadcastVisitor extends SendVisitor{
-	
+public class BroadcastVisitor extends AbstractVisitor{
+	private int blacklist = -2;
+
 	/**
-	 * Begin broadcasting from this node; it will first run a
-	 * SendVisitor operation to node with webID = 0; from there, it
-	 * will begin the broadcast
+	 * Create a new broadcast visitor
+	 * @param listener the visitor callback
+	 */
+	public BroadcastVisitor(NodeListener listener){
+		super(listener);
+	}
+
+	/**
+	 * Visit a node
 	 * @param n a node to begin broadcasting from
 	 */
 	@Override
-	final public void visit(Node n) {
-		super.visit(n);
-	}
-	@Override
-	final protected void performIntermediateOperation(Node node){}
-	@Override
-	final protected void performTargetOperation(Node node) {
-		node.accept(new Broadcast());
-	}
-	
-	/**
-	 * Perform a broadcast operation
-	 * @param n the node that has been broadcasted to
-	 */
-	protected void performOperation(Node n){
+	public final void visit(Node n){
+		//Run callback on this node
+		callback.callback(n);
 		
-	}
-	
-	/**
-	 * Private broadcast algorithm
-	 * We don't want to expose our algorithm
-	 * @author Josh
-	 */
-	private class Broadcast implements VisitorInterface{
-		@Override
-		public void visit(Node n) {
-			performOperation(n);
-			List<Node> broadcastNeighbors = n.getBroadcastNodes();
-			for (Node neighbor : broadcastNeighbors)
-				neighbor.accept(this);
+		//Reset blacklist flag
+		int cur_blacklist = blacklist;
+		blacklist = -1;
+		
+		//Broadcast to children
+		for (Node child : n.getTreeChildren()){
+			if (child.getWebId() != cur_blacklist)
+				child.accept(this);
+		}
+		//Broadcast to parent, if necessary
+		if (cur_blacklist != -1){
+			Node parent = n.getTreeParent();
+			if (parent != null){
+				//Put child in blacklist, so we don't broadcast to it again
+				blacklist = n.getWebId();
+				parent.accept(this);
+			}
 		}
 	}
 }

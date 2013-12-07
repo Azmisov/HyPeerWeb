@@ -1,19 +1,33 @@
 package hypeerweb;
 
+import communicator.Command;
+import communicator.Communicator;
+import communicator.RemoteAddress;
+import java.io.ObjectStreamException;
+import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map.Entry;
+import java.util.SortedSet;
 import java.util.TreeSet;
 
 /**
  * Maintains all node connections
  * @author isaac
  */
-public class Links{
-	/**
-	 * All the possible node link/connection types
-	 */
+public class Links implements Serializable {
+	public static final String
+		className = Links.class.getName(),
+		classNameArr = Links[].class.getName();
+	//All the possible node link/connection types
 	public static enum Type {
-		FOLD, SFOLD, ISFOLD, NEIGHBOR, SNEIGHBOR, ISNEIGHBOR
+		FOLD, SFOLD, ISFOLD, NEIGHBOR, SNEIGHBOR, ISNEIGHBOR;
+		public static String className = Type.class.getName();
 	}
+	//Serialization
+	public int UID;
+	//Link data
 	private Node fold;
 	private Node surrogateFold;
 	private Node inverseSurrogateFold;
@@ -25,11 +39,12 @@ public class Links{
 	/**
 	 * Creates an empty links object
 	 */
-	public Links(){
-		neighbors = new TreeSet<>();
-		surrogateNeighbors = new TreeSet<>();
-		inverseSurrogateNeighbors = new TreeSet<>();
-		highest = new TreeSet<>();
+	public Links(int UID){
+		this.UID = UID;
+		neighbors = new TreeSet();
+		surrogateNeighbors = new TreeSet();
+		inverseSurrogateNeighbors = new TreeSet();
+		highest = new TreeSet();
 	}
 	/**
 	 * Creates a links object with predefined connections
@@ -99,9 +114,13 @@ public class Links{
 		}
 		//Update the highest connection list
 		//Make sure this node isn't being referenced elsewhere
-		if (oldNode != null && (!(fold == oldNode || surrogateFold == oldNode ||
-			inverseSurrogateFold == oldNode || neighbors.contains(oldNode) ||
-			surrogateNeighbors.contains(oldNode) || inverseSurrogateNeighbors.contains(oldNode))))
+		//Cannot have same reference in fold-set or neighbor-set
+		boolean isFoldType = type == Type.FOLD || type == Type.SFOLD || type == Type.ISFOLD;
+		if (oldNode != null && !(
+			(!isFoldType &&
+				(oldNode.equals(fold) || oldNode.equals(surrogateFold) || !oldNode.equals(inverseSurrogateFold))) ||
+			(isFoldType &&
+				(neighbors.contains(oldNode) || surrogateNeighbors.contains(oldNode) || inverseSurrogateNeighbors.contains(oldNode)))))
 		{
 			highest.remove(oldNode);
 		}
@@ -132,9 +151,10 @@ public class Links{
 	 * @param newPointer the new node pointer
 	 * than a replacement of oldPointer
 	 */
-	protected void broadcastUpdate(Node oldPointer, Node newPointer){
+	protected void broadcastReplacement(Node oldPointer, Node newPointer){
 		//NOTE: we reverse surrogate/inverse-surrogate connection types
 		//In the case of folds, we do not have to search for an oldPointer
+		//TODO: group these into mass updates
 		if (fold != null)
 			fold.L.update(null, newPointer, Type.FOLD);
 		if (surrogateFold != null)
@@ -147,6 +167,147 @@ public class Links{
 			n.L.update(oldPointer, newPointer, Type.ISNEIGHBOR);
 		for (Node n: inverseSurrogateNeighbors)
 			n.L.update(oldPointer, newPointer, Type.SNEIGHBOR);
+	}
+	/**
+	 * Notifies all incoming pointers that the current node has
+	 * changed its height and their lists need to be resorted
+	 * @param n the node that was updated
+	 * @param newHeight the node's
+	 */
+	protected void broadcastNewHeight(Node original, int newHeight){
+		RemoteAddress hostAddr = Communicator.getAddress();
+		//A list of nodes that are on this machine
+		ArrayList<Links> here = new ArrayList();
+		//A list of proxy nodes, mapped by their RemoteAddress
+		HashMap<RemoteAddress, ArrayList<Links>> proxies = new HashMap();
+		//Sort all links into here/proxies
+		for (Node link: highest){
+			//Not a proxy
+			RemoteAddress laddr = link.getAddress();
+			if (laddr == null || laddr.onSameMachineAs(hostAddr))
+				here.add(link.L);
+			//Is a proxy
+			else{
+				ArrayList<Links> list = proxies.get(laddr);
+				if (list == null){
+					list = new ArrayList();
+					proxies.put(laddr, list);
+				}
+				list.add(link.L);
+			}
+		}
+				
+		//Execute mass height update on each remote machine
+		if (!proxies.isEmpty()){
+			Command update = new Command(
+				Links.className, "_resortLinks",
+				new String[]{"int", "int", "int", Links.classNameArr},
+				new Object[]{original.webID, original.height, newHeight, null}
+			);
+			for (Entry<RemoteAddress, ArrayList<Links>> proxy: proxies.entrySet()){
+				update.setBaseParameter(3, proxy.getValue().toArray(new Links[proxy.getValue().size()]));
+				Communicator.request(proxy.getKey(), update, false);
+			}
+		}
+		
+		//Change references on this computer (must come after remote stuff)
+		if (!here.isEmpty())
+			Links._resortLinks(original.webID, original.height, newHeight, here.toArray(new Links[here.size()]));
+		//No references, we're safe to update
+		else original.height = newHeight;
+	}
+	protected static void _resortLinks(int webId, int oldHeight, int newHeight, Links[] toUpdate){
+		//All these links will be on this machine; if not, we did something wrong
+		//We merge all duplicate proxy/real node references into one pointer
+		ArrayList<HeightUpdate> reinsert = new ArrayList();
+		for (Links l: toUpdate){
+			assert(!(l instanceof LinksProxy));
+			reinsert.add(l.removeOutdatedLink(webId, oldHeight, newHeight));
+		}
+		
+		//Re-insert the one pointer to rule them all
+		Node pointer = null;
+		for (int i=0, l=toUpdate.length; i<l; i++){
+			HeightUpdate update = reinsert.get(i);
+			if (update != null){
+				//Change the height, if we haven't already
+				if (pointer == null){
+					pointer = update.pointer;
+					pointer.height = newHeight;
+				}
+				//Re-insert
+				if (update.foldRef != null)
+					toUpdate[i].update(null, pointer, update.foldRef);
+				if (update.neighborRef != null)
+					toUpdate[i].update(null, pointer, update.neighborRef);
+			}
+		}		
+	}
+	private HeightUpdate removeOutdatedLink(int webID, int oldHeight, int newHeight){
+		/* Since height makes up part of the key for the TreeSets, changing height
+			poses a foreboding challenge. If the object is a reference/pointer in
+			multiple TreeSets, changing the pointer in one will break retrieval
+			from another. To fix this, we'll remove all items, change the key, and
+			then re-insert.
+			 
+			Proxy nodes are serialized, so there may be multiple references that
+			actually point to the same remote node. We merge all duplicate references
+			and just use a single 'pointer'
+		*/
+		Node pointer = null;
+		Type foldRef = null, neighRef = null;
+		
+		//Compile list of fold references; only one of them will have a reference
+		if (fold != null && fold.webID == webID){
+			pointer = fold;
+			foldRef = Type.FOLD;
+		}
+		else if (surrogateFold != null && surrogateFold.webID == webID){
+			pointer = surrogateFold;
+			foldRef = Type.SFOLD;
+		}
+		else if (inverseSurrogateFold != null && inverseSurrogateFold.webID == webID){
+			pointer = inverseSurrogateFold;
+			foldRef = Type.ISFOLD;
+		}
+		
+		//Compile list of neighbor references; only one of the lists will have a reference, if any
+		//(neighbor differs by one bit, sneighbor differs by two bits,
+		// isneighbor same as sneighbor but you can't have sneighbor and isneighbor)
+		Node faux_node = pointer == null ? new Node(webID, oldHeight) : pointer;
+		SortedSet<Node> search = neighbors.subSet(faux_node, true, faux_node, true);
+		if (search.isEmpty()){
+			search = surrogateNeighbors.subSet(faux_node, true, faux_node, true);
+			if (search.isEmpty()){
+				search = inverseSurrogateNeighbors.subSet(faux_node, true, faux_node, true);
+				if (!search.isEmpty())
+					neighRef = Type.ISNEIGHBOR;
+			}
+			else neighRef = Type.SNEIGHBOR;
+		}
+		else neighRef = Type.NEIGHBOR;
+		//Remove from neighbor list; SortedSet is backed by the actual TreeSet
+		if (!search.isEmpty()){
+			pointer = search.first();
+			search.remove(pointer);
+		}
+		
+		//Remove the reference from the "all links" TreeSet
+		if (pointer != null){
+			highest.remove(pointer);
+			return new HeightUpdate(foldRef, neighRef, pointer);
+		}
+		
+		return null;
+	}
+	private class HeightUpdate{
+		public Type foldRef, neighborRef;
+		public Node pointer;
+		public HeightUpdate(Type foldRef, Type neighborRef, Node pointer){
+			this.foldRef = foldRef;
+			this.neighborRef = neighborRef;
+			this.pointer = pointer;
+		}
 	}
 	
 	//SETTERS
@@ -162,7 +323,16 @@ public class Links{
 	 * @param n the node to remove
 	 */
 	protected void removeNeighbor(Node n){
+		System.err.println("FATAL ERROR HERE; THIS SHOULD NOT BE CALLED!!!!");
 		update(n, null, Type.NEIGHBOR);
+	}
+	
+	/**
+	 * Removes all neighbors from the node
+	 */
+	protected void removeAllNeighbors(){
+		highest.removeAll(neighbors);
+		neighbors.clear();
 	}
 	/**
 	 * Adds a Surrogate Neighbor
@@ -223,18 +393,25 @@ public class Links{
 	
 	//GETTERS
 	/**
+	 * Get a sorted array of all Node links
+	 * @return an array of all connections
+	 */
+	public Node[] getAllLinks(){
+		return highest.toArray(new Node[highest.size()]);
+	}
+	/**
 	 * Gets the highest node out of all the connections
 	 * @return a node
 	 */
 	public Node getHighestLink(){
-		return highest.last();
+		return highest.isEmpty() ? null : highest.last();
 	}
 	/**
 	 * Gets the lowest node out of all the connections
 	 * @return a node
 	 */
 	public Node getLowestLink(){
-		return highest.first();
+		return highest.isEmpty() ? null : highest.first();
 	}
 	/**
 	 * Gets the node's fold
@@ -333,37 +510,12 @@ public class Links{
 		return inverseSurrogateNeighbors.first();
 	}
 	
-	//PROTECTED GETTERS (WARNING, DO NOT MODIFY RETURNED VALUES)
-	/**
-	 * Gets neighbors as a collection
-	 * Implementor must not modify the values
-	 * @return a set of neighbors
-	 */
-	protected TreeSet<Node> getNeighborsSet(){
-		return neighbors;
+	//NETWORKING
+	public Object writeReplace() throws ObjectStreamException {
+		//TODO: Figure out how to send real links in case of replacing node
+		return new LinksProxy(this);
 	}
-	/**
-	 * Gets surrogate neighbors as a collection
-	 * Implementor must not modify the values
-	 * @return a set of surrogate neighbors
-	 */
-	protected TreeSet<Node> getSurrogateNeighborsSet(){
-		return surrogateNeighbors;
-	}
-	/**
-	 * Gets inverse surrogate neighbors as a collection
-	 * Implementor must not modify the values
-	 * @return a set of inverse surrogate neighbors
-	 */
-	protected TreeSet<Node> getInverseSurrogateNeighborsSet(){
-		return inverseSurrogateNeighbors;
-	}
-	/**
-	 * Gets the highest node set as a collection
-	 * Implementor must not modify the values
-	 * @return a set of all connections
-	 */
-	protected TreeSet<Node> getAllLinks(){
-		return highest;
+	public Object readResolve() throws ObjectStreamException {
+		return this;
 	}
 }

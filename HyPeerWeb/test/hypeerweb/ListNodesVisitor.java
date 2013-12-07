@@ -1,5 +1,6 @@
 package hypeerweb;
 
+import hypeerweb.Node;
 import hypeerweb.visitors.BroadcastVisitor;
 import java.util.ArrayList;
 import java.util.List;
@@ -21,7 +22,7 @@ public class ListNodesVisitor extends BroadcastVisitor{
 	}
 
 	@Override
-	protected void performOperation(Node n) {
+	public void performOperation(Node n) {
 		nodeList.add(n);
 	}
 }
