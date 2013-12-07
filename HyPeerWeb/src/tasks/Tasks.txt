@@ -1,0 +1,45 @@
+For Pass-off:
+===========================
+- Server shutdown
+	- Come up with a way to store links/nodes in a database file
+	- This can probably be built on top of SegmentCache; it will need special deserialization though
+- Debug remove node
+	- Fix replaceNode to send actual links object, not proxy
+	- Make all HyPeerWeb states' removeNode use the new callback Brian made
+- Debug server disconnect
+	- Handle network-id changes for NodeCache/ChatUsers
+
+Other Stuff:
+==========================
+- Network-name stuff (low priority)
+- Optimization
+	- minimize network communications
+	- group updates into commits
+	- optimize Criteria class; esp. find insert/disconnect point
+		(e.g., relax HW constraints; will break validator, but be faster)
+- Client
+	- synchronize node selection between graph-tab/list-tab
+	- petrie projection mode for GraphTab
+- Concurrency (after optimization)
+	- have each segment hold a list of commit operations
+	- each commit has a timecode for when the add/remove operation began (timestamp-based control)
+	- have algorithm run through list of commits and find a total ordering that guarantees non-conflicting execution
+	- segment-cache is prone to concurrency issues (becomes out-of-sync); need a better way to manage this
+- Cleanup
+	- add assert statements before all methods?
+	- write any missing javadoc
+	- come up with a way to remove SegmentProxy/NodeProxy duplicate code
+	- make comm.request and commands more generalized/reusable
+	- general code improvement...
+- RSA signing of application requests
+- Error detection and handling; rollback on failure
+
+Questions:
+===========================
+- should we allow null listeners in HyPeerWebSegment
+- do proxies need UID? is there any case we reference node.UID when it would be a proxy
+- can we cache fold-state? in node proxies
+- what if we send a node across the net that used localhost for IP?
+- make sure id/height caching is working properly
+- how do we guarantee NodeListener.callback(null) executes on the original machine?
+- make Segment.state/Command.methodName stuff private/protected again
