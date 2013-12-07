@@ -13,6 +13,7 @@ import javax.swing.event.ListSelectionListener;
 import javax.swing.event.TableModelListener;
 import javax.swing.table.*;
 import hypeerweb.validator.Validator;
+import java.util.HashSet;
 
 /**
  * List all nodes in HyPeerWeb, categorized by
@@ -23,7 +24,7 @@ public class ListTab extends JPanel{
 	private static JTable table;
 	private static MyTableModel tabModel = new MyTableModel();
 	private static JComboBox segmentBox;
-	private static segmentModel segModel = new segmentModel();
+	private static SegmentModel segModel = new SegmentModel();
 	private static NodeCache[] nodeList;
 	
 	public ListTab(){
@@ -34,6 +35,12 @@ public class ListTab extends JPanel{
 		segmentBox = new JComboBox(segModel);
 		segmentBox.setPreferredSize(new Dimension(150, 30));
 		segmentBox.setBorder(new EmptyBorder(4, 8, 4, 4));
+		segmentBox.addActionListener(new ActionListener(){
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				draw();
+			}
+		});
 		segmentPanel.add(label);
 		segmentPanel.add(segmentBox);
 		
@@ -53,7 +60,12 @@ public class ListTab extends JPanel{
         validateButton.addActionListener(new ActionListener(){
 			@Override
 			public void actionPerformed(ActionEvent e){
-				boolean pass = !ChatClient.isConnected() || (new Validator(ChatClient.nodeCache)).validate();
+				boolean pass;
+				try{
+					pass = !ChatClient.isConnected() || (new Validator(ChatClient.nodeCache)).validate();
+				} catch (Exception ex){
+					pass = false;
+				}
 				ChatClient.showPopup(
 					pass ? JOptionPane.INFORMATION_MESSAGE : JOptionPane.ERROR_MESSAGE,
 					pass ? "Validation Passed!" : "Validation Failed!"
@@ -94,7 +106,12 @@ public class ListTab extends JPanel{
 	}
 	
 	public void draw(){
-		nodeList = (NodeCache[]) ChatClient.nodeCache.getOrderedListOfNodes();
+		if (segModel.selection == -1)
+			nodeList = (NodeCache[]) ChatClient.nodeCache.getOrderedListOfNodes();
+		else{
+			HashSet<NodeCache> set = ChatClient.nodeCache.segments.get(segModel.selection);
+			nodeList = set.toArray(new NodeCache[set.size()]);
+		}
 		table.repaint();
 		segModel.updateSegments();
 		segmentBox.repaint();
@@ -115,10 +132,9 @@ public class ListTab extends JPanel{
 		
 		@Override
 		public int getRowCount() {
-			if(ChatClient.nodeCache == null)
+			if (!ChatClient.isConnected())
 				return 0;
-			else
-				return ChatClient.nodeCache.nodes.size();
+			return nodeList.length;
 		}
 
 		@Override
@@ -143,49 +159,47 @@ public class ListTab extends JPanel{
 
 		@Override
 		public Object getValueAt(int rowIndex, int columnIndex) {
-			if(ChatClient.nodeCache == null)
+			if (!ChatClient.isConnected())
 				return null;
 			
 			String result = "";
 			NodeCache node = nodeList[rowIndex];
 			int selection = segModel.getSelection();
-			
-			if (selection == -1 || selection == node.getNetworkId()){
-				switch(columnIndex){
-					case 0:
-						result += node.getNetworkId();
-						break;
-					case 1:
-						result += node.getWebId();
-						break;
-					case 2:
-						result += node.getHeight();
-						break;
-					case 3:
-						for(int n : node.getRawNeighbors())
-							result += n + " ";
-						break;
-					case 4:
-						for(int n : node.getRawSurrogateNeighbors())
-							result += n + " ";
-						break;
-					case 5:
-						for(int n : node.getRawInverseSurrogateNeighbors())
-							result += n + " ";
-						break;
-					case 6:
-						if(node.getRawFold() != -1)
-							result += node.getRawFold();
-						break;
-					case 7:
-						if(node.getRawSurrogateFold() != -1)
-							result += node.getRawSurrogateFold();
-						break;
-					case 8:
-						if(node.getRawInverseSurrogateFold() != -1)
-							result += node.getRawInverseSurrogateFold();
-						break;
-				}
+				
+			switch (columnIndex){
+				case 0:
+					result += node.getNetworkId();
+					break;
+				case 1:
+					result += node.getWebId();
+					break;
+				case 2:
+					result += node.getHeight();
+					break;
+				case 3:
+					for(int n : node.getRawNeighbors())
+						result += n + " ";
+					break;
+				case 4:
+					for(int n : node.getRawSurrogateNeighbors())
+						result += n + " ";
+					break;
+				case 5:
+					for(int n : node.getRawInverseSurrogateNeighbors())
+						result += n + " ";
+					break;
+				case 6:
+					if(node.getRawFold() != -1)
+						result += node.getRawFold();
+					break;
+				case 7:
+					if(node.getRawSurrogateFold() != -1)
+						result += node.getRawSurrogateFold();
+					break;
+				case 8:
+					if(node.getRawInverseSurrogateFold() != -1)
+						result += node.getRawInverseSurrogateFold();
+					break;
 			}	
 			return result;
 		}
@@ -200,14 +214,14 @@ public class ListTab extends JPanel{
 		}
 	}
 	
-	private static class segmentModel implements ComboBoxModel{
+	private static class SegmentModel implements ComboBoxModel{
 		//temporary
 		
 		int selection = -1;//-1 for all segments
 		String[] segments = {"All"};
 		
 		private void updateSegments(){
-			if(ChatClient.nodeCache == null)
+			if (!ChatClient.isConnected())
 				return;
 			
 			int size = ChatClient.nodeCache.segments.size();
@@ -216,10 +230,9 @@ public class ListTab extends JPanel{
 			size++;//All goes first
 			segments = new String[size];
 			segments[0] = "All";
-			for(Integer i : seg){
+			for (Integer i : seg){
 				segments[index++] = i.toString();
 			}
-			
 		}
 		
 		@Override
@@ -232,10 +245,7 @@ public class ListTab extends JPanel{
 
 		@Override
 		public Object getSelectedItem() {
-			if(selection == -1)
-				return "All";
-			else
-				return selection;
+			return selection == -1 ? "All" : selection;
 		}
 		
 		public int getSelection(){
@@ -250,7 +260,7 @@ public class ListTab extends JPanel{
 
 		@Override
 		public Object getElementAt(int index) {
-			if(index < 0 || index >= getSize())
+			if (index < 0 || index >= getSize())
 				return null;
 			return segments[index];
 		}
@@ -271,7 +281,8 @@ public class ListTab extends JPanel{
 		public void valueChanged(ListSelectionEvent e) {
 			ListSelectionModel lsm = (ListSelectionModel)e.getSource();
 			int index = lsm.getMinSelectionIndex();
-			NodeCache n = (NodeCache) ChatClient.nodeCache.nodes.values().toArray()[index];
+			
+			NodeCache n = (NodeCache) nodeList[index];
 			ChatClient.setSelectedNode(n);	
 		}
 	}

@@ -205,7 +205,7 @@ public class Links implements Serializable {
 				new Object[]{original.webID, original.height, newHeight, null}
 			);
 			for (Entry<RemoteAddress, ArrayList<Links>> proxy: proxies.entrySet()){
-				update.setParameter(3, proxy.getValue().toArray(new Links[proxy.getValue().size()]));
+				update.setBaseParameter(3, proxy.getValue().toArray(new Links[proxy.getValue().size()]));
 				Communicator.request(proxy.getKey(), update, false);
 			}
 		}

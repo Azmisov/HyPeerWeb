@@ -1,6 +1,5 @@
 package communicator;
 
-import hypeerweb.LinksProxy;
 import java.io.ObjectStreamException;
 import java.io.Serializable;
 import java.lang.reflect.Method;
@@ -59,6 +58,15 @@ public class Command implements Serializable{
 	
 	//MANIPULATE PARAMETERS
 	/**
+	 * Sets parameter at a specified index, acting as though no
+	 * new parameters have been added with prependParameter
+	 * @param index location, before any prependParameter operations
+	 * @param paramVal the parameter's value
+	 */
+	public void setBaseParameter(int index, Object paramVal){
+		paramVals_lst.set(index+addedParamCount, paramVal);
+	}
+	/**
 	 * Set the parameter at this index
 	 * @param index which parameter
 	 * @param paramVal the parameter's value
@@ -68,14 +76,13 @@ public class Command implements Serializable{
 	}
 	/**
 	 * Insert a new parameter
-	 * @param index where to insert
 	 * @param paramType the type of the parameter (class name)
 	 * @param paramVal the parameter's value
 	 */
-	public void insertParameter(int index, String paramType, Object paramVal){
+	public void prependParameter(String paramType, Object paramVal){
 		addedParamCount++;
-		paramTypes_lst.add(index, paramType);
-		paramVals_lst.add(index, paramVal);
+		paramTypes_lst.add(0, paramType);
+		paramVals_lst.add(0, paramVal);
 	}
 	/**
 	 * Retrieve a parameter value
@@ -122,6 +129,12 @@ public class Command implements Serializable{
 				//This is a reflection error
 				System.err.println("Reflection on: "+methodName+"("+Arrays.toString(paramTypes_lst.toArray(new String[l]))+")");
 				System.err.println("With parameters: "+Arrays.toString(paramVals_lst.toArray(new Object[l])));
+				String[] names = new String[l];
+				for (int i=0; i<l; i++){
+					Object v = paramVals_lst.get(i);
+					names[i] = v == null ? null : v.getClass().getName();
+				}
+				System.err.println("Of types:"+Arrays.toString(names));
 				e.printStackTrace();
 			}
 			return e;

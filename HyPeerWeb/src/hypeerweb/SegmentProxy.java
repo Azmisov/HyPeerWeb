@@ -12,7 +12,7 @@ import java.util.ArrayList;
  * Oh goodness. I can't believe I'm doing this
  * @author isaac
  */
-public class SegmentProxy extends Segment{
+public class SegmentProxy<T> extends Segment{
 	private final RemoteAddress raddr;
 	
 	public SegmentProxy(Segment seg){
@@ -122,6 +122,29 @@ public class SegmentProxy extends Segment{
 		Command command = new Command(Node.className, name, paramTypes, paramVals);
 		return Communicator.request(raddr, command, sync);
 	}
+	
+	//HYPEERWEB SPECIFIC
+	@Override
+	public int getSegmentSize(){
+		return (int) requestSeg("getSegmentSize");
+	}
+	@Override
+	public boolean isSegmentEmpty(){
+		return (boolean) requestSeg("isSegmentEmpty");
+	}
+	@Override
+	public void getNode(int p1, boolean p2, NodeListener p3){
+		requestSeg("getNode", new String[] {"int", "boolean", NodeListener.className}, new Object[] {p1, p2, p3}, false);
+	}
+	
+	private Object requestSeg(String name){
+		return requestSeg(name, null, null, true);
+	}
+	private Object requestSeg(String name, String[] paramTypes, Object[] paramVals, boolean sync){
+		Command command = new Command(className, name, paramTypes, paramVals);
+		return Communicator.request(raddr, command, sync);
+	}
+	
 	
 	@Override
 	public Object writeReplace() throws ObjectStreamException {

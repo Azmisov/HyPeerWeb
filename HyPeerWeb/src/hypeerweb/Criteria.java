@@ -1,5 +1,7 @@
 package hypeerweb;
 
+import communicator.Communicator;
+
 /**
  * Criteria for whether a node is valid or not
  * This is called by Node.findValidNode()
@@ -44,8 +46,9 @@ public class Criteria {
 				}
 				return null;
 			case NONEMPTY:
+				Segment seg = friend instanceof SegmentProxy ? (SegmentProxy) friend : (Segment) friend;
 				//Is this segment empty?
-				return ((Segment) friend).isSegmentEmpty() ? null : friend;
+				return seg.isSegmentEmpty() ? null : friend;
 		}
 		return null;
 	}

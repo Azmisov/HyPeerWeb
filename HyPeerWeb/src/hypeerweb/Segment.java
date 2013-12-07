@@ -139,7 +139,7 @@ public class Segment<T extends Node> extends Node{
 		inceptionweb.nodesByUID.put(this.UID, this);
 		//The only extra data we need to initialize is the state
 		segment.executeRemotely(new NodeListener(
-			Segment.className, "_inheritState",
+			className, "_inheritState",
 			new String[]{HyPeerWebState.className},
 			new Object[]{state}
 		));
@@ -434,7 +434,11 @@ public class Segment<T extends Node> extends Node{
 			//that is not empty; this is terribly inefficient, but we don't
 			//know a better way to do it (at least not yet)
 			//findValidNode will always check current node first
-			return (Segment) findValidNode(Criteria.Type.NONEMPTY, -1, false);
+			Segment s = (Segment) findValidNode(Criteria.Type.NONEMPTY, -1, false);
+			System.out.println("FOUND NONEMPTY SEGMENT");
+			if (s.isSegmentEmpty())
+				System.out.println("BUT IT DIDN't WORK");
+			return s;
 		}
 	}
 	/**

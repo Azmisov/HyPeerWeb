@@ -8,8 +8,6 @@ import hypeerweb.visitors.AbstractVisitor;
 import java.io.ObjectStreamException;
 import java.io.Serializable;
 import java.util.*;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 /**
  * The Node class
@@ -274,7 +272,8 @@ public class Node implements Serializable, Comparable<Node>{
 	 * @param levels how many neighbor levels out to search;
 	 *	a value less than zero will search forever until there are no more nodes to search
 	 * @param recursive should this be run recursively, once a valid node is found?
-	 *	Warning! depending on how you implement Criteria, if levels < 0 you may enter an infinite loop
+	 *	Warning! depending on how you implement Criteria, if levels is less than 0 you
+	 *  may enter an infinite loop
 	 * @return a valid node
 	 */
 	protected Node findValidNode(Criteria.Type type, int levels, boolean recursive){

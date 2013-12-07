@@ -45,7 +45,7 @@ public class NodeListener extends Command{
 	 */
 	public void callback(Node n){
 		if (addedParamCount != 1)
-			insertParameter(0, Node.className, n);
+			prependParameter(Node.className, n);
 		else setParameter(0, n);
 		//Should we execute this callback remotely?
 		execute(false);		
@@ -59,9 +59,9 @@ public class NodeListener extends Command{
 	 */
 	public void callback(Node n1, Node n2, int i){
 		if (addedParamCount != 3){
-			insertParameter(0, Node.className, n1);
-			insertParameter(1, Node.className, n2);
-			insertParameter(2, "int", i);
+			prependParameter("int", i);
+			prependParameter(Node.className, n2);
+			prependParameter(Node.className, n1);
 		}
 		else{
 			setParameter(0, n1);

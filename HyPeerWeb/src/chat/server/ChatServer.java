@@ -383,7 +383,7 @@ public class ChatServer{
 			for (int i=0, l=lst.size(); i<l; i++)
 				dirty[i] = lst.get(i).intValue();
 			//Execute the retrieval command
-			retrieve.setParameter(1, dirty);
+			retrieve.setBaseParameter(1, dirty);
 			SendVisitor visitor = new SendVisitor(netID, retrieve);
 			visitor.visit(segment);
 		}
