@@ -88,7 +88,7 @@ public class ChatServer{
 		);
 		Communicator.request(client, register, false);
 		
-		//Add new client to our list
+		//Add new client to our list (this should come last)
 		clients.put(newUser, user);
 	}
 	/**
@@ -192,23 +192,21 @@ public class ChatServer{
 			registerClient(leecher);
 	}
 	protected static void _spawn(RemoteAddress rem, Segment seg){
-		//Listener will execute on this segment/server
-		segment.addSegment(seg, new NodeListener(
-			ChatServer.className, "_spawnSendData",
-			new String[]{RemoteAddress.className},
-			new Object[]{rem}
-		));
+		//Listener will execute on this segment/server (since we've enabled setRemote)
+		NodeListener spawner = new NodeListener(ChatServer.className, "_spawnSendData");
+		spawner.setRemote(true);
+		segment.addSegment(seg, spawner);
 	}
-	protected static void _spawnSendData(Node n, RemoteAddress rem){		
-		Command transfer = new Command(
+	protected static void _spawnSendData(Node new_seg){		
+		new_seg.executeRemotely(new NodeListener(
 			ChatServer.className, "_spawnReceiveData",
 			new String[]{SegmentCache.className, ChatUser.classNameArr},
 			new Object[]{cache, users.values().toArray(new ChatUser[users.size()])}
-		);
-		Communicator.request(rem, transfer, false);
+		));
 	}
-	protected static void _spawnReceiveData(SegmentCache spawn_cache, ChatUser[] spawn_users){
+	protected static void _spawnReceiveData(Node n, SegmentCache spawn_cache, ChatUser[] spawn_users){
 		cache = spawn_cache;
+		System.out.println("Getting spawned users, count = "+spawn_users.length);
 		for (ChatUser usr: spawn_users)
 			users.put(usr.id, usr);
 		
@@ -228,18 +226,34 @@ public class ChatServer{
 	 * Disconnect from the network
 	 */
 	public static void disconnect(){
-		//this one looks tough
-		//I think this is the part where Dr. Woodfield said that if one segment
-		//wanted to quit, all of the segments would have to quit.  Now I can 
-		//see why.  Sending all of the nodes on this segment to live somewhere
-		//else would be difficult.
-		
+		//Send all data to the nearest connection
 		Segment conn = (Segment) segment.L.getLowestLink();
-		
-		segment.removeSegment(segment, null);
+		if (conn != null){
+			//Disconnect from the inception web
+			segment.removeSegment(null);
+			//Send data to "conn"
+			ChatUser[] rusers = clients.values().toArray(new ChatUser[clients.size()]);
+			RemoteAddress[] raddress = new RemoteAddress[clients.size()];
+			for (int i=0; i<rusers.length; i++)
+				raddress[i] = rusers[i].client;
+			conn.executeRemotely(new NodeListener(
+				className, "_mergeServerData",
+				new String[]{SegmentCache.className, ChatUser.classNameArr, RemoteAddress.classNameArr},
+				new Object[]{null, rusers, raddress}
+			));
+		}
+		//Disconnect all clients
+		else{
+			Command changeServer = new Command(
+				ChatClient.className, "changeServer",
+				new String[]{RemoteAddress.className},
+				new Object[]{null}
+			);
+			for (ChatUser usr: clients.values())
+				Communicator.request(usr.client, changeServer, false);
+		}
 	}
-	
-	public static void _receiveData(NodeCache cache, ChatUser[] rusers, RemoteAddress[] addresses){
+	public static void _mergeServerData(SegmentCache cache, ChatUser[] rusers, RemoteAddress[] addresses){
 		for(int i=0;i<rusers.length;i++){
 			rusers[i].client = addresses[i];
 			clients.put(rusers[i].id, rusers[i]);
@@ -251,9 +265,8 @@ public class ChatServer{
 			new String[]{RemoteAddress.className},
 			new Object[]{Communicator.getAddress()}
 		);
-		for (int i=0;i<addresses.length;i++){
+		for (int i=0; i<addresses.length; i++)
 			Communicator.request(addresses[i], changeServer, false);
-		}
 		//TODO 
 	}
 	/**
@@ -378,13 +391,13 @@ public class ChatServer{
 			for (int i=0, l=lst.size(); i<l; i++)
 				dirty[i] = lst.get(i).intValue();
 			//Execute the retrieval command
-			retrieve.setParameter(2, dirty);
+			retrieve.setParameter(1, dirty);
 			SendVisitor visitor = new SendVisitor(netID, retrieve);
 			visitor.visit(segment);
 		}
 		
 	}
-	([hypeerweb.Node, communicator.RemoteAddress, [I, int])
+	//([hypeerweb.Node, communicator.RemoteAddress, [I, int])
 	protected static void _syncCache_send(Node n, RemoteAddress origin, int[] dirty, int request_id){
 		Communicator.request(origin, new Command(
 			className, "_syncCache_retrieve",
@@ -566,5 +579,10 @@ public class ChatServer{
 	//NETWORKING
 	public static boolean handshake(){
 		return instance != null;
+	}
+	public static void _debug(){
+		System.err.println("PRINTING SERVER DATA");
+		System.out.println(segment.convertToCached());
+		System.err.println("--------------------");
 	}
 }

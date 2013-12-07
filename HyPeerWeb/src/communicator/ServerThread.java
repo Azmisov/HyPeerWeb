@@ -43,8 +43,8 @@ public class ServerThread extends Thread {
 	    try {
 	        Command command = (Command) ois.readObject();
 			System.out.println("> "+command.clazz+"."+command.methodName);
-	        if (command.sync){
-	            Object result = command.execute();
+	        if (command.commSync){
+	            Object result = command.execute(true);
 	            oos.writeObject(result);
 	            oos.flush();
 	            oos.close();
@@ -54,7 +54,7 @@ public class ServerThread extends Thread {
 	            oos.close();
 		        ois.close();
 	            client.close();
-	            command.execute();
+	            command.execute(false);
 	        }
 	    } catch(IOException | ClassNotFoundException e) {}       
 	}

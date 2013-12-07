@@ -10,8 +10,6 @@ import hypeerweb.Node;
  */
 public class NodeListener extends Command{
 	public static final String className = NodeListener.class.getName();
-	private boolean isRemote = false;
-	private RemoteAddress origin;
 	
 	/**
 	 * Create a new node listener
@@ -40,15 +38,6 @@ public class NodeListener extends Command{
 	public NodeListener(String cname, String mname, String[] ptypes, Object[] pvals){
 		super(cname, mname, ptypes, pvals);
 	}
-	/**
-	 * Should this listener be executed on the machine that created it?
-	 * @param enabled true, to enable remote execution
-	 */
-	public NodeListener setRemote(boolean enabled){
-		isRemote = enabled;
-		origin = enabled ? Communicator.getAddress() : null;
-		return this;
-	}
 	
 	/**
 	 * Runs the callback on this node
@@ -59,10 +48,15 @@ public class NodeListener extends Command{
 			insertParameter(0, Node.className, n);
 		else setParameter(0, n);
 		//Should we execute this callback remotely?
-		if (!isRemote) execute();
-		else Communicator.request(origin, this, false);
+		execute(false);		
 	}
-	
+	/**
+	 * Runs the callback on this node, with extra
+	 * parameters for remove-node methods
+	 * @param n1 the removed node
+	 * @param n2 the node that replaced it
+	 * @param i the old webID of the replacing node
+	 */
 	public void callback(Node n1, Node n2, int i){
 		if (addedParamCount != 3){
 			insertParameter(0, Node.className, n1);
@@ -74,8 +68,6 @@ public class NodeListener extends Command{
 			setParameter(1, n2);
 			setParameter(2, i);
 		}
-		//Should we execute this callback remotely?
-		if (!isRemote) execute();
-		else Communicator.request(origin, this, false);
+		execute(false);
 	}
 }

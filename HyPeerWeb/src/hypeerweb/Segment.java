@@ -153,14 +153,14 @@ public class Segment<T extends Node> extends Node{
 	 * @param segment the segment to be removed
 	 * @param listener remove segment callback
 	 */
-	public void removeSegment(Segment<T> segment, NodeListener listener){
+	public void removeSegment(NodeListener listener){
 		Segment<Segment<T>> inceptionweb = new Segment(null, seed);
 		inceptionweb.state = inceptionState;
 		inceptionweb.isInceptionWeb = true;
 		inceptionweb.nodes.put(this.webID, this);
 		inceptionweb.nodesByUID.put(this.UID, this);
 		
-		inceptionweb.removeNode(segment, listener);
+		inceptionweb.removeNode(this, listener);
 	}
 	
 	//HYPEERWEB STATE
@@ -174,8 +174,7 @@ public class Segment<T extends Node> extends Node{
 		HAS_NONE {
 			@Override
 			public void addNode(Segment web, Node n, NodeListener listener){
-				//When the entire HyPeerWeb is empty, we can guarantee that
-				//we will be executing on n's machine (e.g. web is not a proxy)
+				//Add to the current segment
 				n.resetLinks();
 				n.setWebID(0);
 				n.setHeight(0);
@@ -197,21 +196,15 @@ public class Segment<T extends Node> extends Node{
 		//Only one node
 		HAS_ONE {
 			@Override
-			public void addNode(Segment web, Node sec, NodeListener listener){
+			public void addNode(Segment web, Node n, NodeListener listener){
+				//Broadcast state change and execute callback
+				//Host will be on the executing machine
+				web.changeState(HAS_MANY);
 				//Go get the segment that contains the first node, we'll start editing from there
 				web.getNode(0, false, new NodeListener(
 					Node.className, "_ONE_add_zero",
 					new String[]{Node.className, NodeListener.className},
-					new Object[]{sec, listener}
-				));
-				Node first = web.getFirstSegmentNode();
-				//Always modify heights before you start changing links
-				//Doing so will result in less network communications
-				first.setHeight(1);
-				sec.executeRemotely(new NodeListener(
-					Node.className, "_ONE_editSecondNode",
-					new String[]{Node.className, NodeListener.className},
-					new Object[]{first, listener}
+					new Object[]{n, listener}
 				));
 			}
 			@Override
@@ -230,7 +223,6 @@ public class Segment<T extends Node> extends Node{
 			@Override
 			public void addNode(Segment web, Node n, NodeListener listener){
 				//Find a random node to start insertion search from
-				System.out.println("HAS_MANY executing");
 				web.getRandomNode(new NodeListener(
 					Node.className, "_MANY_add_random",
 					new String[]{Node.className, NodeListener.className},
@@ -251,7 +243,7 @@ public class Segment<T extends Node> extends Node{
 					//The only other possibility is if we have one node, with a proxy child
 					//Always execute this last, to avoid network communication if at all possible
 					(size == 1 && last.L.getHighestLink().getWebId() > 1))
-				{
+				{					
 					//Get a random node to start a disconnect search from
 					web.getRandomNode(new NodeListener(
 						Node.className, "_MANY_remove_random",
@@ -431,15 +423,6 @@ public class Segment<T extends Node> extends Node{
 		}
 	}
 	/**
-	 * Criteria for a non-empty HyPeerWeb segment
-	 */
-	private static final Criteria nonemptyCriteria = new Criteria(){
-		@Override
-		public Node check(Node origin, Node friend) {
-			return ((Segment) friend).isSegmentEmpty() ? null : friend;
-		}
-	};
-	/**
 	 * Looks for a Segment that is not empty
 	 * @return the segment found
 	 */
@@ -451,7 +434,7 @@ public class Segment<T extends Node> extends Node{
 			//that is not empty; this is terribly inefficient, but we don't
 			//know a better way to do it (at least not yet)
 			//findValidNode will always check current node first
-			return (Segment) findValidNode(nonemptyCriteria, -1, false);
+			return (Segment) findValidNode(Criteria.Type.NONEMPTY, -1, false);
 		}
 	}
 	/**

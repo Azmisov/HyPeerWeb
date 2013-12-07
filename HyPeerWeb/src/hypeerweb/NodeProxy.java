@@ -28,8 +28,8 @@ public class NodeProxy extends Node{
 		request("disconnectNode", new String[] {NodeListener.className}, new Object[] {listener}, false);
 	}
 	@Override
-	protected Node findValidNode(Criteria x, int levels, boolean recursive) {
-		return (Node) request("findValidNode", new String[] {"hypeerweb.Node$Criteria","int","boolean"}, new Object[]{x, levels, recursive}, true);
+	protected Node findValidNode(Criteria.Type x, int levels, boolean recursive) {
+		return (Node) request("findValidNode", new String[] {"hypeerweb.Criteria$Type","int","boolean"}, new Object[]{x, levels, recursive}, true);
 	}
 	@Override
 	protected Node findInsertionNode() {

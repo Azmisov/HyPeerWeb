@@ -26,7 +26,7 @@ public class BroadcastVisitor extends AbstractVisitor{
 	public final void visit(Node n){
 		//Run callback on this node
 		callback.callback(n);
-		System.out.println("BROADCAST: "+callback.methodName);
+		System.out.println("Broadcast > "+callback.methodName);
 		
 		//Reset blacklist flag
 		int cur_blacklist = blacklist;

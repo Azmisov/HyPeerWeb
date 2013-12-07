@@ -188,7 +188,7 @@ public class NodeCache implements NodeInterface, Serializable {
 	@Override
 	public String toString() {
 		StringBuilder builder = new StringBuilder();
-		builder.append("\nNode: ").append(webID).append("(").append(height).append(")");
+		builder.append("Node: ").append(webID).append("(").append(height).append(")");
 		//Folds
 		if (f != -1) {
 			builder.append("\n\tFold: ").append(f);

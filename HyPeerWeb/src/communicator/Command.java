@@ -23,13 +23,14 @@ public class Command implements Serializable{
 	protected String[] paramTypes;
 	//The actual parameters to be used when the method is invoked.
 	protected transient ArrayList<Object> paramVals_lst = new ArrayList();
-	protected Object[] paramVals;
-	//Indicates whether a result is expected.
-	protected boolean sync;
-	//localObjectId of the object of target object
-	protected int UID;
+	protected Object[] paramVals;	
+	//These two vars should only be set in Communicator and used by ServerThread, never anywhere else
+	protected boolean commSync = false;		// execute synchronously
+	protected int UID;						// object to resolve execution
 	//number of inserted parameters
 	protected int addedParamCount = 0;
+	//Remote address, if we want to override the address given by Communicator.request(addr, ...)
+	protected RemoteAddress origin;
 	
 	/**
 	 * Create a command object with no parameters
@@ -57,9 +58,20 @@ public class Command implements Serializable{
 	}
 	
 	//MANIPULATE PARAMETERS
+	/**
+	 * Set the parameter at this index
+	 * @param index which parameter
+	 * @param paramVal the parameter's value
+	 */
 	public void setParameter(int index, Object paramVal){
 		paramVals_lst.set(index, paramVal);
 	}
+	/**
+	 * Insert a new parameter
+	 * @param index where to insert
+	 * @param paramType the type of the parameter (class name)
+	 * @param paramVal the parameter's value
+	 */
 	public void insertParameter(int index, String paramType, Object paramVal){
 		addedParamCount++;
 		paramTypes_lst.add(index, paramType);
@@ -78,7 +90,12 @@ public class Command implements Serializable{
 	 * Executes this method on the indicated object.
 	 * @return the return value of the target method
 	 */
-	public Object execute(){
+	public Object execute(boolean sync){
+		//Send across the net, if necessary
+		if (origin != null && !origin.onSameMachineAs(Communicator.getAddress()))
+			return Communicator.request(null, this, sync);
+		
+		//Otherwise, use reflection to execute the method
 		int l = paramTypes_lst.size();
 		try{
 			Class<?> targetClass = resolveClassName(clazz);
@@ -110,15 +127,14 @@ public class Command implements Serializable{
 			return e;
 		}
 	}
-	
 	/**
-	 * isSynchronous getter
-	 * @return true, if this command is synchronous
+	 * Should this listener be executed on the machine that created it?
+	 * @param enabled true, to enable remote execution
 	 */
-	protected boolean isSynchronous(){
-		return sync;
+	public Command setRemote(boolean enabled){
+		origin = enabled ? Communicator.getAddress() : null;
+		return this;
 	}
-	
 	/**
 -	 * Returns a class for the indicated className.  Works for built in and non-built in classes.  Usually you would
 -	 * use the Class.forName(String) method but this doesn't work for built in types such as <i>int</i>.  This method

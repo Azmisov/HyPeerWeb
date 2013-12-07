@@ -11,7 +11,9 @@ import java.net.UnknownHostException;
  * @author Scott Woodfield
  */
 public class RemoteAddress implements Serializable{
-	public static final String className = RemoteAddress.class.getName();
+	public static final String
+		className = RemoteAddress.class.getName(),
+		classNameArr = RemoteAddress[].class.getName();
 	//Port number constants
 	public static final int
 		MIN_PORT = 1,

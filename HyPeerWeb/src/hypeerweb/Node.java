@@ -177,15 +177,22 @@ public class Node implements Serializable, Comparable<Node>{
 	}
 	
 	//MASS NODE UPDATES
-	protected static void _ONE_add_zeroid(Node zero, Node one, NodeListener listener){
+	protected static void _ONE_add_zero(Node zero, Node one, NodeListener listener){
+		//Always modify heights before you start changing links
+		//Doing so will result in less network communications
+		//In this case, it doesn't matter much; but we're here anyways, so might as well...
+		zero.setHeight(1);
+		one.executeRemotely(new NodeListener(
+			Node.className, "_ONE_add_one",
+			new String[]{Node.className, NodeListener.className},
+			new Object[]{zero, listener}
+		));
+		
 		//Update node zero to have connections
 		zero.L.setFold(one);
 		zero.L.addNeighbor(one);
-		//Broadcast state change and execute callback
-		//Host will be on the executing machine
-		zero.getHostSegment().changeState(HAS_MANY);
 	}
-	protected static void _ONE_add_oneid(Node one, Node zero, NodeListener listener){
+	protected static void _ONE_add_one(Node one, Node zero, NodeListener listener){
 		//Update data for the new second node
 		one.resetLinks();
 		one.setHeight(1);
@@ -194,45 +201,21 @@ public class Node implements Serializable, Comparable<Node>{
 		one.L.addNeighbor(zero);
 		//Host will be on executing machine
 		//If we're doing an addSegment op, there will be no host
-		Segment host = sec.getHostSegment();		
+		Segment host = one.getHostSegment();
 		if (host != null)
-			host.nodes.put(1, sec);
+			host.nodes.put(1, one);
 		//Update data for the first node
-		first.executeRemotely(new NodeListener(
-			className, "_ONE_editFirstNode",
+		zero.executeRemotely(new NodeListener(
+			className, "_ONE_add_finalize",
 			new String[]{className, NodeListener.className},
-			new Object[]{sec, listener}
-		));
-		if (listener != null)
-			listener.callback(one);
-	}
-	protected static void _ONE_editSecondNode(Node sec, Node first, NodeListener listener){
-		//Update data for the new second node
-		sec.resetLinks();
-		sec.setHeight(1);
-		sec.setWebID(1);
-		sec.L.setFold(first);
-		sec.L.addNeighbor(first);
-		//Host will be on executing machine
-		//If we're doing an addSegment op, there will be no host
-		Segment host = sec.getHostSegment();
-		if (host != null)
-			host.nodes.put(1, sec);
-		//Update data for the first node
-		first.executeRemotely(new NodeListener(
-			className, "_ONE_editFirstNode",
-			new String[]{className, NodeListener.className},
-			new Object[]{sec, listener}
+			new Object[]{one, listener}
 		));
 	}
-	protected static void _ONE_editFirstNode(Node first, Node sec, NodeListener listener){
-		first.L.setFold(sec);
-		first.L.addNeighbor(sec);
-		//Broadcast state change and execute callback
-		//Host will be on the executing machine
-		first.getHostSegment().changeState(HAS_MANY);
+	protected static void _ONE_add_finalize(Node zero, Node one, NodeListener listener){
+		zero.L.setFold(one);
+		zero.L.addNeighbor(one);
 		if (listener != null)
-			listener.callback(sec);
+			one.executeRemotely(listener);
 	}
 	protected static void _TWO_remove(Node tostay, Node removed, NodeListener listener){
 		tostay.L.removeAllNeighbors();
@@ -287,28 +270,15 @@ public class Node implements Serializable, Comparable<Node>{
 	
 	//FIND VALID NODES
 	/**
-	 * Defines a set of criteria for a valid node point
-	 * (whether that be for an insertionPoint or disconnectPoint)
-	 */
-	protected static interface Criteria{
-		/**
-		 * Checks to see if the "friend" of the "origin" node fits some criteria
-		 * @param origin the originating node
-		 * @param friend a node connected to the origin within "level" neighbor connections
-		 * @return a Node that fits the criteria, otherwise null
-		 */
-		public Node check(Node origin, Node friend);
-	}
-	/**
 	 * Finds a valid node, given a set of criteria
-	 * @param x the Criteria that denotes a valid node
+	 * @param type the Criteria that denotes a valid node
 	 * @param levels how many neighbor levels out to search;
 	 *	a value less than zero will search forever until there are no more nodes to search
 	 * @param recursive should this be run recursively, once a valid node is found?
 	 *	Warning! depending on how you implement Criteria, if levels < 0 you may enter an infinite loop
 	 * @return a valid node
 	 */
-	protected Node findValidNode(Criteria x, int levels, boolean recursive){
+	protected Node findValidNode(Criteria.Type type, int levels, boolean recursive){
 		int level = levels;
 		//Nodes we've checked already
 		TreeSet<Node> visited = new TreeSet();
@@ -323,8 +293,8 @@ public class Node implements Serializable, Comparable<Node>{
 		while(true){
 			//Check for valid nodes
 			for (Node parent: parents){
-				if ((temp = x.check(this, parent)) != null)
-					return recursive ? temp.findValidNode(x, levels, recursive) : temp;
+				if ((temp = Criteria.check(type, this, parent)) != null)
+					return recursive ? temp.findValidNode(type, levels, recursive) : temp;
 			}
 			//If this was the last level, don't go down any further
 			if (level-- != 0){
@@ -348,61 +318,22 @@ public class Node implements Serializable, Comparable<Node>{
 		}
 	}
 	/**
-	 * Criteria for a valid insertion point node
-	 */
-	private static final Criteria insertCriteria = new Criteria(){
-		@Override
-		public Node check(Node origin, Node friend){
-			//Insertion point is always the lowest point within recurseLevel connections
-			Node low = friend.L.getLowestLink();
-			if (low != null && low.getHeight() < origin.getHeight())
-				return low;
-			return null;
-		}
-	};
-	/**
 	 * Finds the closest valid insertion point (the parent
- of the child to add) from a startuping node, automatically deals with
- the node's holes and insertable state
+	 * of the child to add) from a startuping node, automatically deals with
+	 * the node's holes and insertable state
 	 * @return the parent of the child to add
 	 * @author josh
 	 */
 	protected Node findInsertionNode() {
-		return findValidNode(insertCriteria, recurseLevel, true);
+		return findValidNode(Criteria.Type.INSERT, recurseLevel, true);
 	}
-	/**
-	 * Criteria for a valid disconnect node
-	 */
-	private static final Criteria disconnectCriteria = new Criteria(){
-		@Override
-		public Node check(Node origin, Node friend){
-			/* Check all nodes out to "recurseLevel" for higher nodes
-				Any time we find a "higher" node, we go up to it
-				We keep walking up the ladder until we can go no farther
-				We don't need to keep track of visited nodes, since visited nodes
-				will always be lower on the ladder We also never want to delete
-				from a node with children
-			*/
-			//Check for higher nodes
-			Node high = friend.L.getHighestLink();
-			if (high != null && high.getHeight() > origin.getHeight())
-				return high;
-			//Then go up to children, if it has any
-			if (origin == friend){
-				Node child = origin.L.getHighestNeighbor();
-				if (child.getWebId() > origin.getWebId())
-					return child;
-			}
-			return null;
-		}
-	};
 	/**
 	 * Finds an edge node that can replace a node to be deleted
 	 * @return a Node that can be disconnected
 	 * @author Josh
 	 */
 	protected Node findDisconnectNode(){
-		return findValidNode(disconnectCriteria, recurseLevel, true);
+		return findValidNode(Criteria.Type.DISCONNECT, recurseLevel, true);
 	}
 	
 	//GETTERS
@@ -689,14 +620,12 @@ public class Node implements Serializable, Comparable<Node>{
 		listener.callback(this);
 	}
 	/**
-	 * Convert this node to a cached one; NOTE: only use
-	 * this to convert single nodes; to convert many nodes
+	 * Convert this node to a cached one; to convert many nodes
 	 * at once, use Segment.getCache()
 	 * @return a cached version of this node
 	 */
 	public NodeCache convertToCached(){
-		SegmentCache c = new SegmentCache();
-		return c.createCachedNode(this);
+		return new NodeCache(this, null);
 	}
 	
 	//CLASS OVERRIDES

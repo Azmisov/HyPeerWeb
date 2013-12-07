@@ -272,9 +272,17 @@ public class ChatClient extends JFrame{
 		//Disconnect button
 		JButton btnDisconnect = new JButton("Disconnect");
 		btnDisconnect.setPreferredSize(new Dimension(actionBarWidth, 25));
-		
 		//Shutdown button
 		JButton btnShutdown = new JButton("Shutdown");
+		//Debug button
+		JButton btnDebug = new JButton("Debug");
+		btnDebug.addActionListener(new ActionListener(){
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				Command c = new Command(ChatServer.className, "_debug");
+				Communicator.request(server, c, false);
+			}
+		});
 		
 		// <editor-fold defaultstate="collapsed" desc="Layout components in grid">
 		JPanel box = new JPanel();
@@ -297,6 +305,8 @@ public class ChatClient extends JFrame{
 		box.add(btnDisconnect, c);
 		c.gridy++;
 		box.add(btnShutdown, c);
+		c.gridy++;
+		box.add(btnDebug, c);
 		// </editor-fold>
 		
 		return box;
@@ -459,7 +469,14 @@ public class ChatClient extends JFrame{
 		nodeCache = cache;
 	}
 	public static void changeServer(RemoteAddress address){
-		server = address;
+		if (address != null){
+			server = address;
+			chat.writeStatus("You have been transferred to a new network");
+		}
+		else{
+			setConnected(false);
+			chat.writeStatus("You have been disconnected from the network");
+		}
 	}
 	public static void updateNetworkName(String newName){
 		txtSubnetName.setText(newName);

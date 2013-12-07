@@ -246,14 +246,14 @@ public class Links implements Serializable {
 	 * @return a node
 	 */
 	public Node getHighestLink(){
-		return highest.last();
+		return highest.isEmpty() ? null : highest.last();
 	}
 	/**
 	 * Gets the lowest node out of all the connections
 	 * @return a node
 	 */
 	public Node getLowestLink(){
-		return highest.first();
+		return highest.isEmpty() ? null : highest.first();
 	}
 	/**
 	 * Gets the node's fold

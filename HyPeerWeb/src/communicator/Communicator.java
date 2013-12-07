@@ -101,9 +101,16 @@ public class Communicator extends Thread{
 	 * @return the results of the command, if sync is true
 	 */
 	public static Object request(RemoteAddress raddr, Command command, boolean sync){
+		//Command has overriden the remote address
+		if (command.origin != null)
+			raddr = command.origin;
+		//If the request happens to be for the same machine, just execute
+		if (raddr.onSameMachineAs(address))
+			return command.execute(sync);
+		//Otherwise, send a request across the network
 		Object result = null;
 		try {
-			command.sync = sync;
+			command.commSync = sync;
 			command.UID = raddr.UID;
 			//open a socket connection
 			Socket ext_socket = new Socket(raddr.ip, raddr.port);
@@ -113,7 +120,8 @@ public class Communicator extends Thread{
 			oos.writeObject(command);
 			oos.flush();
 			//get the remote server's response message (if necessary)
-			if (sync) result = ois.readObject();
+			if (sync)
+				result = ois.readObject();
 			//close connection
 			oos.close();
 			ois.close();
