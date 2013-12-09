@@ -1,11 +1,13 @@
 package hypeerweb;
 
+import com.sun.xml.internal.ws.policy.privateutil.PolicyUtils;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.HashSet;
 import hypeerweb.validator.HyPeerWebInterface;
 import hypeerweb.validator.NodeInterface;
 import java.io.ObjectStreamException;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map.Entry;
 
@@ -63,8 +65,11 @@ public class SegmentCache implements HyPeerWebInterface, Serializable{
 	 * @return a list of nodes that need to be synced, if "sync" was enabled
 	 */
 	public HashSet<Integer> addNode(NodeCache faux, boolean sync){
+		//Return list of dirty nodes
+		if (sync)
+			return sync(faux);
+		
 		faux.parent = this;
-		HashSet<Integer> syncNodes = sync ? sync(faux) : null;
 		nodes.put(faux.webID, faux);
 		//Add to segments list
 		HashSet<NodeCache> set = segments.get(faux.networkID);
@@ -74,8 +79,8 @@ public class SegmentCache implements HyPeerWebInterface, Serializable{
 		}
 		set.remove(faux);
 		set.add(faux);
-		//Return list of dirty nodes
-		return syncNodes;
+
+		return null;
 	}
 	
 	/**
@@ -96,15 +101,18 @@ public class SegmentCache implements HyPeerWebInterface, Serializable{
 	 * @return a list of nodes that need to be synced, if "sync" was enabled
 	 */
 	public HashSet<Integer> removeNode(NodeCache faux, boolean sync){
-		HashSet<Integer> syncNodes = sync ? sync(faux) : null;
+		//Return a list of dirty nodes
+		if (sync)
+			return sync(faux);
+		
 		nodes.remove(faux.webID);
 		//Remove from segments list
 		HashSet<NodeCache> set = segments.get(faux.networkID);
 		set.remove(faux);
 		if (set.isEmpty())
 			segments.remove(faux.networkID);
-		//Return a list of dirty nodes
-		return syncNodes;
+		
+		return null;
 	}
 	public void removeAllNodes(){
 		nodes.clear();
@@ -132,13 +140,14 @@ public class SegmentCache implements HyPeerWebInterface, Serializable{
 		//Replace node is special in that the webID has changed
 		//So, instead of using sync() to get the symmetric difference,
 		//all of the old node's links are dirty
-		HashSet<Integer> dirty = sync ? syncAll(old) : null;
+		if (sync)
+			return syncAll(old);
 		
 		//Replace the node
 		removeNode(old, false);
 		addNode(faux, false);
 		
-		return dirty;
+		return null;
 	}
 	
 	//Gather a list of nodes that need to be updated

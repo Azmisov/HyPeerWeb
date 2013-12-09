@@ -126,26 +126,24 @@ public class Node implements Serializable, Comparable<Node>{
 	/**
 	 * Replaces a node with this node
 	 * @param db a reference to the database singleton
-	 * @param toReplace the node to replace
+	 * @param removed the node to replace
 	 * @return true, if the replacement was successful
 	 * @author isaac
 	 */
-	protected void replaceNode(Node toReplace, NodeListener listener){
+	protected void replaceNode(Node removed, NodeListener listener){
 		int oldWebID = this.webID;
 		//Swap out connections
-		//We're probably going to have to modify this so it works with proxies.
-		//TODO, fix this here
-		//L = toReplace.getLinks();
+		L = new Links(removed.L.convertToImmutable());
 		L.UID = UID;
 		//Inherit the node's fold state
-		foldState = toReplace.getFoldState();
+		foldState = removed.getFoldState();
 		//Change WebID/Height, this must come before updating connections
 		//Otherwise, the Neighbor Sets will be tainted with incorrect webID's
-		webID = toReplace.getWebId();
-		height = toReplace.getHeight();
+		webID = removed.getWebId();
+		height = removed.getHeight();
 		//Notify all connections that their reference has changed
-		L.broadcastReplacement(toReplace, this);
-		listener.callback(toReplace);
+		L.broadcastReplacement(removed, this);
+		listener.callback(removed, this, oldWebID);
 	}
 	/**
 	 * Disconnects an edge node to replace a node that
@@ -177,6 +175,7 @@ public class Node implements Serializable, Comparable<Node>{
 
 		//TODO, group these into mass node updates
 		//Reverse the fold state; we will always have a fold - guaranteed
+		assert(L.getFold() != null);
 		L.getFold().getFoldState().reverseFolds(parent, this);
 		listener.callback(this);
 	}
@@ -266,7 +265,6 @@ public class Node implements Serializable, Comparable<Node>{
 			removed.getHostSegment().nodes.put(newWebID, replaced);
 			replaced.replaceNode(removed, listener);
 		}
-		listener.callback(removed, replaced, oldWebId);
 	}
 	
 	//FIND VALID NODES
