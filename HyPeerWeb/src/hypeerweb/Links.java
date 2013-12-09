@@ -323,7 +323,6 @@ public class Links implements Serializable {
 	 * @param n the node to remove
 	 */
 	protected void removeNeighbor(Node n){
-		System.err.println("FATAL ERROR HERE; THIS SHOULD NOT BE CALLED!!!!");
 		update(n, null, Type.NEIGHBOR);
 	}
 	

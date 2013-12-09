@@ -220,7 +220,7 @@ public class Node implements Serializable, Comparable<Node>{
 		tostay.setWebID(0);
 		tostay.setHeight(0);
 		tostay.getHostSegment().changeState(HAS_ONE);
-		removed.executeRemotely(listener);
+		listener.callback(removed, tostay, tostay.getWebId());
 	}
 	protected static void _MANY_add_random(Node ranNode, Node child, NodeListener listener){
 		//Find a valid insertion point and add the child

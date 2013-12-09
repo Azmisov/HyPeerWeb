@@ -215,7 +215,7 @@ public class Segment<T extends Node> extends Node{
 				//broadcast state change to HAS_NONE
 				web.changeState(HAS_NONE);
 				if (listener != null)
-					listener.callback(n);
+					listener.callback(n, null, -1);
 			}
 		},
 		//More than one node
@@ -245,6 +245,7 @@ public class Segment<T extends Node> extends Node{
 					(size == 1 && last.L.getHighestLink().getWebId() > 1))
 				{					
 					//Get a random node to start a disconnect search from
+					System.out.println("Deleting from HasMany");
 					web.getRandomNode(new NodeListener(
 						Node.className, "_MANY_remove_random",
 						new String[]{Node.className, NodeListener.className},
