@@ -427,6 +427,7 @@ public class ChatServer{
 		//Update the server's cache
 		int[] toRemove = (int[]) syncify.getParameter(0);		
 		if (toRemove != null){
+			System.out.println(Arrays.toString(toRemove));
 			for (int webID: toRemove)
 				cache.removeNode(webID, false);
 		}

@@ -63,6 +63,7 @@ public class Links implements Serializable {
 		neighbors = l.neighbors;
 		surrogateNeighbors = l.surrogateNeighbors;
 		inverseSurrogateNeighbors = l.inverseSurrogateNeighbors;
+		highest = l.highest;
 	}
 	
 	/**
@@ -502,5 +503,9 @@ public class Links implements Serializable {
 	}
 	public Object readResolve() throws ObjectStreamException {
 		return this;
+	}
+	public LinksImmutable convertToImmutable()
+	{
+		return new LinksImmutable(this);
 	}
 }
