@@ -6,7 +6,6 @@ import communicator.RemoteAddress;
 import java.io.ObjectStreamException;
 import java.io.Serializable;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map.Entry;
 import java.util.SortedSet;
@@ -55,28 +54,15 @@ public class Links implements Serializable {
 	 * @param sn list of surrogate neighbors
 	 * @param isn list of inverse surrogate neighbors
 	 */
-	public Links(Node f, Node sf, Node isf, ArrayList<Node> n, ArrayList<Node> sn, ArrayList<Node> isn){
+	public Links(Links l){
 		//Add everything to the highest set as well
 		//Add folds
-		fold = f;
-		surrogateFold = sf;
-		inverseSurrogateFold = isf;
-		if (f != null) highest.add(f);
-		if (sf != null) highest.add(sf);
-		if (isf != null) highest.add(isf);
-		//Add neighbors
-		if (n != null){
-			neighbors.addAll(n);
-			highest.addAll(n);
-		}
-		if (sn != null){
-			surrogateNeighbors.addAll(sn);
-			highest.addAll(sn);
-		}
-		if (isn != null){
-			inverseSurrogateNeighbors.addAll(isn);
-			highest.addAll(isn);
-		}
+		fold = l.fold;
+		surrogateFold = l.surrogateFold;
+		inverseSurrogateFold = l.inverseSurrogateFold;
+		neighbors = l.neighbors;
+		surrogateNeighbors = l.surrogateNeighbors;
+		inverseSurrogateNeighbors = l.inverseSurrogateNeighbors;
 	}
 	
 	/**

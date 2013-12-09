@@ -8,14 +8,17 @@ import java.io.ObjectStreamException;
 
 /**
  *
- * @author ljnutal6
+ * @author Gangsta
  */
-public class LinksImmutable extends Links {
-	public LinksImmutable(Links links){
-		super(links);
+public class NodeImmutable extends Node {
+
+	public NodeImmutable(Node node) {
+		super(node.webID, node.height);
+		L = new LinksImmutable(node.L);
 	}
 	@Override
 	public Object writeReplace() throws ObjectStreamException {
 		return this;
-	}	
+	}
+    
 }
