@@ -5,6 +5,7 @@ import hypeerweb.visitors.SendVisitor;
 import hypeerweb.visitors.BroadcastVisitor;
 import java.io.ObjectStreamException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Random;
 import java.util.TreeMap;
 
@@ -475,6 +476,11 @@ public class Segment<T extends Node> extends Node{
 				temp.addNode(n, false);
 		}
 		return temp.nodes.values().toArray(new NodeCache[temp.nodes.size()]);
+	}
+	public SegmentDB getDatabase(){
+		SegmentDB db = new SegmentDB();
+		db.store((Collection<Node>) nodes.values());
+		return db;
 	}
 	public void store() throws Exception{
 		//TODO: NOT IMPLEMENTED

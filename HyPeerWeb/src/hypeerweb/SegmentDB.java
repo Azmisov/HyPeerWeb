@@ -6,9 +6,10 @@ package hypeerweb;
 
 import communicator.Communicator;
 import communicator.RemoteAddress;
+import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashSet;
-import java.util.Set;
 
 /**
  *
@@ -16,31 +17,28 @@ import java.util.Set;
  * Every database segment has a database. It only saves to the database when the
  * InceptionWeb shuts down.
  */
-public class SegmentDB {
-	private HashSet<NodeProxy> proxies;
-	private ArrayList<NodeCache> nodes;
+public class SegmentDB implements Serializable {
+	private ArrayList<NodeImmutable> nodes;
+	private RemoteAddress oldAddress;
 	
 	public SegmentDB(){
-		proxies = new HashSet<>();
 		nodes = new ArrayList<>();
+		oldAddress = Communicator.getAddress();
 	}
 	
 	/**
 	 * Stores the InceptionWeb segment in a database.
 	 * @param nodes The nodes in the segment to be saved 
 	 */
-	public void store(Set<Node> nodes){
-		RemoteAddress here = Communicator.getAddress();
-		for(Node n : nodes){
-			NodeCache cache = new NodeCache(n, null);
-			this.nodes.add(cache);
-			for(Node link : n.L.getAllLinks()){
-				if(!link.getAddress().onSameMachineAs(here)){
-					proxies.add((NodeProxy)link);
-				}
-			}
-		}
+	public void store(Collection<Node> nodes){
+		for(Node n : nodes)
+			this.nodes.add(new NodeImmutable(n));
 	}
 	
-	
+	public void restore(Segment<Node> segment){
+		for (NodeImmutable n : nodes){
+			n.UID = Communicator.assignId();
+			n.L.broadcastReplacement(n, );
+		}
+	}
 }
