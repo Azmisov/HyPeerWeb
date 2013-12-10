@@ -28,7 +28,7 @@ public class Node implements Serializable, Comparable<Node>{
 	//Node's connections
 	public Links L;
 	//State machines
-	private static final int recurseLevel = 1; //2 = neighbor's neighbors
+	private static final int recurseLevel = 2; //2 = neighbor's neighbors (2+ for validator to validate)
 	private FoldState foldState = FoldState.STABLE; 
 	
 	//CONSTRUCTORS
@@ -52,7 +52,6 @@ public class Node implements Serializable, Comparable<Node>{
 	//ADD OR REMOVE NODES
 	/**
 	 * Adds a child node to the current one
-	 * @param db the Database associated with the HyPeerWeb
 	 * @param child the Node to add as a child
 	 * @param listener the add node callback
 	 */
@@ -126,7 +125,6 @@ public class Node implements Serializable, Comparable<Node>{
 	}
 	/**
 	 * Replaces a node with this node
-	 * @param db a reference to the database singleton
 	 * @param removed the node to replace
 	 * @return true, if the replacement was successful
 	 * @author isaac
@@ -149,7 +147,6 @@ public class Node implements Serializable, Comparable<Node>{
 	/**
 	 * Disconnects an edge node to replace a node that
 	 * will be deleted
-	 * @param db the database connection
 	 * @return the disconnected node
 	 * @author John, Brian, Guy
 	 */
@@ -255,18 +252,27 @@ public class Node implements Serializable, Comparable<Node>{
 			new Object[]{remove, listener}
 		));
 	}
-	protected static void _MANY_remove_disconnect(Node replaced, Node removed, NodeListener listener){
-		int oldWebId = replaced.webID;
+	protected static void _MANY_remove_disconnect(Node replacement, Node remove, NodeListener listener){
+		//Change replacement's webID; this should execute on replacement's machine
+		Segment host = replacement.getHostSegment();
+		if (host != null){
+			int oldWebId = replacement.getWebId();
+			host.nodes.remove(oldWebId);
+			host.nodes.put(host, host)
+		}
 		//Remove node from list of nodes
 		//This remove is called on the same machine
-		removed.getHostSegment().nodes.remove(replaced.getWebId());
+		remove.getHostSegment().nodes.remove(replacement.getWebId());
 		//Replace the node to be deleted
 		if (!removed.equals(replaced)){
 			int newWebID = removed.getWebId();
-			removed.getHostSegment().nodes.remove(newWebID);
-			removed.getHostSegment().nodes.put(newWebID, replaced);
 			replaced.replaceNode(removed, listener);
 		}
+	}
+	protected static void _MANY_remove_finalize(Node ){
+		removed.getHostSegment().nodes.remove(newWebID);
+		removed.getHostSegment().nodes.put(newWebID, replaced);
+		listener.callback();
 	}
 	
 	//FIND VALID NODES

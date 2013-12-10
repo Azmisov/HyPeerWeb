@@ -102,6 +102,7 @@ public class Links implements Serializable {
 		//Update the highest connection list
 		//Make sure this node isn't being referenced elsewhere
 		//Cannot have same reference in fold-set or neighbor-set
+		/*
 		boolean isFoldType = type == Type.FOLD || type == Type.SFOLD || type == Type.ISFOLD;
 		if (oldNode != null && !(
 			(!isFoldType &&
@@ -111,6 +112,17 @@ public class Links implements Serializable {
 		{
 			highest.remove(oldNode);
 		}
+		//*/
+		//*
+		//Update the highest connection list
+		//Make sure this node isn't being referenced elsewhere
+		if (oldNode != null && (!(fold == oldNode || surrogateFold == oldNode ||
+			inverseSurrogateFold == oldNode || neighbors.contains(oldNode) ||
+			surrogateNeighbors.contains(oldNode) || inverseSurrogateNeighbors.contains(oldNode))))
+		{
+			highest.remove(oldNode);
+		}
+		//*/
 		//Add it to the appropriate structure
 		//Change the key back to the changed value
 		if (newNode != null){
@@ -209,7 +221,7 @@ public class Links implements Serializable {
 		ArrayList<HeightUpdate> reinsert = new ArrayList();
 		for (Links l: toUpdate){
 			assert(!(l instanceof LinksProxy));
-			reinsert.add(l.removeOutdatedLink(webId, oldHeight, newHeight));
+			reinsert.add(l._removeOutdatedLink(webId, oldHeight, newHeight));
 		}
 		
 		//Re-insert the one pointer to rule them all
@@ -230,7 +242,7 @@ public class Links implements Serializable {
 			}
 		}		
 	}
-	private HeightUpdate removeOutdatedLink(int webID, int oldHeight, int newHeight){
+	private HeightUpdate _removeOutdatedLink(int webID, int oldHeight, int newHeight){
 		/* Since height makes up part of the key for the TreeSets, changing height
 			poses a foreboding challenge. If the object is a reference/pointer in
 			multiple TreeSets, changing the pointer in one will break retrieval
