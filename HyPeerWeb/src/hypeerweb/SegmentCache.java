@@ -102,6 +102,8 @@ public class SegmentCache implements HyPeerWebInterface, Serializable{
 		//Return a list of dirty nodes
 		if (sync)
 			return sync(faux);
+		if (faux == null)
+			return null;
 		
 		nodes.remove(faux.webID);
 		//Remove from segments list
@@ -150,6 +152,8 @@ public class SegmentCache implements HyPeerWebInterface, Serializable{
 	
 	//Gather a list of nodes that need to be updated
 	private HashSet<Integer> sync(NodeCache faux){
+		if (faux == null)
+			return new HashSet();
 		NodeCache cache = nodes.get(faux.webID);
 		//If this is a new node, sync all links
 		if (cache == null)
@@ -202,6 +206,8 @@ public class SegmentCache implements HyPeerWebInterface, Serializable{
 	private HashSet<Integer> syncAll(NodeCache faux){
 		//Sync all connections
 		HashSet<Integer> dirty = new HashSet();
+		if (faux == null)
+			return dirty;
 		dirty.add(faux.f);
 		dirty.add(faux.sf);
 		dirty.add(faux.isf);
@@ -252,8 +258,13 @@ public class SegmentCache implements HyPeerWebInterface, Serializable{
 	@Override
     public String toString() {
         StringBuilder builder = new StringBuilder();
-        for (NodeCache n : nodes.values())
+		boolean first = true;
+        for (NodeCache n : nodes.values()){
+			if (!first)
+				builder.append("\n");
             builder.append(n);
+			first = false;
+		}
         return builder.toString();
     }
 	

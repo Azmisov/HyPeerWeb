@@ -212,8 +212,7 @@ public class Node implements Serializable, Comparable<Node>{
 		L.getFold().getFoldState().reverseFolds(parent, this);
 		
 		//Execute callback, returning the new parentHeight
-		listener.prependParameter("int", parentHeight);
-		listener.callback(this);
+		listener.callback(this, parentHeight);
 	}
 	
 	//MASS NODE UPDATES
@@ -274,15 +273,17 @@ public class Node implements Serializable, Comparable<Node>{
 		//Remove "remove_proxy" from it's node-maps
 		remove_proxy.executeRemotely(new NodeListener(
 			className, "_TWO_remove_finalize",
-			new String[]{className, "int"},
-			new Object[]{tostay, oldWebID}
+			new String[]{className, "int", NodeListener.className},
+			new Object[]{tostay, oldWebID, listener}
 		));
 	}
 	protected static void _TWO_remove_finalize(Node remove, Node replace_proxy, int oldWebID, NodeListener listener){
 		//The removed node will be on this machine; remove from the node maps
+		//replace_proxy may have replaced it already, in which case we ignore this step
 		Segment seg = remove.getHostSegment();
-		if (seg != null){
-			seg.nodes.remove(remove.getWebId());
+		int remID = remove.getWebId();
+		if (seg != null && remID != 0){
+			seg.nodes.remove(remID);
 			seg.nodesByUID.remove(remove.UID);
 		}
 		if (listener != null)

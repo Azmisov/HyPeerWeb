@@ -44,8 +44,10 @@ public class NodeListener extends Command{
 	 * @param n the node to callback on
 	 */
 	public void callback(Node n){
-		if (addedParamCount != 1)
+		if (addedParamCount != 1){
+			assert(addedParamCount == 0);
 			prependParameter(Node.className, n);
+		}
 		else setParameter(0, n);
 		//Should we execute this callback remotely?
 		execute(false);		
@@ -59,6 +61,7 @@ public class NodeListener extends Command{
 	 */
 	public void callback(Node n1, Node n2, int i){
 		if (addedParamCount != 3){
+			assert(addedParamCount == 0);
 			prependParameter("int", i);
 			prependParameter(Node.className, n2);
 			prependParameter(Node.className, n1);
@@ -67,6 +70,22 @@ public class NodeListener extends Command{
 			setParameter(0, n1);
 			setParameter(1, n2);
 			setParameter(2, i);
+		}
+		execute(false);
+	}
+	/**
+	 * Runs the callback on this node, with extra
+	 * parameters for the _HAS_MANY_remove_disconnect callback
+	 */
+	public void callback(Node n1, int i){
+		if (addedParamCount != 2){
+			assert(addedParamCount == 0);
+			prependParameter("int", i);
+			prependParameter(Node.className, n1);
+		}
+		else{
+			setParameter(0, n1);
+			setParameter(1, i);
 		}
 		execute(false);
 	}

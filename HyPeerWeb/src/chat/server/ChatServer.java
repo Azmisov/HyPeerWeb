@@ -585,10 +585,18 @@ public class ChatServer{
 		return instance != null;
 	}
 	public static void _debug(){
-		Validator v = new Validator(segment.getCache());
+		SegmentCache actualCache = segment.getCache();
+		Validator v = new Validator(cache);
 		System.err.println("PRINTING SERVER DATA");
-		System.out.println(v.validate());
-		System.out.println(segment.inceptionState);
+		try{
+			boolean valid = v.validate();
+			System.out.println("Valid = "+valid);
+			if (valid)
+				System.out.println(actualCache);
+		} catch (Exception e){
+			System.err.println("Error validating:");
+			System.err.println(e.getMessage());
+		}
 		System.err.println("--------------------");
 	}
 }
