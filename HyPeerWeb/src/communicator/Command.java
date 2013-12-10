@@ -137,6 +137,8 @@ public class Command implements Serializable{
 				System.err.println("Of types:"+Arrays.toString(names));
 				e.printStackTrace();
 			}
+			System.exit(999);
+			System.err.println("THIS LINE SHOULD NOT PRINT");
 			return e;
 		}
 	}

@@ -52,32 +52,37 @@ public class HyPeerWebTest {
 					boolean halt;
 					for (int i=1; i<=MAX_SIZE; i++){
 						final int final_i = i, final_size = ++old_size;
-						web.addNode(new Node(0, 0), new SyncListener(){
-							@Override
-							public void callback(Node n){
-								int size = web.getSegmentSize();
-								if (size != final_size){
-									System.err.println("HyPeerWeb is not the correct size; should be "+final_size+" but found "+size);
-									STOP_TESTS = true;
-								}
-								if (final_i % TEST_EVERY == 0){
-									SegmentCache cache = web.getCache();
-									Validator x = new Validator(cache);
-									try{
-										if (!x.validate()){
-											System.out.println("VALIDATION FAILED:");
-											System.out.println(cache);
-											STOP_TESTS = true;
-										}
-									}catch (Exception e){
-										System.out.println("VALIDATION FAILED:");
-										System.out.println(cache);
-										e.printStackTrace();
+						try{
+							web.addNode(new Node(0, 0), new SyncListener(){
+								@Override
+								public void callback(Node n){
+									int size = web.getSegmentSize();
+									if (size != final_size){
+										System.err.println("HyPeerWeb is not the correct size; should be "+final_size+" but found "+size);
 										STOP_TESTS = true;
 									}
+									if (final_i % TEST_EVERY == 0){
+										SegmentCache cache = web.getCache();
+										Validator x = new Validator(cache);
+										try{
+											if (!x.validate()){
+												System.out.println("VALIDATION FAILED:");
+												System.out.println(cache);
+												STOP_TESTS = true;
+											}
+										}catch (Exception e){
+											System.out.println("VALIDATION FAILED:");
+											System.out.println(cache);
+											e.printStackTrace();
+											STOP_TESTS = true;
+										}
+									}
 								}
-							}
-						});						
+							});
+						} catch (Exception e){
+							System.err.println("EXCEPTION OCCURRED: "+i);
+							STOP_TESTS = true;
+						}
 						if (STOP_TESTS) fail();
 					}
 				}
@@ -111,22 +116,58 @@ public class HyPeerWebTest {
 	/**
 	 * Test of removeNode method (from zero, every time)
 	 */
-	/*
 	@Test
 	public void testRemoveZero() throws Exception {
 		begin("REMOVING ZERO");
 		Node temp;
-		int old_size = getSize();
+		int old_size = web.getSegmentSize();
 		assert(old_size == MAX_SIZE);
 		for (int i=1; i<=MAX_SIZE; i++){
-			web.removeNode(0, RemoveListener);
-			if (getSize() != --old_size)
-				throw new Exception("HyPeerWeb is not the correct size");
-			if (i % TEST_EVERY == 0)
-				assertTrue((new Validator(web.getSegmentNodeCache(0))).validate());
+			System.out.println(i);
+			final int final_i = i, final_size = --old_size;
+			if (i == 78){
+				System.out.println("CACHE AT 78 = ");
+			}
+			try{
+				web.removeNode(0, new SyncListener(){
+					@Override
+					public void callback(Node n, Node n2, int webid){
+						int size = web.getSegmentSize();
+						if (n == null){
+							System.err.println("Removed node should not be null");
+							STOP_TESTS = true;
+						}
+						else if (size != final_size){
+							System.err.println("HyPeerWeb is not the correct size; should be "+final_size+" but found "+size);
+							STOP_TESTS = true;
+						}
+						else if (final_i % TEST_EVERY == 0){
+							SegmentCache cache = web.getCache();
+							Validator x = new Validator(cache);
+							try{
+								if (!x.validate()){
+									System.err.println("VALIDATION FAILED:");
+									System.out.println(cache);
+									STOP_TESTS = true;
+								}
+							}catch (Exception e){
+								System.err.println("VALIDATION FAILED:");
+								System.out.println(cache);
+								e.printStackTrace();
+								STOP_TESTS = true;
+							}
+						}
+					}
+				});
+			} catch (Exception e){
+				System.err.println("EXCEPTION OCCURRED: "+i);
+				STOP_TESTS = true;
+			}
+			if (STOP_TESTS) fail();
 		}
 	}
 	
+	/*
 	@Test
 	public void testRemoveRandom() throws Exception {
 		begin("REMOVING RANDOM");
@@ -142,6 +183,7 @@ public class HyPeerWebTest {
 		}
 	}
 	
+	/*
 	@Test
 	public void testSendValid() throws Exception {
 		//Test send node

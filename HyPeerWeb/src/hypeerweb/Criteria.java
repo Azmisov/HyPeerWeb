@@ -19,6 +19,8 @@ public class Criteria {
 	 * @return a Node that fits the criteria, otherwise null
 	 */
 	public static Node check(Type type, Node origin, Node friend){
+		//We have to do it this way because static class methods can't be serialized
+		//So instead, we pass in an enum type; its a lot cleaner than using reflection
 		switch (type){
 			case INSERT:
 				//Insertion point is always the lowest point within recurseLevel connections

@@ -28,7 +28,7 @@ public class Node implements Serializable, Comparable<Node>{
 	//Node's connections
 	public Links L;
 	//State machines
-	private static final int recurseLevel = 2; //2 = neighbor's neighbors
+	private static final int recurseLevel = 1; //2 = neighbor's neighbors
 	private FoldState foldState = FoldState.STABLE; 
 	
 	//CONSTRUCTORS
@@ -248,7 +248,8 @@ public class Node implements Serializable, Comparable<Node>{
 	}
 	protected static void _MANY_remove_random(Node ranNode, Node remove, NodeListener listener){	
 		//Find a valid disconnect point
-		ranNode.findDisconnectNode().disconnectNode(new NodeListener(
+		Node discNode = ranNode.findDisconnectNode();
+		discNode.disconnectNode(new NodeListener(
 			className, "_MANY_remove_disconnect",
 			new String[]{Node.className, NodeListener.className},
 			new Object[]{remove, listener}

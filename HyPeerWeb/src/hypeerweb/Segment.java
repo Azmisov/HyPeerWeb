@@ -16,8 +16,7 @@ import java.util.TreeMap;
 public class Segment<T extends Node> extends Node{
 	public static final String className = Segment.class.getName();
 	//HyPeerWebSegment attributes
-	protected final TreeMap<Integer, T> nodes;
-	protected final TreeMap<Integer, T> nodesByUID;
+	protected final TreeMap<Integer, T> nodes, nodesByUID;
 	public HyPeerWebState
 		state = HyPeerWebState.HAS_NONE,
 		inceptionState = HyPeerWebState.HAS_ONE;
@@ -50,7 +49,7 @@ public class Segment<T extends Node> extends Node{
 	public Segment(String dbname, long seed, int webID, int height){
 		super(webID, height);
 		this.dbname = dbname;
-		this.seed = seed;
+		this.seed = 2;
 		nodes = new TreeMap();
 		nodesByUID = new TreeMap();
 		if (seed != -1)
@@ -244,9 +243,8 @@ public class Segment<T extends Node> extends Node{
 					//The only other possibility is if we have one node, with a proxy child
 					//Always execute this last, to avoid network communication if at all possible
 					(size == 1 && last.L.getHighestLink().getWebId() > 1))
-				{					
+				{
 					//Get a random node to start a disconnect search from
-					System.out.println("Deleting from HasMany");
 					web.getRandomNode(new NodeListener(
 						Node.className, "_MANY_remove_random",
 						new String[]{Node.className, NodeListener.className},
