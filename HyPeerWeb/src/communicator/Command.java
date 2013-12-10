@@ -64,7 +64,7 @@ public class Command implements Serializable{
 	 * @param paramVal the parameter's value
 	 */
 	public void setBaseParameter(int index, Object paramVal){
-		paramVals_lst.set(index+addedParamCount, paramVal);
+		setParameter(index+addedParamCount, paramVal);
 	}
 	/**
 	 * Set the parameter at this index
@@ -144,7 +144,8 @@ public class Command implements Serializable{
 	}
 	/**
 	 * Should this listener be executed on the machine that created it?
-	 * @param enabled true, to enable remote execution
+	 * @param enabled true, to enable remote execution; this sets
+	 * the "origin" machine as the current machine
 	 */
 	public Command setRemote(boolean enabled){
 		origin = enabled ? Communicator.getAddress() : null;

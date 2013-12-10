@@ -54,9 +54,8 @@ public class Links implements Serializable {
 	 * @param sn list of surrogate neighbors
 	 * @param isn list of inverse surrogate neighbors
 	 */
-	public Links(Links l){
-		//Add everything to the highest set as well
-		//Add folds
+	public Links(int UID, Links l){
+		this.UID = UID;		
 		fold = l.fold;
 		surrogateFold = l.surrogateFold;
 		inverseSurrogateFold = l.inverseSurrogateFold;
@@ -516,8 +515,7 @@ public class Links implements Serializable {
 	public Object readResolve() throws ObjectStreamException {
 		return this;
 	}
-	public LinksImmutable convertToImmutable()
-	{
+	public LinksImmutable convertToImmutable(){
 		return new LinksImmutable(this);
 	}
 }

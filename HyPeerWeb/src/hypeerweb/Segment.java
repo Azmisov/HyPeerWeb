@@ -1,5 +1,6 @@
 package hypeerweb;
 
+import communicator.Communicator;
 import communicator.NodeListener;
 import hypeerweb.visitors.SendVisitor;
 import hypeerweb.visitors.BroadcastVisitor;
@@ -73,7 +74,8 @@ public class Segment<T extends Node> extends Node{
 	/**
 	 * Removes the node
 	 * @param node the node to remove
-	 * @param listener event callback
+	 * @param listener event callback; this will execute on the machine
+	 * that the removed node is on, unless remote execution is enabled
 	 */
 	public void removeNode(T node, NodeListener listener){
 		//Get the segment that has this node and execute the method there
@@ -91,9 +93,8 @@ public class Segment<T extends Node> extends Node{
 	}
 	/**
 	 * Removes all nodes from HyPeerWeb
-	 * Warning! This may leave the HyPeerWeb corrupt, if
-	 * all segments are not cleared together
-	 * @param listener event callback
+	 * @param listener event callback; executed on the each segment, unless
+	 * remote execution is enabled
 	 */
 	public void removeAllNodes(NodeListener listener){
 		(new BroadcastVisitor(new NodeListener(
@@ -112,15 +113,18 @@ public class Segment<T extends Node> extends Node{
 	/**
 	 * Adds a node to the HyPeerWeb, using a pre-initialized Node;
 	 * Note: webID, height, and Links (L) will be altered; all other
-	 * attributes will remain the same, however
-	 * @param node a pre-initialized Node
+	 * attributes will remain the same however
+	 * @param node a pre-initialized Node; this is the only method that requires the
+	 * input "node" be on same machine as the Segment
 	 * @param listener add node callback; this will execute on the machine
 	 * that "node" is on, unless remote execution is enabled
 	 */
 	public void addNode(T node, NodeListener listener){
+		assert(node.getAddress().equals(Communicator.getAddress()));
 		//Add node to UID list, so proxies can be resolved during the add process
 		nodesByUID.put(node.UID, node);
 		//The HyPeerWeb's state will handle everything else
+		// (e.g. finding a nonempty segment to add from)
 		state.addNode(this, node, listener);
 	}
 	/**
@@ -128,7 +132,8 @@ public class Segment<T extends Node> extends Node{
 	 * Note: webID, height, Links (L), state, and inceptionState will be altered;
 	 * all other attributes will remain the same however
 	 * @param segment the pre-initialized segment
-	 * @param listener add segment callback
+	 * @param listener add segment callback; this will execute on the machine
+	 * the "segment" is on, unless remote execution is enabled
 	 */
 	public void addSegment(Segment<T> segment, NodeListener listener){
 		//Create a temporary segment container
@@ -151,7 +156,8 @@ public class Segment<T extends Node> extends Node{
 	/**
 	 * Removes a segment from the HyPeerWeb
 	 * @param segment the segment to be removed
-	 * @param listener remove segment callback
+	 * @param listener remove segment callback; this will execute on the machine
+	 * that removed segment is on, unless remote execution is enabled
 	 */
 	public void removeSegment(NodeListener listener){
 		Segment<Segment<T>> inceptionweb = new Segment(null, seed);
@@ -174,14 +180,14 @@ public class Segment<T extends Node> extends Node{
 		HAS_NONE {
 			@Override
 			public void addNode(Segment web, Node n, NodeListener listener){
+				web.changeState(HAS_ONE);
 				//Add to the current segment
+				//execution namespace, web, and n, are all on the same machine
 				n.resetLinks();
 				n.setWebID(0);
 				n.setHeight(0);
 				web.nodes.put(0, n);
-				//broadcast state change to HAS_ONE
-				web.changeState(HAS_ONE);
-				//run callback
+				//callback
 				if (listener != null)
 					listener.callback(n);
 			}
@@ -189,6 +195,7 @@ public class Segment<T extends Node> extends Node{
 			public void removeNode(Segment web, Node n, NodeListener listener){
 				//Throw an error; this shouldn't happen
 				web.changeState(CORRUPT);
+				//callback
 				if (listener != null)
 					listener.callback(null);
 			}
@@ -197,8 +204,6 @@ public class Segment<T extends Node> extends Node{
 		HAS_ONE {
 			@Override
 			public void addNode(Segment web, Node n, NodeListener listener){
-				//Broadcast state change and execute callback
-				//Host will be on the executing machine
 				web.changeState(HAS_MANY);
 				//Go get the segment that contains the first node, we'll start editing from there
 				web.getNode(0, false, new NodeListener(
@@ -209,11 +214,12 @@ public class Segment<T extends Node> extends Node{
 			}
 			@Override
 			public void removeNode(Segment web, Node n, NodeListener listener){
+				//broadcast state change to HAS_NONE
+				web.changeState(HAS_NONE);
 				//only node left; both n and web will be on this machine
 				web.nodes.clear();
 				web.nodesByUID.clear();
-				//broadcast state change to HAS_NONE
-				web.changeState(HAS_NONE);
+				//callback
 				if (listener != null)
 					listener.callback(n, null, -1);
 			}
@@ -253,17 +259,14 @@ public class Segment<T extends Node> extends Node{
 				}
 				//If the entire HyPeerWeb has only two nodes
 				else{
-					Node replace = n.L.getFold(); //gets node 1
-					if (replace == null)
-						web.changeState(CORRUPT);
-					//Remove node from list of nodes
-					else{
-						replace.executeRemotely(new NodeListener(
-							Node.className, "_TWO_remove",
-							new String[]{Node.className, NodeListener.className},
-							new Object[]{n, listener}
-						));
-					}
+					web.changeState(HAS_ONE);
+					//Make the other node be the HAS_ONE node, first
+					//Afterwards, we'll remove the node from the node-maps
+					n.L.getFold().executeRemotely(new NodeListener(
+						Node.className, "_TWO_remove",
+						new String[]{Node.className, NodeListener.className},
+						new Object[]{n, listener}
+					));
 				}		
 			}
 		},

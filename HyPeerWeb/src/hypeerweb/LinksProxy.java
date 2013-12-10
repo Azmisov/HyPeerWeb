@@ -127,6 +127,12 @@ public class LinksProxy extends Links{
     public Node getLowestInverseSurrogateNeighbor(){
 		return (Node) request("getLowestInverseSurrogateNeighbor");
     }
+	
+	//NETWORKING
+	@Override
+	public LinksImmutable convertToImmutable(){
+		return (LinksImmutable) request("convertToImmutable");
+	}
 
     private Object request(String name){
 		return request(name, null, null, true);

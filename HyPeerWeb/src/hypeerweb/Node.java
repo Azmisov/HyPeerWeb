@@ -43,19 +43,25 @@ public class Node implements Serializable, Comparable<Node>{
 		this.height = height;
 		L = new Links(UID);
 	}
+	/**
+	 * Copy constructor
+	 * @param node node to merge data with
+	 */
 	public Node(Node node) {
 		webID = node.getWebId();
 		height = node.getHeight();
-		L = new Links(node.L.convertToImmutable());
+		//TODO, we may want to transfer data over; not sure how 
+		//the whole get/setData stuff is going to be used, though
+		L = new Links(UID, node.L.convertToImmutable());
 	}
 	
 	//ADD OR REMOVE NODES
 	/**
 	 * Adds a child node to the current one
-	 * @param child the Node to add as a child
+	 * @param child_proxy the Node to add as a child
 	 * @param listener the add node callback
 	 */
-	protected void addChild(Node child, NodeListener listener){
+	protected void addChild(Node child_proxy, NodeListener listener){
 		//Get new height and child's WebID
 		int childHeight = height+1,
 			childWebID = (1 << height) | webID;
@@ -83,7 +89,7 @@ public class Node implements Serializable, Comparable<Node>{
 		L.removeAllInverseSurrogateNeighbors();
 		
 		//Execute the update on the external segment
-		child.executeRemotely(new NodeListener(
+		child_proxy.executeRemotely(new NodeListener(
 			className, "_addChild",
 			new String[]{"int", "int", className, className+"$FoldState", classNameArr, classNameArr, NodeListener.className},
 			new Object[]{childHeight, childWebID, this, foldState, child_n, child_sn, listener}
@@ -120,42 +126,72 @@ public class Node implements Serializable, Comparable<Node>{
 		//TODO, group these into mass remote updates
 		foldState.updateFolds(parent, child);
 		
-		//Child data has been set, we can call the listener now
-		listener.callback(child);
+		//Child data has been set
+		//TODO, the following needs to be moved to another callback, once
+		//	we've grouped the other stuff into mass updates
+		//Add to the host's node list
+		Segment host = (Segment) child.getHostSegment();
+		//Host could be null if we're adding a new segment (addSegment)
+		if (host != null)
+			host.nodes.put(child.getWebId(), child);
+		if (listener != null)
+			listener.callback(child);
 	}
 	/**
 	 * Replaces a node with this node
-	 * @param removed the node to replace
+	 * @param remove_proxy the node to replace
 	 * @return true, if the replacement was successful
 	 * @author isaac
 	 */
-	protected void replaceNode(Node removed, NodeListener listener){
+	protected void replaceNode(Node remove_proxy, int newHeight, NodeListener listener){
 		int oldWebID = this.webID;
 		//Swap out connections
-		L = new Links(removed.L.convertToImmutable());
-		L.UID = UID;
+		L = new Links(UID, remove_proxy.L.convertToImmutable());
 		//Inherit the node's fold state
-		foldState = removed.getFoldState();
+		//TODO, should we cache this foldState?
+		foldState = remove_proxy.getFoldState();
 		//Change WebID/Height, this must come before updating connections
 		//Otherwise, the Neighbor Sets will be tainted with incorrect webID's
-		webID = removed.getWebId();
-		height = removed.getHeight();
+		webID = remove_proxy.getWebId();
+		//Update the node-map to reflect the new webID
+		Segment host = getHostSegment();
+		if (host != null){
+			host.nodes.remove(oldWebID);
+			host.nodes.put(webID, this);
+		}
+		height = newHeight == -1 ? remove_proxy.getHeight() : newHeight;
+		
+		//TODO, we may want to transfer data over; not sure how 
+		//the whole get/setData stuff is going to be used, though
+
 		//Notify all connections that their reference has changed
-		L.broadcastReplacement(removed, this);
-		listener.callback(removed, this, oldWebID);
+		L.broadcastReplacement(remove_proxy, this);
+		remove_proxy.executeRemotely(new NodeListener(
+			className, "_MANY_remove_finalize",
+			new String[]{className, "int", NodeListener.className},
+			new Object[]{this, oldWebID, listener}
+		));
 	}
 	/**
-	 * Disconnects an edge node to replace a node that
-	 * will be deleted
-	 * @return the disconnected node
+	 * Disconnects an edge node to replace a node that will be deleted
+	 * @param listener disconnection callback
 	 * @author John, Brian, Guy
 	 */
-	protected void disconnectNode(NodeListener listener){
+	protected void disconnectNode(int removeID, NodeListener listener){
 		Node parent = getParent();
 		int parentHeight = parent.getHeight()-1;
-		//reduce parent height by 1
-		parent.setHeight(parentHeight);
-
+		//setHeight may conflict with the broadcastReplacement (in replaceNode),
+		//if the parent happens to be the node we want to remove; the replacement
+		//node needs to inherit the new height, so we'll have to pass it along in the listener
+		if (parent.getWebId() != removeID){
+			//reduce parent height by 1
+			//TODO: I'm not sure if this will result in less network comms. if we set
+			//the height before or after; this needs some experimentation
+			parent.setHeight(parentHeight);
+			parentHeight = -1;
+		}
+		
+		//TODO, group these into mass node updates
 		//all of the neighbors of this except parent will have parent as surrogateNeighbor instead of neighbor, and
 		//parent will have all neighbors of this except itself as inverse surrogate neighbor
 		for (Node neighbor: L.getNeighbors()){
@@ -171,108 +207,122 @@ public class Node implements Serializable, Comparable<Node>{
 		for (Node sn : L.getSurrogateNeighbors())
 			sn.L.removeInverseSurrogateNeighbor(this);
 
-		//TODO, group these into mass node updates
 		//Reverse the fold state; we will always have a fold - guaranteed
 		assert(L.getFold() != null);
 		L.getFold().getFoldState().reverseFolds(parent, this);
+		
+		//Execute callback, returning the new parentHeight
+		listener.prependParameter("int", parentHeight);
 		listener.callback(this);
 	}
 	
 	//MASS NODE UPDATES
-	protected static void _ONE_add_zero(Node zero, Node one, NodeListener listener){
+	protected static void _ONE_add_zero(Node zero, Node one_proxy, NodeListener listener){
 		//Always modify heights before you start changing links
 		//Doing so will result in less network communications
 		//In this case, it doesn't matter much; but we're here anyways, so might as well...
 		zero.setHeight(1);
-		one.executeRemotely(new NodeListener(
+		//We can't set zero's links yet, since "one" might be a proxy
+		one_proxy.executeRemotely(new NodeListener(
 			Node.className, "_ONE_add_one",
 			new String[]{Node.className, NodeListener.className},
 			new Object[]{zero, listener}
 		));
 	}
-	protected static void _ONE_add_one(Node one, Node zero, NodeListener listener){
+	protected static void _ONE_add_one(Node one, Node zero_proxy, NodeListener listener){
 		//Update data for the new second node
 		one.resetLinks();
 		one.setHeight(1);
 		one.setWebID(1);
-		one.L.setFold(zero);
-		one.L.addNeighbor(zero);
+		one.L.setFold(zero_proxy);
+		one.L.addNeighbor(zero_proxy);
 		//Host will be on executing machine
 		//If we're doing an addSegment op, there will be no host
 		Segment host = one.getHostSegment();
 		if (host != null)
 			host.nodes.put(1, one);
 		//Update data for the first node
-		zero.executeRemotely(new NodeListener(
+		zero_proxy.executeRemotely(new NodeListener(
 			className, "_ONE_add_finalize",
 			new String[]{className, NodeListener.className},
 			new Object[]{one, listener}
 		));
 	}
-	protected static void _ONE_add_finalize(Node zero, Node one, NodeListener listener){
-		zero.L.setFold(one);
-		zero.L.addNeighbor(one);
+	protected static void _ONE_add_finalize(Node zero, Node one_proxy, NodeListener listener){
+		zero.L.setFold(one_proxy);
+		zero.L.addNeighbor(one_proxy);
 		if (listener != null)
-			one.executeRemotely(listener);
+			one_proxy.executeRemotely(listener);
 	}
-	protected static void _TWO_remove(Node tostay, Node removed, NodeListener listener){
+	protected static void _TWO_remove(Node tostay, Node remove_proxy, NodeListener listener){
+		//Remove links before setting height, to avoid extraneous re-syncing
 		tostay.L.removeAllNeighbors();
 		tostay.L.setFold(null);
-		tostay.setWebID(0);
+		//Note: tostay may already be webID = 0, if remove_proxy is webID = 1
+		int oldWebID = tostay.getWebId();
+		//We need to update the node-map, since we changed the webID
+		if (oldWebID != 0){
+			tostay.setWebID(0);
+			Segment host = tostay.getHostSegment();
+			if (host != null){
+				host.nodes.remove(oldWebID);
+				host.nodes.put(0, tostay);
+			}
+		}
 		tostay.setHeight(0);
-		tostay.getHostSegment().changeState(HAS_ONE);
-		listener.callback(removed, tostay, tostay.getWebId());
-	}
-	protected static void _MANY_add_random(Node ranNode, Node child, NodeListener listener){
-		//Find a valid insertion point and add the child
-		ranNode.findInsertionNode().addChild(child, new NodeListener(
-			className, "_MANY_add_insert", listener
+
+		//Remove "remove_proxy" from it's node-maps
+		remove_proxy.executeRemotely(new NodeListener(
+			className, "_TWO_remove_finalize",
+			new String[]{className, "int"},
+			new Object[]{tostay, oldWebID}
 		));
 	}
-	protected static void _MANY_add_insert(Node child, NodeListener listener){
-		child.executeRemotely(new NodeListener(
-			className, "_MANY_add_finalize", listener
-		));
-	}
-	protected static void _MANY_add_finalize(Node child, NodeListener listener){
-		//Add to the host's node list
-		Segment host = (Segment) child.getHostSegment();
-		//Host could be null if we're adding a new segment (addSegment)
-		if (host != null)
-			host.nodes.put(child.getWebId(), child);
+	protected static void _TWO_remove_finalize(Node remove, Node replace_proxy, int oldWebID, NodeListener listener){
+		//The removed node will be on this machine; remove from the node maps
+		Segment seg = remove.getHostSegment();
+		if (seg != null){
+			seg.nodes.remove(remove.getWebId());
+			seg.nodesByUID.remove(remove.UID);
+		}
 		if (listener != null)
-			listener.callback(child);
+			listener.callback(remove, replace_proxy, oldWebID);
 	}
-	protected static void _MANY_remove_random(Node ranNode, Node remove, NodeListener listener){	
+	protected static void _MANY_add_random(Node ranNode, Node child_proxy, NodeListener listener){
+		//Find a valid insertion point and add the child
+		ranNode.findInsertionNode().addChild(child_proxy, listener);
+	}
+	protected static void _MANY_remove_random(Node ranNode, Node remove_proxy, NodeListener listener){	
 		//Find a valid disconnect point
-		Node discNode = ranNode.findDisconnectNode();
-		discNode.disconnectNode(new NodeListener(
+		ranNode.findDisconnectNode().disconnectNode(remove_proxy.getWebId(), new NodeListener(
 			className, "_MANY_remove_disconnect",
 			new String[]{Node.className, NodeListener.className},
-			new Object[]{remove, listener}
+			new Object[]{remove_proxy, listener}
 		));
 	}
-	protected static void _MANY_remove_disconnect(Node replacement, Node remove, NodeListener listener){
-		//Change replacement's webID; this should execute on replacement's machine
-		Segment host = replacement.getHostSegment();
-		if (host != null){
-			int oldWebId = replacement.getWebId();
-			host.nodes.remove(oldWebId);
-			host.nodes.put(host, host)
-		}
-		//Remove node from list of nodes
-		//This remove is called on the same machine
-		remove.getHostSegment().nodes.remove(replacement.getWebId());
+	protected static void _MANY_remove_disconnect(Node replacement, int newHeight, Node remove_proxy, NodeListener listener){
 		//Replace the node to be deleted
-		if (!removed.equals(replaced)){
-			int newWebID = removed.getWebId();
-			replaced.replaceNode(removed, listener);
+		if (!replacement.equals(remove_proxy))
+			replacement.replaceNode(remove_proxy, newHeight, listener);
+		//If the replacement = remove_proxy, we don't need to do
+		//any replacement; just call the finalize callback
+		else{
+			remove_proxy.executeRemotely(new NodeListener(
+				className, "_MANY_remove_finalize",
+				new String[]{className, "int", NodeListener.className},
+				new Object[]{null, -1, listener}
+			));
 		}
 	}
-	protected static void _MANY_remove_finalize(Node ){
-		removed.getHostSegment().nodes.remove(newWebID);
-		removed.getHostSegment().nodes.put(newWebID, replaced);
-		listener.callback();
+	protected static void _MANY_remove_finalize(Node removed, Node replace_proxy, int oldWebID, NodeListener listener){
+		//Remove from node-maps
+		Segment host = removed.getHostSegment();
+		if (host != null){
+			host.nodes.remove(removed.getWebId());
+			host.nodesByUID.remove(removed.UID);
+		}
+		if (listener != null)
+			listener.callback(removed, replace_proxy, oldWebID);
 	}
 	
 	//FIND VALID NODES
@@ -352,6 +402,12 @@ public class Node implements Serializable, Comparable<Node>{
 	 */
 	public Object getData(String key){
 		return data.getAttribute(key);
+	}
+	/**
+	 * Gets all the data stored in this node
+	 */
+	public Attributes getAllData(){
+		return data;
 	}
 	/**
 	 * Gets the WebID of the Node

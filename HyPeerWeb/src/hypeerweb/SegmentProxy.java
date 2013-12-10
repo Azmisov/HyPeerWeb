@@ -24,15 +24,15 @@ public class SegmentProxy<T> extends Segment{
 	//NODE OPERATIONS
 	@Override
 	protected void addChild(Node child, NodeListener listener) {
-		request("addChild", new String[] {Node.className, NodeListener.className}, new Object[] {child, listener}, false);
+		System.err.println("Node.addChild should not be called from a Proxy");
 	}
 	@Override
-	protected void replaceNode(Node toReplace, NodeListener listener) {
-		request("replaceNode", new String[] {Node.className, NodeListener.className}, new Object[] {toReplace, listener}, false);
+	protected void replaceNode(Node toReplace, int newHeight, NodeListener listener) {
+		System.err.println("Node.replaceNode should not be called from a Proxy");
 	}
 	@Override
-	protected void disconnectNode(NodeListener listener) {
-		request("disconnectNode", new String[] {NodeListener.className}, new Object[] {listener}, false);
+	protected void disconnectNode(int newHeight, NodeListener listener) {
+		System.err.println("Node.disconnectNode should not be called from a Proxy");
 	}
 	@Override
 	protected Node findValidNode(Criteria.Type x, int levels, boolean recursive) {
@@ -67,6 +67,10 @@ public class SegmentProxy<T> extends Segment{
 	@Override
 	public Object getData(String key) {
 		return request("getData", new String[] {"java.lang.String"}, new Object[] {key}, true);
+	}
+	@Override
+	public Attributes getAllData(){
+		return (Attributes) request("getAllData");
 	}
 	@Override
 	protected FoldState getFoldState() {
