@@ -5,6 +5,7 @@ import hypeerweb.visitors.SendVisitor;
 import hypeerweb.visitors.BroadcastVisitor;
 import java.io.ObjectStreamException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Random;
 import java.util.TreeMap;
 
@@ -16,7 +17,7 @@ public class Segment<T extends Node> extends Node{
 	public static final String className = Segment.class.getName();
 	//HyPeerWebSegment attributes
 	protected final TreeMap<Integer, T> nodes;
-	private final TreeMap<Integer, T> nodesByUID;
+	protected final TreeMap<Integer, T> nodesByUID;
 	public HyPeerWebState
 		state = HyPeerWebState.HAS_NONE,
 		inceptionState = HyPeerWebState.HAS_ONE;
@@ -475,6 +476,11 @@ public class Segment<T extends Node> extends Node{
 				temp.addNode(n, false);
 		}
 		return temp.nodes.values().toArray(new NodeCache[temp.nodes.size()]);
+	}
+	public SegmentDB getDatabase(){
+		SegmentDB db = new SegmentDB();
+		db.store((Collection<Node>) nodes.values());
+		return db;
 	}
 	public void store() throws Exception{
 		//TODO: NOT IMPLEMENTED

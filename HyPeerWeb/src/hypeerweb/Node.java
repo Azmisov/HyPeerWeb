@@ -21,7 +21,7 @@ public class Node implements Serializable, Comparable<Node>{
 		className = Node.class.getName(),
 		classNameArr = Node[].class.getName();
 	//Serialization
-	public final int UID = Communicator.assignId();
+	public int UID = Communicator.assignId();
 	//Node Attributes
 	protected int webID, height;
 	public Attributes data = new Attributes();
@@ -43,7 +43,12 @@ public class Node implements Serializable, Comparable<Node>{
 		this.height = height;
 		L = new Links(UID);
 	}
-
+	public Node(Node node) {
+		webID = node.getWebId();
+		height = node.getHeight();
+		L = new Links(node.L.convertToImmutable());
+	}
+	
 	//ADD OR REMOVE NODES
 	/**
 	 * Adds a child node to the current one

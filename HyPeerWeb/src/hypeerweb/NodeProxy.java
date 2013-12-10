@@ -13,6 +13,11 @@ public class NodeProxy extends Node{
 		L = new LinksProxy(node.L);
 		raddr = new RemoteAddress(node.UID);
     }
+	public NodeProxy(Node node, RemoteAddress addr){
+		super(node.webID, node.height);
+		L = new LinksProxy(node.L);
+		raddr = addr;
+    }
 
 	//NODE OPERATIONS
 	@Override
