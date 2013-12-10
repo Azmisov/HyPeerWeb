@@ -223,7 +223,9 @@ public class ChatServer{
 		Segment conn = (Segment) segment.L.getLowestLink();
 		if (conn != null){
 			//Disconnect from the inception web
-			segment.removeSegment(null);
+			segment.removeSegment(new NodeListener(
+				className, "_changeNetworkID"
+			));
 			//Send data to "conn"
 			ChatUser[] rusers = clients.values().toArray(new ChatUser[clients.size()]);
 			RemoteAddress[] raddress = new RemoteAddress[clients.size()];
@@ -246,13 +248,20 @@ public class ChatServer{
 				Communicator.request(usr.client, changeServer, false);
 		}
 	}
+	public static void _changeNetworkID(Node removed, Node replaced, int oldWebID){
+		cache.changeNetworkID(oldWebID, replaced.getWebId());
+		Command changeNetworkID = new Command(ChatClient.className, "changeNetworkID", 
+				new String[]{"int","int"}, new Object[]{oldWebID, replaced.getWebId()});
+		for(ChatUser c : clients.values()){
+			Communicator.request(c.client, changeNetworkID, false);
+		}
+	}
 	public static void _mergeServerData(SegmentDB db, ChatUser[] rusers, RemoteAddress[] addresses){
 		for(int i=0;i<rusers.length;i++){
 			rusers[i].client = addresses[i];
 			clients.put(rusers[i].id, rusers[i]);
 		}
-		//TODO change user network ID
-		//TODO add cache to this.cache
+		db.transferTo(segment);
 		Command changeServer = new Command(
 			ChatClient.className, "changeServer",
 			new String[]{RemoteAddress.className},
@@ -260,7 +269,6 @@ public class ChatServer{
 		);
 		for (int i=0; i<addresses.length; i++)
 			Communicator.request(addresses[i], changeServer, false);
-		//TODO
 	}
 	/**
 	 * Shutdown all servers in this network

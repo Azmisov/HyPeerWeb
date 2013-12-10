@@ -48,6 +48,7 @@ public class Node implements Serializable, Comparable<Node>{
 		height = node.getHeight();
 		L = new Links(node.L.convertToImmutable());
 	}
+	
 	//ADD OR REMOVE NODES
 	/**
 	 * Adds a child node to the current one

@@ -34,11 +34,17 @@ public class SegmentDB implements Serializable {
 		for(Node n : nodes)
 			this.nodes.add(new NodeImmutable(n));
 	}
-	
-	public void restore(Segment<Node> segment){
+	/**
+	 * Transfers the database to another segment.
+	 * @param segment The segment to transfer the database to
+	 */
+	public void transferTo(Segment<Node> segment){
 		for (NodeImmutable n : nodes){
 			n.UID = Communicator.assignId();
-			n.L.broadcastReplacement(n, );
+			Node node = new Node(n);
+			segment.nodes.put(node.getWebId(), node);
+			segment.nodesByUID.put(node.UID, node);
+			n.L.broadcastReplacement(new NodeProxy(n, oldAddress), node);
 		}
 	}
 }

@@ -17,7 +17,7 @@ public class Segment<T extends Node> extends Node{
 	public static final String className = Segment.class.getName();
 	//HyPeerWebSegment attributes
 	protected final TreeMap<Integer, T> nodes;
-	private final TreeMap<Integer, T> nodesByUID;
+	protected final TreeMap<Integer, T> nodesByUID;
 	public HyPeerWebState
 		state = HyPeerWebState.HAS_NONE,
 		inceptionState = HyPeerWebState.HAS_ONE;
