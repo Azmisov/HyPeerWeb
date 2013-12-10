@@ -4,6 +4,7 @@ import chat.Main;
 import chat.client.ChatClient;
 import communicator.*;
 import hypeerweb.*;
+import hypeerweb.validator.Validator;
 import hypeerweb.visitors.*;
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -301,8 +302,11 @@ public class ChatServer{
 	protected static void _removeNode(Node removed, Node replaced, int oldWebID){
 		HashSet<Integer> dirty = cache.removeNode(removed.convertToCached(), true);
 		//Replaced node is both an addedNode and a removedNode
-		NodeCache cleanReplace = replaced.convertToCached();
-		dirty.addAll(cache.replaceNode(oldWebID, cleanReplace, true));
+		NodeCache cleanReplace = null;
+		if(replaced != null){
+			cleanReplace = replaced.convertToCached();
+			dirty.addAll(cache.replaceNode(oldWebID, cleanReplace, true));
+		}
 		syncCache(dirty, cleanReplace, new int[]{removed.getWebId(), oldWebID});
 	}
 	public static void removeAllNodes(){
@@ -573,9 +577,10 @@ public class ChatServer{
 		return instance != null;
 	}
 	public static void _debug(){
+		Validator v = new Validator(segment.getCache());
 		System.err.println("PRINTING SERVER DATA");
+		System.out.println(v.validate());
 		System.out.println(segment.inceptionState);
-		System.out.println(segment.convertToCached());		
 		System.err.println("--------------------");
 	}
 }
