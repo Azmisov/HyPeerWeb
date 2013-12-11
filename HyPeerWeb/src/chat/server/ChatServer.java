@@ -310,9 +310,12 @@ public class ChatServer{
 	 * @param webID the webID of the node to delete
 	 */
 	public static void removeNode(int webID){
-		segment.removeNode(webID, new NodeListener(
-			className, "_removeNode"
-		));
+		if (segment.state != Segment.HyPeerWebState.HAS_NONE)
+			{
+				segment.removeNode(webID, new NodeListener(
+					className, "_removeNode"
+				));
+			}
 	}
 	protected static void _removeNode(Node removed, Node replaced, int oldWebID){
 		HashSet<Integer> dirty = cache.removeNode(removed.convertToCached(), true);
