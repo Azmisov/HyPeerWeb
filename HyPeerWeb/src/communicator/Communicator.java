@@ -41,7 +41,7 @@ public class Communicator extends Thread{
 		try{
 	   		socket = new ServerSocket(port);
 			port = socket.getLocalPort();
-			address = new RemoteAddress(InetAddress.getLocalHost().getHostAddress(), port, 0);
+			address = new RemoteAddress(null, port, assignId());
 			System.out.println("Communicator: Listening on "+address);
 			this.start();
 		} catch(Exception e){

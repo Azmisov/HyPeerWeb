@@ -3,7 +3,6 @@ package hypeerweb;
 import communicator.Communicator;
 import communicator.NodeListener;
 import communicator.RemoteAddress;
-import static hypeerweb.Segment.HyPeerWebState.*;
 import hypeerweb.visitors.AbstractVisitor;
 import java.io.ObjectStreamException;
 import java.io.Serializable;
@@ -21,15 +20,15 @@ public class Node implements Serializable, Comparable<Node>{
 		className = Node.class.getName(),
 		classNameArr = Node[].class.getName();
 	//Serialization
-	public int UID = Communicator.assignId();
+	public final int UID = Communicator.assignId();
 	//Node Attributes
 	protected int webID, height;
-	public Attributes data = new Attributes();
+	public transient Attributes data = new Attributes();
 	//Node's connections
 	public Links L;
 	//State machines
 	private static final int recurseLevel = 2; //2 = neighbor's neighbors (2+ for validator to validate)
-	private FoldState foldState = FoldState.STABLE; 
+	protected transient FoldState foldState = FoldState.STABLE;
 	
 	//CONSTRUCTORS
 	/**
@@ -47,12 +46,12 @@ public class Node implements Serializable, Comparable<Node>{
 	 * Copy constructor
 	 * @param node node to merge data with
 	 */
-	public Node(Node node) {
-		webID = node.getWebId();
-		height = node.getHeight();
-		//TODO, we may want to transfer data over; not sure how 
-		//the whole get/setData stuff is going to be used, though
-		L = new Links(UID, node.L.convertToImmutable());
+	public Node(NodeImmutable node) {
+		foldState = node.foldState;
+		webID = node.webID;
+		height = node.height;
+		data = node.data;
+		L = new Links(UID, node.L);
 	}
 	
 	//ADD OR REMOVE NODES
@@ -103,24 +102,23 @@ public class Node implements Serializable, Comparable<Node>{
 		child.resetLinks();
 		child.setHeight(childHeight);
 		child.setWebID(childWebID);
+		
 		//Add neighbors
-		child.L.addNeighbor(parent);
-		for (Node friend: child_n)
-			child.L.addNeighbor(friend);
-		//Add surrogates
-		for (Node friend: child_sn)
-			child.L.addSurrogateNeighbor(friend);
-
-		//Update parent node's connections
 		//TODO, group these into mass remote updates
+		child.L.addNeighbor(parent);
 		parent.L.addNeighbor(child);
 		for (Node friend: child_n){
+			child.L.addNeighbor(friend);
+			//Update friends
 			friend.L.addNeighbor(child);
 			//Remove surrogate reference to parent
 			friend.L.removeSurrogateNeighbor(parent);
 		}
-		for (Node friend: child_sn)
+		//Add surrogates
+		for (Node friend: child_sn){
+			child.L.addSurrogateNeighbor(friend);
 			friend.L.addInverseSurrogateNeighbor(child);
+		}
 		
 		//Set folds
 		//TODO, group these into mass remote updates
@@ -722,4 +720,9 @@ public class Node implements Serializable, Comparable<Node>{
 	public int hashCode() {
 		return new Integer(this.webID).hashCode();
 	}
+	/*
+	@Override
+	public String toString(){
+		return "Node-"+webID+" ("+height+")";
+	}*/
 }

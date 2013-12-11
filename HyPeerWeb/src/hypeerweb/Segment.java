@@ -316,7 +316,7 @@ public class Segment<T extends Node> extends Node{
 		if (seg.isInceptionWeb){
 			//changing the state for the first node will suffice
 			if (state == HyPeerWebState.HAS_MANY || state == HyPeerWebState.HAS_ONE)
-				((Segment) seg.getFirstSegmentNode()).state = state;
+				((Segment) seg.getFirstSegmentNode()).inceptionState = state;
 			//Corrupt state changes need to be broadcasted
 			else if (state == HyPeerWebState.CORRUPT){
 				(new BroadcastVisitor(new NodeListener(

@@ -81,6 +81,9 @@ public class HyPeerWebTest {
 							});
 						} catch (Exception e){
 							System.err.println("EXCEPTION OCCURRED: "+i);
+							System.out.println(e);
+							System.out.println(e.getMessage());
+							e.printStackTrace();
 							STOP_TESTS = true;
 						}
 						if (STOP_TESTS) fail();

@@ -2,13 +2,14 @@ package hypeerweb;
 
 import communicator.*;
 import java.io.ObjectStreamException;
+import java.util.Arrays;
 
 public class LinksProxy extends Links{
-    private final RemoteAddress raddr;
+    public final RemoteAddress raddr;
 
-    public LinksProxy(Links real){
-		super(0);
-		raddr = new RemoteAddress(real.UID);
+    public LinksProxy(int UID){
+		super(UID);
+		raddr = new RemoteAddress(UID);
     }
 
 	@Override
@@ -23,47 +24,47 @@ public class LinksProxy extends Links{
 	//SETTERS
 	@Override
 	protected void addNeighbor(Node n) {
-		request("addNeighbor", new String[]{Node.className}, new Object[]{n}, false);
+		request("addNeighbor", new String[]{Node.className}, new Object[]{n}, true);
 	}
 	@Override
 	protected void removeNeighbor(Node n){
-		request("removeNeighbor", new String[]{Node.className}, new Object[]{n}, false);
+		request("removeNeighbor", new String[]{Node.className}, new Object[]{n}, true);
 	}
 	@Override
 	protected void removeAllNeighbors(){
-		request("removeAllNeighbors", null, null, false);
+		request("removeAllNeighbors", null, null, true);
 	}
 	@Override
 	protected void addSurrogateNeighbor(Node sn) {
-		request("addSurrogateNeighbor", new String[]{Node.className}, new Object[]{sn}, false);
+		request("addSurrogateNeighbor", new String[]{Node.className}, new Object[]{sn}, true);
 	}
 	@Override
 	protected void removeSurrogateNeighbor(Node sn){
-		request("removeSurrogateNeighbor", new String[]{Node.className}, new Object[]{sn}, false);
+		request("removeSurrogateNeighbor", new String[]{Node.className}, new Object[]{sn}, true);
 	}
 	@Override
 	protected void addInverseSurrogateNeighbor(Node isn) {
-		request("addInverseSurrogateNeighbor", new String[]{Node.className}, new Object[]{isn}, false);
+		request("addInverseSurrogateNeighbor", new String[]{Node.className}, new Object[]{isn}, true);
 	}
 	@Override
 	protected void removeInverseSurrogateNeighbor(Node isn){
-		request("removeInverseSurrogateNeighbor", new String[]{Node.className}, new Object[]{isn}, false);
+		request("removeInverseSurrogateNeighbor", new String[]{Node.className}, new Object[]{isn}, true);
 	}
 	@Override
 	protected void removeAllInverseSurrogateNeighbors(){
-		request("removeAllInverseSurrogateNeighbors", null, null, false);
+		request("removeAllInverseSurrogateNeighbors", null, null, true);
 	}
 	@Override
 	protected void setFold(Node f) {
-		request("setFold", new String[]{Node.className}, new Object[]{f}, false);
+		request("setFold", new String[]{Node.className}, new Object[]{f}, true);
 	}
 	@Override
 	protected void setSurrogateFold(Node sf) {
-		request("setSurrogateFold", new String[]{Node.className}, new Object[]{sf}, false);
+		request("setSurrogateFold", new String[]{Node.className}, new Object[]{sf}, true);
 	}
 	@Override
 	protected void setInverseSurrogateFold(Node isf) {
-		request("setInverseSurrogateFold", new String[]{Node.className}, new Object[]{isf}, false);
+		request("setInverseSurrogateFold", new String[]{Node.className}, new Object[]{isf}, true);
 	}
 	
     //GETTERS
@@ -149,7 +150,7 @@ public class LinksProxy extends Links{
 	@Override
 	public Object readResolve() throws ObjectStreamException {
 		if (raddr.onSameMachineAs(Communicator.getAddress()))
-			return ((Node) Communicator.resolveId(Node.class, raddr.UID)).L;
+			return ((Links) Communicator.resolveId(Links.class, raddr.UID));
 		return this;
 	}
 }

@@ -554,7 +554,7 @@ public class ChatClient extends JFrame{
 				int temp;
 				if ((temp = n.getRawFold()) != -1)
 					addInfo("F:",temp);
-				if ((temp = n.getRawFold()) != -1)
+				if ((temp = n.getRawSurrogateFold()) != -1)
 					addInfo("SF:",temp);
 				if ((temp = n.getRawInverseSurrogateFold()) != -1)
 					addInfo("ISF:",temp);

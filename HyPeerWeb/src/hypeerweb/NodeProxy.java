@@ -10,19 +10,19 @@ public class NodeProxy extends Node{
 
     public NodeProxy(Node node){
 		super(node.webID, node.height);
-		L = new LinksProxy(node.L);
+		L = new LinksProxy(node.UID);
 		raddr = new RemoteAddress(node.UID);
     }
-	public NodeProxy(Node node, RemoteAddress addr){
+	public NodeProxy(NodeImmutable node, RemoteAddress addr){
 		super(node.webID, node.height);
-		L = new LinksProxy(node.L);
+		L = new LinksProxy(addr.UID);
 		raddr = addr;
     }
 
 	//NODE OPERATIONS
 	@Override
 	protected void addChild(Node child, NodeListener listener) {
-		System.err.println("Node.addChild should not be called from a Proxy");
+		request("addChild", new String[]{Node.className, NodeListener.className}, new Object[]{child, listener}, false);
 	}
 	@Override
 	protected void replaceNode(Node toReplace, int newHeight, NodeListener listener) {
@@ -30,7 +30,7 @@ public class NodeProxy extends Node{
 	}
 	@Override
 	protected void disconnectNode(int newHeight, NodeListener listener) {
-		System.err.println("Node.disconnectNode should not be called from a Proxy");
+		request("disconnectNode", new String[] {"int",NodeListener.className}, new Object[]{newHeight, listener}, true);
 	}
 	@Override
 	protected Node findValidNode(Criteria.Type x, int levels, boolean recursive) {

@@ -6,6 +6,7 @@ import communicator.RemoteAddress;
 import java.io.ObjectStreamException;
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map.Entry;
 import java.util.SortedSet;
@@ -25,15 +26,15 @@ public class Links implements Serializable {
 		public static String className = Type.class.getName();
 	}
 	//Serialization
-	public int UID;
+	public final int UID;
 	//Link data
-	private Node fold;
-	private Node surrogateFold;
-	private Node inverseSurrogateFold;
-	private TreeSet<Node> neighbors;
-	private TreeSet<Node> surrogateNeighbors;
-	private TreeSet<Node> inverseSurrogateNeighbors;
-	private TreeSet<Node> highest;
+	protected transient Node fold;
+	protected transient Node surrogateFold;
+	protected transient Node inverseSurrogateFold;
+	protected transient TreeSet<Node> neighbors;
+	protected transient TreeSet<Node> surrogateNeighbors;
+	protected transient TreeSet<Node> inverseSurrogateNeighbors;
+	protected transient TreeSet<Node> highest;
 	
 	/**
 	 * Creates an empty links object
@@ -54,7 +55,7 @@ public class Links implements Serializable {
 	 * @param sn list of surrogate neighbors
 	 * @param isn list of inverse surrogate neighbors
 	 */
-	public Links(int UID, Links l){
+	public Links(int UID, LinksImmutable l){
 		this.UID = UID;		
 		fold = l.fold;
 		surrogateFold = l.surrogateFold;
@@ -186,10 +187,11 @@ public class Links implements Serializable {
 				here.add(link.L);
 			//Is a proxy
 			else{
-				ArrayList<Links> list = proxies.get(laddr);
+				RemoteAddress generic = new RemoteAddress(laddr);
+				ArrayList<Links> list = proxies.get(generic);
 				if (list == null){
 					list = new ArrayList();
-					proxies.put(laddr, list);
+					proxies.put(generic, list);
 				}
 				list.add(link.L);
 			}
@@ -219,7 +221,8 @@ public class Links implements Serializable {
 		//We merge all duplicate proxy/real node references into one pointer
 		ArrayList<HeightUpdate> reinsert = new ArrayList();
 		for (Links l: toUpdate){
-			assert(!(l instanceof LinksProxy));
+			if (l instanceof LinksProxy)
+				System.err.println("_resortLinks will fail! This should not happen");
 			reinsert.add(l._removeOutdatedLink(webId, oldHeight, newHeight));
 		}
 		
@@ -239,7 +242,7 @@ public class Links implements Serializable {
 				if (update.neighborRef != null)
 					toUpdate[i].update(null, pointer, update.neighborRef);
 			}
-		}		
+		}
 	}
 	private HeightUpdate _removeOutdatedLink(int webID, int oldHeight, int newHeight){
 		/* Since height makes up part of the key for the TreeSets, changing height
@@ -509,8 +512,7 @@ public class Links implements Serializable {
 	
 	//NETWORKING
 	public Object writeReplace() throws ObjectStreamException {
-		//TODO: Figure out how to send real links in case of replacing node
-		return new LinksProxy(this);
+		return new LinksProxy(UID);
 	}
 	public Object readResolve() throws ObjectStreamException {
 		return this;

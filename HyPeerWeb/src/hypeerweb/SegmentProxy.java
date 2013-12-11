@@ -17,14 +17,14 @@ public class SegmentProxy<T> extends Segment{
 	
 	public SegmentProxy(Segment seg){
 		super(seg.dbname, -1, seg.webID, seg.height);
-		L = new LinksProxy(seg.L);
+		L = new LinksProxy(seg.UID);
 		raddr = new RemoteAddress(seg.UID);
 	}
 
 	//NODE OPERATIONS
 	@Override
 	protected void addChild(Node child, NodeListener listener) {
-		System.err.println("Node.addChild should not be called from a Proxy");
+		request("addChild", new String[]{Node.className, NodeListener.className}, new Object[]{child, listener}, false);
 	}
 	@Override
 	protected void replaceNode(Node toReplace, int newHeight, NodeListener listener) {
@@ -32,7 +32,7 @@ public class SegmentProxy<T> extends Segment{
 	}
 	@Override
 	protected void disconnectNode(int newHeight, NodeListener listener) {
-		System.err.println("Node.disconnectNode should not be called from a Proxy");
+		request("disconnectNode", new String[] {"int",NodeListener.className}, new Object[]{newHeight, listener}, true);
 	}
 	@Override
 	protected Node findValidNode(Criteria.Type x, int levels, boolean recursive) {

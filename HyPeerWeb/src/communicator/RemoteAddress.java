@@ -1,6 +1,5 @@
 package communicator;
 
-import java.io.ObjectStreamException;
 import java.io.Serializable;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
@@ -20,12 +19,11 @@ public class RemoteAddress implements Serializable{
 		MAX_PORT = 65535,
 		DEFAULT_PORT = 49200;
 	//The machineAddr of the RemoteAddress
-	public transient InetAddress ip;
-	private String serialize_ip;
+	public InetAddress ip;
 	//The portNumber of the RemoteAddress
 	public int port;
 	//The localObjectId of the RemoteAddress
-	public int UID;
+	public final int UID;
 	
 	//CONSTRUCTORS
 	/**
@@ -34,7 +32,8 @@ public class RemoteAddress implements Serializable{
 	 * @param UID the unique ID of the object in the application of the other machine
 	 */
 	public RemoteAddress(int UID){
-		setPortUID(Communicator.getAddress().port, UID);
+		setPort(Communicator.getAddress().port, UID);
+		this.UID = UID;
 		try {
 			ip = InetAddress.getLocalHost();
 		} catch (UnknownHostException ex) {
@@ -51,13 +50,22 @@ public class RemoteAddress implements Serializable{
 	 * @throws java.lang.Exception
 	 */
 	public RemoteAddress(String machineName, int portNumber, int UID) throws Exception{
-		setPortUID(portNumber, UID);
+		setPort(portNumber, UID);
+		this.UID = UID;
 		ip = machineName == null ? InetAddress.getLocalHost() : InetAddress.getByName(machineName);
 	}
-	private void setPortUID(int portNumber, int UID){
+	/**
+	 * Constructs a generic remote address, with UID set to 0
+	 * @param addr an address to copy data from
+	 */
+	public RemoteAddress(RemoteAddress addr){
+		ip = addr.ip;
+		port = addr.port;
+		UID = 0;
+	}
+	private void setPort(int portNumber, int UID){
 		assert(portNumber == 0 || (portNumber >= MIN_PORT && portNumber <= MAX_PORT));
 		this.port = portNumber;
-		this.UID = UID;
 	}
 
 	//QUERIES
@@ -94,17 +102,5 @@ public class RemoteAddress implements Serializable{
 	@Override
 	public String toString(){
 		return ip.getHostAddress()+":"+port;
-	}
-	public Object writeReplace() throws ObjectStreamException {
-		serialize_ip = ip.getHostAddress();
-		return this;
-	}
-	public Object readResolve() throws ObjectStreamException {
-		try {
-			ip = InetAddress.getByName(serialize_ip);
-		} catch (UnknownHostException ex) {
-			System.err.println("RemoteAddress: Could not resolve serialized IP Address!!!");
-		}
-		return this;
 	}
 }

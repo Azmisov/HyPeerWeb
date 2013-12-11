@@ -1,7 +1,5 @@
 package hypeerweb;
 
-import communicator.Communicator;
-
 /**
  * Criteria for whether a node is valid or not
  * This is called by Node.findValidNode()
