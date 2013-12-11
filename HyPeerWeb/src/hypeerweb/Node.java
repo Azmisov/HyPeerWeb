@@ -21,14 +21,15 @@ public class Node implements Serializable, Comparable<Node>{
 		classNameArr = Node[].class.getName();
 	//Serialization
 	public final int UID = Communicator.assignId();
+	protected boolean writeRealNode = false;
 	//Node Attributes
 	protected int webID, height;
-	public transient Attributes data = new Attributes();
+	public Attributes data = new Attributes();
 	//Node's connections
 	public Links L;
 	//State machines
 	private static final int recurseLevel = 2; //2 = neighbor's neighbors (2+ for validator to validate)
-	protected transient FoldState foldState = FoldState.STABLE;
+	protected FoldState foldState = FoldState.STABLE;
 	
 	//CONSTRUCTORS
 	/**
@@ -578,6 +579,10 @@ public class Node implements Serializable, Comparable<Node>{
 	protected void resetLinks(){
 		L = new Links(UID);
 	}
+	public void setWriteRealNode(boolean writeRealNode){
+		this.writeRealNode = writeRealNode;
+		L.setWriteRealLinks(writeRealNode);
+	}
 	
 	//FOLD STATE PATTERN
 	/**
@@ -697,6 +702,10 @@ public class Node implements Serializable, Comparable<Node>{
 	
 	//CLASS OVERRIDES
 	public Object writeReplace() throws ObjectStreamException {
+		if(writeRealNode){
+			setWriteRealNode(false);
+			return this;
+		}
 		return new NodeProxy(this);
 	}
 	public Object readResolve() throws ObjectStreamException {

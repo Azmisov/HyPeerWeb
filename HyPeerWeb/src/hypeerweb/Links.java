@@ -27,14 +27,15 @@ public class Links implements Serializable {
 	}
 	//Serialization
 	public final int UID;
+	private boolean writeRealLinks = false;
 	//Link data
-	protected transient Node fold;
-	protected transient Node surrogateFold;
-	protected transient Node inverseSurrogateFold;
-	protected transient TreeSet<Node> neighbors;
-	protected transient TreeSet<Node> surrogateNeighbors;
-	protected transient TreeSet<Node> inverseSurrogateNeighbors;
-	protected transient TreeSet<Node> highest;
+	protected Node fold;
+	protected Node surrogateFold;
+	protected Node inverseSurrogateFold;
+	protected TreeSet<Node> neighbors;
+	protected TreeSet<Node> surrogateNeighbors;
+	protected TreeSet<Node> inverseSurrogateNeighbors;
+	protected TreeSet<Node> highest;
 	
 	/**
 	 * Creates an empty links object
@@ -390,6 +391,9 @@ public class Links implements Serializable {
 	protected void setInverseSurrogateFold(Node isf) {
 		update(null, isf, Type.ISFOLD);
 	}
+	public void setWriteRealLinks(boolean writeRealLinks){
+		this.writeRealLinks = writeRealLinks;
+	}
 	
 	//GETTERS
 	/**
@@ -512,6 +516,10 @@ public class Links implements Serializable {
 	
 	//NETWORKING
 	public Object writeReplace() throws ObjectStreamException {
+		if(writeRealLinks){
+			setWriteRealLinks(false);
+			return this;
+		}
 		return new LinksProxy(UID);
 	}
 	public Object readResolve() throws ObjectStreamException {

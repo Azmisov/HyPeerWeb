@@ -4,12 +4,23 @@
  */
 package hypeerweb;
 
+import com.thoughtworks.xstream.XStream;
+import com.thoughtworks.xstream.io.xml.DomDriver;
 import communicator.Communicator;
 import communicator.RemoteAddress;
+import java.io.BufferedOutputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.io.OutputStream;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashSet;
+import java.util.Date;
 
 /**
  *
@@ -45,5 +56,21 @@ public class SegmentDB implements Serializable {
 			segment.nodesByUID.put(node.UID, node);
 			node.L.broadcastReplacement(new NodeProxy(n, oldAddress), node);
 		}
+	}
+	
+	public void save(Segment segment){
+		try{
+			ObjectOutputStream bstream = new ObjectOutputStream(new FileOutputStream(segment.dbname));
+			//bstream.write(segment.UID);
+			bstream.write("Chibbi".getBytes());
+			bstream.close();
+		}
+		catch(Exception e){
+			e.printStackTrace();
+		}
+	}
+	
+	public Segment load(File file) throws IOException, ClassNotFoundException{
+		return (Segment) new ObjectInputStream(new FileInputStream(file)).readObject();
 	}
 }

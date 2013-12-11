@@ -18,10 +18,10 @@ public class Command implements Serializable{
 	//The name of the method to be invoked.
 	public final String methodName;
 	//Fully qualified parameter class names (or raw primitive name: "int", "boolean", etc)
-	protected transient ArrayList<String> paramTypes_lst = new ArrayList();
+	protected ArrayList<String> paramTypes_lst = new ArrayList();
 	protected String[] paramTypes;
 	//The actual parameters to be used when the method is invoked.
-	protected transient ArrayList<Object> paramVals_lst = new ArrayList();
+	protected ArrayList<Object> paramVals_lst = new ArrayList();
 	protected Object[] paramVals;	
 	//These two vars should only be set in Communicator and used by ServerThread, never anywhere else
 	protected boolean commSync = false;		// execute synchronously

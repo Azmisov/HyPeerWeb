@@ -4,11 +4,15 @@ import communicator.Communicator;
 import communicator.NodeListener;
 import hypeerweb.visitors.SendVisitor;
 import hypeerweb.visitors.BroadcastVisitor;
+import java.io.File;
+import java.io.IOException;
 import java.io.ObjectStreamException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Random;
 import java.util.TreeMap;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * The Great HyPeerWeb
@@ -27,8 +31,8 @@ public class Segment<T extends Node> extends Node{
 	//Static list of all HWSegments in this JVM; they may not correspond to the same HyPeerWeb
 	public static final ArrayList<Segment> segmentList = new ArrayList();
 	//Segment settings
-	protected final transient String dbname;
-	protected final transient long seed;
+	protected final String dbname;
+	protected final long seed;
 	
 	/**
 	 * Constructor for initializing the HyPeerWeb with default Node values
@@ -483,8 +487,9 @@ public class Segment<T extends Node> extends Node{
 		db.store((Collection<Node>) nodes.values());
 		return db;
 	}
-	public void store() throws Exception{
-		//TODO: NOT IMPLEMENTED
+	public void store(){
+		System.out.println("Storing in database");
+		getDatabase().save(this);
 	}
 	public void restore() throws Exception{
 		//TODO: NOT IMPLEMENTED
@@ -492,7 +497,18 @@ public class Segment<T extends Node> extends Node{
 	
 	//CLASS OVERRIDES
 	@Override
+	public void setWriteRealNode(boolean writeRealNode) {
+		this.writeRealNode = writeRealNode;
+		for(Node n : nodes.values()){
+			n.setWriteRealNode(writeRealNode);
+		}
+	}
+	@Override
 	public Object writeReplace() throws ObjectStreamException {
+		if(writeRealNode){
+			setWriteRealNode(false);
+			return this;
+		}
 		return new SegmentProxy(this);
 	}
 	@Override

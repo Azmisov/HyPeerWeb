@@ -287,6 +287,13 @@ public class ChatClient extends JFrame{
 		});
 		//Shutdown button
 		JButton btnShutdown = new JButton("Shutdown");
+		btnShutdown.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				Command c = new Command(ChatServer.className, "shutdown");
+				Communicator.request(server, c, false);
+			}
+		});
 		//Debug button
 		JButton btnDebug = new JButton("Debug");
 		btnDebug.addActionListener(new ActionListener(){

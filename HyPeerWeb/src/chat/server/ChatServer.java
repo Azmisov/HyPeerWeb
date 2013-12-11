@@ -274,7 +274,9 @@ public class ChatServer{
 	/**
 	 * Shutdown all servers in this network
 	 */
-	public static void shutdown(){}
+	public static void shutdown(){
+		segment.store();
+	}
 	/**
 	 * Change the ChatServer's name
 	 * @param name 
@@ -552,7 +554,7 @@ public class ChatServer{
 		public int id;
 		//Server that owns this user
 		public int networkID;
-		public transient RemoteAddress client;
+		public RemoteAddress client;
 		
 		/**
 		 * Create a new chat user
