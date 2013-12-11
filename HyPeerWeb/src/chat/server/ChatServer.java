@@ -250,14 +250,21 @@ public class ChatServer{
 		}
 	}
 	public static void _changeNetworkID(Node removed, Node replaced, int oldWebID){
+		//Change network ID's for the users
+		int newID = replaced.getWebId();
+		for (ChatUser usr: users.values()){
+			if (usr.networkID == oldWebID)
+				usr.networkID = newID;
+		}
+		//Change client stuff
 		cache.changeNetworkID(oldWebID, replaced.getWebId());
 		Command changeNetworkID = new Command(ChatClient.className, "changeNetworkID", 
-				new String[]{"int","int"}, new Object[]{oldWebID, replaced.getWebId()});
+				new String[]{"int","int"}, new Object[]{oldWebID, newID});
 		for(ChatUser c : clients.values()){
 			Communicator.request(c.client, changeNetworkID, false);
 		}
 	}
-	public static void _mergeServerData(SegmentDB db, ChatUser[] rusers, RemoteAddress[] addresses){
+	public static void _mergeServerData(Node n, SegmentDB db, ChatUser[] rusers, RemoteAddress[] addresses){
 		for(int i=0;i<rusers.length;i++){
 			rusers[i].client = addresses[i];
 			clients.put(rusers[i].id, rusers[i]);
@@ -311,7 +318,7 @@ public class ChatServer{
 		HashSet<Integer> dirty = cache.removeNode(removed.convertToCached(), true);
 		//Replaced node is both an addedNode and a removedNode
 		NodeCache cleanReplace = null;
-		if(replaced != null){
+		if (replaced != null){
 			cleanReplace = replaced.convertToCached();
 			dirty.addAll(cache.replaceNode(oldWebID, cleanReplace, true));
 		}
@@ -439,7 +446,6 @@ public class ChatServer{
 		//Update the server's cache
 		int[] toRemove = (int[]) syncify.getParameter(0);		
 		if (toRemove != null){
-			System.out.println(Arrays.toString(toRemove));
 			for (int webID: toRemove)
 				cache.removeNode(webID, false);
 		}
@@ -586,13 +592,15 @@ public class ChatServer{
 	}
 	public static void _debug(){
 		SegmentCache actualCache = segment.getCache();
-		Validator v = new Validator(cache);
+		Validator v = new Validator(actualCache);
 		System.err.println("PRINTING SERVER DATA");
+		System.out.println("ISTATE = "+segment.inceptionState);
 		try{
 			boolean valid = v.validate();
 			System.out.println("Valid = "+valid);
-			if (valid)
+			if (!valid){
 				System.out.println(actualCache);
+			}
 		} catch (Exception e){
 			System.err.println("Error validating:");
 			System.err.println(e.getMessage());

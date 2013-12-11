@@ -3,7 +3,6 @@ package chat.client;
 import chat.server.ChatServer;
 import chat.server.ChatServer.ChatUser;
 import communicator.*;
-import hypeerweb.Node;
 import hypeerweb.SegmentCache;
 import hypeerweb.SegmentCache.*;
 import hypeerweb.NodeCache;
@@ -521,6 +520,14 @@ public class ChatClient extends JFrame{
 		chat.updateUser(userid, username, networkid);
 	}
 	public static void changeNetworkID(int oldWebID, int newWebID){
+		//Change network ID's for the users
+		if (activeUser.networkID == oldWebID)
+			activeUser.networkID = newWebID;
+		for (ChatUser usr: chatUsers.values()){
+			if (usr.networkID == oldWebID)
+				usr.networkID = newWebID;
+		}
+		//Update node cache
 		nodeCache.changeNetworkID(oldWebID, newWebID);
 	}
 	public static void updateNodeCache(int[] removedNodes, NodeCache[] addedNodes){
