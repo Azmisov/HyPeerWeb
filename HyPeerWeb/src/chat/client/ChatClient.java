@@ -485,6 +485,7 @@ public class ChatClient extends JFrame{
 		//todo update listtab, graphtab, nodeinfo
 		//todo synchronize selection between tabs
 		//todo tell list-tab's scroll pane that it's height changed; right now, it isn't updating
+		//todo fix graph tab removed nodes
 		listTab.draw();
 		graph.draw();
 	}
