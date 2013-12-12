@@ -61,7 +61,6 @@ public class SegmentDB implements Serializable {
 	public void save(Segment segment){
 		try{
 			ObjectOutputStream bstream = new ObjectOutputStream(new FileOutputStream(segment.dbname));
-			//bstream.write(segment.UID);
 			bstream.write("Chibbi".getBytes());
 			bstream.close();
 		}
