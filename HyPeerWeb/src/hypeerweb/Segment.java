@@ -330,17 +330,12 @@ public class Segment<T extends Node> extends Node{
 		seg.state = state;
 		//InceptionWeb will always have at least one node
 		if (seg.isInceptionWeb){
-			//changing the state for the first node will suffice
-			if (state == HyPeerWebState.HAS_MANY || state == HyPeerWebState.HAS_ONE)
-				((Segment) seg.getFirstSegmentNode()).inceptionState = state;
-			//Corrupt state changes need to be broadcasted
-			else if (state == HyPeerWebState.CORRUPT){
-				(new BroadcastVisitor(new NodeListener(
-					className, "_changeInceptionState",
-					new String[]{HyPeerWebState.className},
-					new Object[]{state}
-				))).visit(seg.getFirstSegmentNode());
-			}
+			//Broadcast change to all sub-nodes
+			(new BroadcastVisitor(new NodeListener(
+				className, "_changeInceptionState",
+				new String[]{HyPeerWebState.className},
+				new Object[]{state}
+			))).visit(seg.getFirstSegmentNode());
 		}
 	}
 	protected static void _changeInceptionState(Node n, HyPeerWebState state){
