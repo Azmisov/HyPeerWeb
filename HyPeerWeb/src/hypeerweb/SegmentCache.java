@@ -101,7 +101,7 @@ public class SegmentCache implements HyPeerWebInterface, Serializable{
 	public HashSet<Integer> removeNode(NodeCache faux, boolean sync){
 		//Return a list of dirty nodes
 		if (sync)
-			return sync(faux);
+			return syncAll(faux);
 		if (faux == null)
 			return null;
 		

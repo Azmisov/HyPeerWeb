@@ -62,6 +62,54 @@ public class Segment<T extends Node> extends Node{
 		segmentList.add(this);
 	}
 	
+	//SEGMENT OPS
+	public void newSegment(){
+		
+	}
+	/**
+	 * Adds a segment to the HyPeerWeb, using a pre-initialized Segment;
+	 * Note: webID, height, Links (L), state, and inceptionState will be altered;
+	 * all other attributes will remain the same however
+	 * @param segment the pre-initialized segment
+	 * @param listener add segment callback; this will execute on the machine
+	 * the "segment" is on, unless remote execution is enabled
+	 */
+	public void addSegment(Segment<T> segment, NodeListener listener){
+		//Create a temporary segment container
+		Segment<Segment<T>> inceptionweb = new Segment(null, seed);
+		inceptionweb.state = inceptionState;
+		inceptionweb.isInceptionWeb = true;
+		inceptionweb.nodes.put(this.webID, this);
+		inceptionweb.nodesByUID.put(this.UID, this);
+		//Temporarily add it to the segment list (so addNode can resolve the host)
+		
+		//The only extra data we need to initialize is the state
+		segment.executeRemotely(new NodeListener(
+			className, "_inheritState",
+			new String[]{HyPeerWebState.className},
+			new Object[]{state}
+		));
+		//Change the inception's state, since we're adding another node
+		inceptionState = HyPeerWebState.HAS_MANY;
+		//Now run the add operation
+		inceptionweb.addNode(segment, listener);
+	}
+	/**
+	 * Removes a segment from the HyPeerWeb
+	 * @param segment the segment to be removed
+	 * @param listener remove segment callback; this will execute on the machine
+	 * that removed segment is on, unless remote execution is enabled
+	 */
+	public void removeSegment(NodeListener listener){
+		Segment<Segment<T>> inceptionweb = new Segment(null, seed);
+		inceptionweb.state = inceptionState;
+		inceptionweb.isInceptionWeb = true;
+		inceptionweb.nodes.put(this.webID, this);
+		inceptionweb.nodesByUID.put(this.UID, this);
+		
+		inceptionweb.removeNode(this, listener);
+	}
+	
 	//ADD & REMOVE NODE
 	/**
 	 * Removes the node of specified webid
@@ -91,7 +139,7 @@ public class Segment<T extends Node> extends Node{
 		Segment host;
 		//This node doesn't exist or isn't attached to a Segment
 		if (n == null || (host = n.getHostSegment()) == null)
-			listener.callback(null);
+			listener.callback(null, null, -1);
 		//Get the host segment to run removeNode on
 		else host.state.removeNode(host, n, listener);
 	}
@@ -130,47 +178,6 @@ public class Segment<T extends Node> extends Node{
 		//The HyPeerWeb's state will handle everything else
 		// (e.g. finding a nonempty segment to add from)
 		state.addNode(this, node, listener);
-	}
-	/**
-	 * Adds a segment to the HyPeerWeb, using a pre-initialized Segment;
-	 * Note: webID, height, Links (L), state, and inceptionState will be altered;
-	 * all other attributes will remain the same however
-	 * @param segment the pre-initialized segment
-	 * @param listener add segment callback; this will execute on the machine
-	 * the "segment" is on, unless remote execution is enabled
-	 */
-	public void addSegment(Segment<T> segment, NodeListener listener){
-		//Create a temporary segment container
-		Segment<Segment<T>> inceptionweb = new Segment(null, seed);
-		inceptionweb.state = inceptionState;
-		inceptionweb.isInceptionWeb = true;
-		inceptionweb.nodes.put(this.webID, this);
-		inceptionweb.nodesByUID.put(this.UID, this);
-		//The only extra data we need to initialize is the state
-		segment.executeRemotely(new NodeListener(
-			className, "_inheritState",
-			new String[]{HyPeerWebState.className},
-			new Object[]{state}
-		));
-		//Change the inception's state, since we're adding another node
-		inceptionState = HyPeerWebState.HAS_MANY;
-		//Now run the add operation
-		inceptionweb.addNode(segment, listener);
-	}
-	/**
-	 * Removes a segment from the HyPeerWeb
-	 * @param segment the segment to be removed
-	 * @param listener remove segment callback; this will execute on the machine
-	 * that removed segment is on, unless remote execution is enabled
-	 */
-	public void removeSegment(NodeListener listener){
-		Segment<Segment<T>> inceptionweb = new Segment(null, seed);
-		inceptionweb.state = inceptionState;
-		inceptionweb.isInceptionWeb = true;
-		inceptionweb.nodes.put(this.webID, this);
-		inceptionweb.nodesByUID.put(this.UID, this);
-		
-		inceptionweb.removeNode(this, listener);
 	}
 	
 	//HYPEERWEB STATE
@@ -441,11 +448,7 @@ public class Segment<T extends Node> extends Node{
 			//that is not empty; this is terribly inefficient, but we don't
 			//know a better way to do it (at least not yet)
 			//findValidNode will always check current node first
-			Segment s = (Segment) findValidNode(Criteria.Type.NONEMPTY, -1, false);
-			System.out.println("FOUND NONEMPTY SEGMENT");
-			if (s.isSegmentEmpty())
-				System.out.println("BUT IT DIDN't WORK");
-			return s;
+			return (Segment) findValidNode(Criteria.Type.NONEMPTY, -1, false);
 		}
 	}
 	/**
