@@ -286,6 +286,13 @@ public class ChatClient extends JFrame{
 		});
 		//Shutdown button
 		JButton btnShutdown = new JButton("Shutdown");
+		btnShutdown.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				Command c = new Command(ChatServer.className, "shutdown");
+				Communicator.request(server, c, false);
+			}
+		});
 		//Debug button
 		JButton btnDebug = new JButton("Debug");
 		btnDebug.addActionListener(new ActionListener(){
@@ -485,6 +492,7 @@ public class ChatClient extends JFrame{
 		//todo update listtab, graphtab, nodeinfo
 		//todo synchronize selection between tabs
 		//todo tell list-tab's scroll pane that it's height changed; right now, it isn't updating
+		//todo fix graph tab removed nodes
 		listTab.draw();
 		graph.draw();
 	}

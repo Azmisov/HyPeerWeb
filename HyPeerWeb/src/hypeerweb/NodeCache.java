@@ -24,7 +24,7 @@ public class NodeCache implements NodeInterface, Serializable {
 	//Node links
 	protected final int[] n, sn, isn;
 	protected int f = -1, sf = -1, isf = -1;
-	protected transient SegmentCache parent;
+	protected SegmentCache parent;
 
 	public NodeCache(hypeerweb.Node real, final SegmentCache parent){
 		this.parent = parent;
