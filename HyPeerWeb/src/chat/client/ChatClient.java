@@ -293,6 +293,17 @@ public class ChatClient extends JFrame{
 				Communicator.request(server, c, false);
 			}
 		});
+		//Startup button
+		JButton btnStartup = new JButton("Startup");
+		btnStartup.addActionListener(new ActionListener() {
+
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				Command c = new Command(ChatServer.className, "startup_broadcast");
+				Communicator.request(server, c, false);
+			}
+		});
+		btnStartup.setEnabled(false);
 		//Debug button
 		JButton btnDebug = new JButton("Debug");
 		btnDebug.addActionListener(new ActionListener(){
@@ -324,6 +335,8 @@ public class ChatClient extends JFrame{
 		box.add(btnDisconnect, c);
 		c.gridy++;
 		box.add(btnShutdown, c);
+		c.gridy++;
+		box.add(btnStartup, c);
 		c.gridy++;
 		box.add(btnDebug, c);
 		// </editor-fold>
@@ -558,6 +571,36 @@ public class ChatClient extends JFrame{
 	public static void _removeAllNodes(){
 		nodeCache = new SegmentCache();
 		redrawTabs();
+	}
+	public static java.util.List<Component> getAllComponents(final Container c) {
+		Component[] comps = c.getComponents();
+		java.util.List<Component> compList = new ArrayList<Component>();
+		for (Component comp : comps) {
+			compList.add(comp);
+			if (comp instanceof Container)
+				compList.addAll(getAllComponents((Container) comp));
+		}
+		return compList;
+		}
+	public static void shutdown(){
+		for(Component comp : getAllComponents(instance)){
+			if(comp instanceof JButton){
+				if(!((JButton)comp).getText().equals("Startup"))
+					((JButton)comp).setEnabled(false);
+				else
+					((JButton)comp).setEnabled(true);
+			}
+		}
+	}
+	public static void startup(){
+		for(Component comp : getAllComponents(instance)){
+			if(comp instanceof JButton){
+				if(((JButton)comp).getText().equals("Startup"))
+					((JButton)comp).setEnabled(false);
+				else
+					((JButton)comp).setEnabled(true);
+			}
+		}
 	}
 	
 	private static class NodeInfo extends AbstractTableModel{

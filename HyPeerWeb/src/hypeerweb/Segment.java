@@ -31,7 +31,7 @@ public class Segment<T extends Node> extends Node{
 	//Static list of all HWSegments in this JVM; they may not correspond to the same HyPeerWeb
 	public static final ArrayList<Segment> segmentList = new ArrayList();
 	//Segment settings
-	protected final String dbname;
+	public final String dbname;
 	protected final long seed;
 	
 	/**

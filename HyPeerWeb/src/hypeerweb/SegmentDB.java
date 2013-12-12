@@ -64,15 +64,13 @@ public class SegmentDB implements Serializable {
 			segment.setWriteRealNode(true);
 			stream.writeObject(segment);
 			stream.close();
-			
-			System.out.println(load(segment.dbname));
 		}
 		catch(Exception e){
 			e.printStackTrace();
 		}
 	}
 	
-	public Segment load(String file) throws IOException, ClassNotFoundException{
+	public static Segment load(String file) throws IOException, ClassNotFoundException{
 		ObjectInputStream stream = new ObjectInputStream(new FileInputStream(new File(file)));
 		Segment segment = (Segment) stream.readObject();
 		Segment.segmentList.add(segment);
