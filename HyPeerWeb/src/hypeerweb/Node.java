@@ -21,7 +21,7 @@ public class Node implements Serializable, Comparable<Node>{
 		classNameArr = Node[].class.getName();
 	//Serialization
 	public final int UID = Communicator.assignId();
-	protected boolean writeRealNode = false;
+	public boolean writeRealNode = false;
 	//Node Attributes
 	protected int webID, height;
 	public Attributes data = new Attributes();
@@ -729,9 +729,10 @@ public class Node implements Serializable, Comparable<Node>{
 	public int hashCode() {
 		return new Integer(this.webID).hashCode();
 	}
-	/*
+
 	@Override
-	public String toString(){
-		return "Node-"+webID+" ("+height+")";
-	}*/
+	public String toString() {
+		return "Node{" + "UID=" + UID + ", \nwriteRealNode=" + writeRealNode + ", \nwebID=" + webID + ", \nheight=" + height + ", \ndata=" + data + ", L=" + L + ", \nfoldState=" + foldState + '}';
+	}
+	
 }

@@ -41,8 +41,8 @@ public class ChatServer{
 	private static final HashMap<Integer, ChatUser> clients = new HashMap();
 	
 	private ChatServer(){
-		segment = new Segment("HyPeerWeb.db", -1);
 		Communicator.startup(0);
+		segment = new Segment("HyPeerWeb" + Communicator.getAddress() +".db", -1);
 	}
 	/**
 	 * Gets an instance of the server on this computer
@@ -281,7 +281,10 @@ public class ChatServer{
 	/**
 	 * Shutdown all servers in this network
 	 */
-	public static void shutdown(){
+	public static void shutdown_broadcast(){
+		new BroadcastVisitor(new NodeListener(className, "shutdown")).visit(segment);
+	}
+	public static void shutdown(Node n){
 		segment.store();
 	}
 	/**

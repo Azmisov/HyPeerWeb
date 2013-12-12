@@ -518,4 +518,10 @@ public class Segment<T extends Node> extends Node{
 	public Object readResolve() throws ObjectStreamException {
 		return this;
 	}
+
+	@Override
+	public String toString() {
+		return "Segment{" + "nodes=" + nodes + ", \nnodesByUID=" + nodesByUID + ", \nstate=" + state + ", inceptionState=" + inceptionState + ", \nisInceptionWeb=" + isInceptionWeb + ", \ndbname=" + dbname + ", \nseed=" + seed + '}';
+	}
+	
 }

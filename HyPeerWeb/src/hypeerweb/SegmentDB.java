@@ -60,16 +60,23 @@ public class SegmentDB implements Serializable {
 	
 	public void save(Segment segment){
 		try{
-			ObjectOutputStream bstream = new ObjectOutputStream(new FileOutputStream(segment.dbname));
-			bstream.write("Chibbi".getBytes());
-			bstream.close();
+			ObjectOutputStream stream = new ObjectOutputStream(new FileOutputStream(segment.dbname));
+			segment.setWriteRealNode(true);
+			stream.writeObject(segment);
+			stream.close();
+			
+			System.out.println(load(segment.dbname));
 		}
 		catch(Exception e){
 			e.printStackTrace();
 		}
 	}
 	
-	public Segment load(File file) throws IOException, ClassNotFoundException{
-		return (Segment) new ObjectInputStream(new FileInputStream(file)).readObject();
+	public Segment load(String file) throws IOException, ClassNotFoundException{
+		ObjectInputStream stream = new ObjectInputStream(new FileInputStream(new File(file)));
+		Segment segment = (Segment) stream.readObject();
+		Segment.segmentList.add(segment);
+		stream.close();
+		return segment;
 	}
 }

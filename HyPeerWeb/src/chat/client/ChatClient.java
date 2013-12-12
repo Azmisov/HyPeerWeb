@@ -289,7 +289,7 @@ public class ChatClient extends JFrame{
 		btnShutdown.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				Command c = new Command(ChatServer.className, "shutdown");
+				Command c = new Command(ChatServer.className, "shutdown_broadcast");
 				Communicator.request(server, c, false);
 			}
 		});
@@ -327,7 +327,6 @@ public class ChatClient extends JFrame{
 		c.gridy++;
 		box.add(btnDebug, c);
 		// </editor-fold>
-		
 		return box;
 	}
 	private JPanel initNodeBox(){

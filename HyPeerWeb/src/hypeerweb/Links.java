@@ -36,6 +36,24 @@ public class Links implements Serializable {
 	protected TreeSet<Node> surrogateNeighbors;
 	protected TreeSet<Node> inverseSurrogateNeighbors;
 	protected TreeSet<Node> highest;
+
+	@Override
+	public String toString() {
+		StringBuilder builder = new StringBuilder();
+		if(fold != null)
+			builder.append("Fold: " + fold.getWebId()+ "\n");
+		if(surrogateFold!=null)
+			builder.append("Surrogate Fold: " + surrogateFold.getWebId()  + "\n");
+		if(inverseSurrogateFold!=null)
+			builder.append("Surrogate Fold: " + inverseSurrogateFold.getWebId()  + "\n");
+		for(Node n : neighbors)
+			builder.append("Neighbor:" + n.getWebId() + "\n");
+		for(Node n : surrogateNeighbors)
+			builder.append("Surrogate Neighbor:" + n.getWebId() + "\n");
+		for(Node n : inverseSurrogateNeighbors)
+			builder.append("Inverse Surrogate Neighbor:" + n.getWebId() + "\n");
+		return builder.toString();
+	}
 	
 	/**
 	 * Creates an empty links object
