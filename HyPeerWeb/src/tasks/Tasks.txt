@@ -35,6 +35,7 @@ Other Stuff:
 - RSA signing of application requests
 - Make remote-address hook up to the public IP somehow
 - Error detection and handling; rollback on failure
+- Fix inconsistent bug: after adding nodes and deleting all nodes, if you add more, removing them may fail or fail the validator, but we don't know when it can always fail
 
 Questions:
 ===========================

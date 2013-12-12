@@ -32,6 +32,7 @@ public class ChatServer{
 	//Inception web
 	private static Segment<Node> segment;
 	private static String networkName = "";
+	private static String dbName;
 	//Node cache for the entire HyPeerWeb
 	private static SegmentCache cache;
 	private static final ArrayList<Integer> syncRequests = new ArrayList();
@@ -46,7 +47,8 @@ public class ChatServer{
 	
 	private ChatServer(){
 		Communicator.startup(0);
-		segment = Segment.<Node>newSegment("HyPeerWeb" + Communicator.getAddress().port + ".db", -1);
+		dbName = "HyPeerWeb" + Communicator.getAddress().port + ".db";
+		segment = Segment.<Node>newSegment(dbName, -1);
 	}
 	/**
 	 * Gets an instance of the server on this computer
@@ -301,20 +303,20 @@ public class ChatServer{
 		segment = null;
 	}
 	public static void startup_broadcast(){
+		startup(null);
 		new BroadcastVisitor(new NodeListener(className, "startup")).visit(segment);
 	}
 	public static void startup(Node n){
-		Command startup = new Command(ChatClient.className, "startup");
-		for(ChatUser user : clients.values()){
-			Communicator.request(user.client, startup, false);
-		}
-		state = State.ON;
-		try {
-			segment = SegmentDB.load(segment.dbname);
-		} catch (IOException ex) {
-			Logger.getLogger(ChatServer.class.getName()).log(Level.SEVERE, null, ex);
-		} catch (ClassNotFoundException ex) {
-			Logger.getLogger(ChatServer.class.getName()).log(Level.SEVERE, null, ex);
+		if (state == State.OFF){
+			try {
+				segment = SegmentDB.load(dbName);
+			} catch (Exception ex) {
+				System.err.println("Could not recover chat server!!!");
+			}
+			Command startup = new Command(ChatClient.className, "startup");
+			for(ChatUser user : clients.values())
+				Communicator.request(user.client, startup, false);
+			state = State.ON;
 		}
 	}
 	public static boolean isShutDown(){
