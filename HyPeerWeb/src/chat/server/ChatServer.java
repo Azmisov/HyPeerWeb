@@ -19,6 +19,8 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map.Entry;
 import java.util.Random;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * Handles communications in the chat network
@@ -41,10 +43,12 @@ public class ChatServer{
 	private static final HashMap<Integer, ChatUser> users = new HashMap();
 	//List of all users and their GUI/Clients that are leeching on this network
 	private static final HashMap<Integer, ChatUser> clients = new HashMap();
+	private static enum State{ON, OFF};
+	private static State state = State.ON;
 	
 	private ChatServer(){
-		segment = Segment.<Node>newSegment("HyPeerWeb.db", -1);
 		Communicator.startup(0);
+		segment = new Segment("HyPeerWeb" + Communicator.getAddress().port + ".db", -1);
 	}
 	/**
 	 * Gets an instance of the server on this computer
@@ -64,6 +68,10 @@ public class ChatServer{
 	 * @return the ChatUser for this GUI/Client
 	 */
 	public static void registerClient(RemoteAddress client){
+//		if(state == State.OFF){
+//			System.out.println("The server has been shut down.");
+//			return;
+//		}
 		//Perform a handshake with the client
 		System.out.println("Registering client at "+client);
 		if (!Communicator.handshake(ChatClient.className, client)){
@@ -91,6 +99,10 @@ public class ChatServer{
 		);
 		Communicator.request(client, register, false);
 		
+		if(state == State.OFF){
+			Command shutdown = new Command(ChatClient.className, "shutdown");
+			Communicator.request(client, shutdown, false);
+		}
 		//Add new client to our list (this should come last)
 		clients.put(newUser, user);
 	}
@@ -99,6 +111,10 @@ public class ChatServer{
 	 * @param userID the user ID associated with this client
 	 */
 	public static void unregisterClient(int userID){
+		if(state == State.OFF){
+			System.out.println("The server has been shut down.");
+			return;
+		}
 		users.remove(userID);
 		clients.remove(userID);
 		//Broadcast user removal
@@ -195,12 +211,20 @@ public class ChatServer{
 			registerClient(leecher);
 	}
 	protected static void _spawn(RemoteAddress rem, Segment seg){
+		if(state == State.OFF){
+			System.out.println("The server has been shut down.");
+			return;
+		}
 		//Listener will execute on this segment/server (since we've enabled setRemote)
 		NodeListener spawner = new NodeListener(ChatServer.className, "_spawnSendData");
 		spawner.setRemote(true);
 		segment.addSegment(seg, spawner);
 	}
 	protected static void _spawnSendData(Node new_seg){		
+		if(state == State.OFF){
+			System.out.println("The server has been shut down.");
+			return;
+		}
 		new_seg.executeRemotely(new NodeListener(
 			ChatServer.className, "_spawnReceiveData",
 			new String[]{SegmentCache.className, ChatUser.classNameArr},
@@ -208,6 +232,10 @@ public class ChatServer{
 		));
 	}
 	protected static void _spawnReceiveData(Node n, SegmentCache spawn_cache, ChatUser[] spawn_users){
+		if(state == State.OFF){
+			System.out.println("The server has been shut down.");
+			return;
+		}
 		cache = spawn_cache;
 		for (ChatUser usr: spawn_users)
 			users.put(usr.id, usr);
@@ -222,6 +250,10 @@ public class ChatServer{
 	 * Disconnect from the network
 	 */
 	public static void disconnect(){
+		if(state == State.OFF){
+			System.out.println("The server has been shut down.");
+			return;
+		}
 		//Send all data to the nearest connection
 		Segment conn = (Segment) segment.L.getLowestLink();
 		if (conn != null){
@@ -252,6 +284,10 @@ public class ChatServer{
 		}
 	}
 	public static void _changeNetworkID(Node removed, Node replaced, int oldWebID){
+		if(state == State.OFF){
+			System.out.println("The server has been shut down.");
+			return;
+		}
 		//Change network ID's for the users
 		int newID = replaced.getWebId();
 		for (ChatUser usr: users.values()){
@@ -267,6 +303,10 @@ public class ChatServer{
 		}
 	}
 	public static void _mergeServerData(Node n, SegmentDB db, ChatUser[] rusers, RemoteAddress[] addresses){
+		if(state == State.OFF){
+			System.out.println("The server has been shut down.");
+			return;
+		}
 		for(int i=0;i<rusers.length;i++){
 			rusers[i].client = addresses[i];
 			clients.put(rusers[i].id, rusers[i]);
@@ -283,14 +323,48 @@ public class ChatServer{
 	/**
 	 * Shutdown all servers in this network
 	 */
-	public static void shutdown(){
+	public static void shutdown_broadcast(){
+		if(state == State.OFF){
+			System.out.println("The server has been shut down.");
+			return;
+		}
+		new BroadcastVisitor(new NodeListener(className, "shutdown")).visit(segment);
+	}
+	public static void shutdown(Node n){
+		Command shutdown = new Command(ChatClient.className, "shutdown");
+		for(ChatUser user : clients.values()){
+			Communicator.request(user.client, shutdown, false);
+		}
+		state = State.OFF;
 		segment.store();
+		segment = new Segment<>("HyPeerWeb" + Communicator.getAddress().port + ".db", -1);
+	}
+	public static void startup_broadcast(){
+		new BroadcastVisitor(new NodeListener(className, "startup")).visit(segment);
+	}
+	public static void startup(Node n){
+		Command startup = new Command(ChatClient.className, "startup");
+		for(ChatUser user : clients.values()){
+			Communicator.request(user.client, startup, false);
+		}
+		state = State.ON;
+		try {
+			segment = SegmentDB.load(segment.dbname);
+		} catch (IOException ex) {
+			Logger.getLogger(ChatServer.class.getName()).log(Level.SEVERE, null, ex);
+		} catch (ClassNotFoundException ex) {
+			Logger.getLogger(ChatServer.class.getName()).log(Level.SEVERE, null, ex);
+		}
 	}
 	/**
 	 * Change the ChatServer's name
 	 * @param name 
 	 */
 	public static void changeNetworkName(String name){
+		if(state == State.OFF){
+			System.out.println("The server has been shut down.");
+			return;
+		}
 		networkName = name;
 		//broadcast to all network name listeners
 	}
@@ -300,12 +374,20 @@ public class ChatServer{
 	 * Adds a node to the HyPeerWeb and tells the nodeListeners about it.
 	 */
 	public static void addNode(){
+		if(state == State.OFF){
+			System.out.println("The server has been shut down.");
+			return;
+		}
 		hypeerweb.Node newNode = new hypeerweb.Node(0, 0);
 		segment.addNode(newNode, new NodeListener(
 			className, "_addNode"
 		));
 	}
 	protected static void _addNode(Node newNode){
+		if(state == State.OFF){
+			System.out.println("The server has been shut down.");
+			return;
+		}
 		NodeCache clean = newNode.convertToCached();
 		syncCache(cache.addNode(clean, true), clean, null);
 	}
@@ -314,6 +396,10 @@ public class ChatServer{
 	 * @param webID the webID of the node to delete
 	 */
 	public static void removeNode(int webID){
+		if(state == State.OFF){
+			System.out.println("The server has been shut down.");
+			return;
+		}
 		if (segment.state != Segment.HyPeerWebState.HAS_NONE)
 			{
 				segment.removeNode(webID, new NodeListener(
@@ -322,6 +408,10 @@ public class ChatServer{
 			}
 	}
 	protected static void _removeNode(Node removed, Node replaced, int oldWebID){
+		if(state == State.OFF){
+			System.out.println("The server has been shut down.");
+			return;
+		}
 		HashSet<Integer> dirty = cache.removeNode(removed.convertToCached(), true);
 		//Replaced node is both an addedNode and a removedNode
 		NodeCache cleanReplace = null;
@@ -332,11 +422,19 @@ public class ChatServer{
 		syncCache(dirty, cleanReplace, new int[]{removed.getWebId(), oldWebID});
 	}
 	public static void removeAllNodes(){
+		if(state == State.OFF){
+			System.out.println("The server has been shut down.");
+			return;
+		}
 		segment.removeAllNodes(new NodeListener(
 			className, "_removeAllNodes"
 		));
 	}
 	public static void _removeAllNodes(Node n){
+		if(state == State.OFF){
+			System.out.println("The server has been shut down.");
+			return;
+		}
 		cache = new SegmentCache();
 		Command updater = new Command(
 			ChatClient.className, "_removeAllNodes"
@@ -351,6 +449,10 @@ public class ChatServer{
 	 * @param removedNodes nodes that have been removed
 	 */
 	private static void syncCache(HashSet<Integer> addedNodes, NodeCache prefetched, int[] removedNodes){
+		if(state == State.OFF){
+			System.out.println("The server has been shut down.");
+			return;
+		}
 		//We need to retrieve cached versions of all addedNodes
 		//Group them by networkID, and then delegate each segment to build a cache
 		HashMap<Integer, ArrayList<Integer>> grouped = new HashMap();
@@ -416,6 +518,10 @@ public class ChatServer{
 		
 	}
 	protected static void _syncCache_send(Node n, RemoteAddress origin, int[] dirty, int request_id){
+		if(state == State.OFF){
+			System.out.println("The server has been shut down.");
+			return;
+		}
 		Communicator.request(origin, new Command(
 			className, "_syncCache_retrieve",
 			new String[]{SegmentCache.nodeClassNameArr, "int"},
@@ -423,6 +529,10 @@ public class ChatServer{
 		), false);
 	}
 	protected static void _syncCache_retrieve(NodeCache[] clean, int request_id){
+		if(state == State.OFF){
+			System.out.println("The server has been shut down.");
+			return;
+		}
 		SyncRequest req = syncResults.get(request_id);
 		req.clean.addAll(Arrays.asList(clean));
 		//If this is the last request, broadcast the updated cache
@@ -435,6 +545,10 @@ public class ChatServer{
 		syncRequests.set(request_id, req_left-1);
 	}
 	protected static void _syncCache_broadcast(NodeCache[] clean, int[] removed){
+		if(state == State.OFF){
+			System.out.println("The server has been shut down.");
+			return;
+		}
 		Command syncify = new Command(
 			ChatClient.className, "updateNodeCache",
 			new String[]{"[I", SegmentCache.nodeClassNameArr},
@@ -447,6 +561,10 @@ public class ChatServer{
 		)).visit(segment);
 	}
 	protected static void _syncCache_update(Node n, Command syncify){
+		if(state == State.OFF){
+			System.out.println("The server has been shut down.");
+			return;
+		}
 		//Notify all listeners that the cache changed
 		for (ChatUser user : clients.values())
 			Communicator.request(user.client, syncify, false);
@@ -480,6 +598,10 @@ public class ChatServer{
 	 * @param message the message
 	 */
 	public static void sendMessage(int senderID, int recipientID, String message){
+		if(state == State.OFF){
+			System.out.println("The server has been shut down.");
+			return;
+		}
 		if (recipientID == -1){
 			//Public message
 			new BroadcastVisitor(new NodeListener(
@@ -501,6 +623,10 @@ public class ChatServer{
 		}
 	}
 	protected static void _sendMessagePublic(Node n, int senderID, String message){
+		if(state == State.OFF){
+			System.out.println("The server has been shut down.");
+			return;
+		}
 		Command receiver = new Command(
 			ChatClient.className, "receiveMessage",
 			new String[]{"int", "int", "java.lang.String"},
@@ -510,6 +636,10 @@ public class ChatServer{
 			Communicator.request(user.client, receiver, false);
 	}
 	protected static void _sendMessagePrivate(Node n, int senderID, int recipientID, String message){
+		if(state == State.OFF){
+			System.out.println("The server has been shut down.");
+			return;
+		}
 		RemoteAddress client = clients.get(recipientID).client;
 		Command receiver = new Command(
 			ChatClient.className, "receiveMessage",
@@ -526,6 +656,10 @@ public class ChatServer{
 	 * @param name new name for this user (null to remove user)
 	 */
 	public static void updateUser(int userid, String username, int networkid){
+		if(state == State.OFF){
+			System.out.println("The server has been shut down.");
+			return;
+		}
 		new BroadcastVisitor(new NodeListener(
 			ChatServer.className, "_updateUser",
 			new String[]{"int", "java.lang.String", "int"},
@@ -533,6 +667,10 @@ public class ChatServer{
 		)).visit(segment);
 	}
 	protected static void _updateUser(Node n, int userid, String username, int networkid){
+		if(state == State.OFF){
+			System.out.println("The server has been shut down.");
+			return;
+		}
 		ChatUser user = users.get(userid);
 		//If this is a new user, create it
 		if (user == null){
@@ -598,6 +736,10 @@ public class ChatServer{
 		return instance != null;
 	}
 	public static void _debug(){
+		if(state == State.OFF){
+			System.out.println("The server has been shut down.");
+			return;
+		}
 		SegmentCache actualCache = segment.getCache();
 		Validator v = new Validator(actualCache);
 		System.err.println("PRINTING SERVER DATA");
