@@ -7,9 +7,11 @@ import hypeerweb.*;
 import hypeerweb.validator.Validator;
 import hypeerweb.visitors.*;
 import java.io.BufferedReader;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.ObjectOutputStream;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -41,7 +43,7 @@ public class ChatServer{
 	private static final HashMap<Integer, ChatUser> clients = new HashMap();
 	
 	private ChatServer(){
-		segment = new Segment("HyPeerWeb.db", -1);
+		segment = Segment.<Node>newSegment("HyPeerWeb.db", -1);
 		Communicator.startup(0);
 	}
 	/**

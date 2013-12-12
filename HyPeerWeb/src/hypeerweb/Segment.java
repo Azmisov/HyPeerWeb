@@ -36,7 +36,7 @@ public class Segment<T extends Node> extends Node{
 	 * @param seed the random seed number for getting random nodes; use -1
 	 *	to get a pseudo-random seed
 	 */
-	public Segment(String dbname, long seed){
+	protected Segment(String dbname, long seed){
 		this(dbname, seed, 0, 0);
 	}
 	/**
@@ -47,7 +47,7 @@ public class Segment<T extends Node> extends Node{
 	 * @param webID the node webID, if it has one
 	 * @param height the node height, if it has one
 	 */
-	public Segment(String dbname, long seed, int webID, int height){
+	protected Segment(String dbname, long seed, int webID, int height){
 		super(webID, height);
 		this.dbname = dbname;
 		this.seed = 2;
@@ -55,12 +55,19 @@ public class Segment<T extends Node> extends Node{
 		nodesByUID = new TreeMap();
 		if (seed != -1)
 			rand.setSeed(seed);
-		segmentList.add(this);
 	}
 	
 	//SEGMENT OPS
-	public void newSegment(){
-		
+	/**
+	 * Creates a new segment
+	 * @param dbname filename for the database/node-cache
+	 * @param seed the random seed number for getting random nodes; use -1
+	 *	to get a pseudo-random seed
+	 */
+	public static <K extends Node> Segment newSegment(String dbname, long seed){
+		Segment<K> seg = new Segment(dbname, seed);
+		segmentList.add(seg);
+		return seg;
 	}
 	/**
 	 * Adds a segment to the HyPeerWeb, using a pre-initialized Segment;
@@ -85,10 +92,8 @@ public class Segment<T extends Node> extends Node{
 			new String[]{HyPeerWebState.className},
 			new Object[]{state}
 		));
-		//Change the inception's state, since we're adding another node
-		inceptionState = HyPeerWebState.HAS_MANY;
 		//Now run the add operation
-		inceptionweb.addNode(segment, listener);
+		inceptionState.addNode(inceptionweb, segment, listener);
 	}
 	/**
 	 * Removes a segment from the HyPeerWeb
@@ -103,7 +108,7 @@ public class Segment<T extends Node> extends Node{
 		inceptionweb.nodes.put(this.webID, this);
 		inceptionweb.nodesByUID.put(this.UID, this);
 		
-		inceptionweb.removeNode(this, listener);
+		inceptionState.removeNode(inceptionweb, this, listener);
 	}
 	
 	//ADD & REMOVE NODE
