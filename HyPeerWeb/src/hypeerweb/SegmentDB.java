@@ -1,26 +1,15 @@
-/*
- * To change this template, choose Tools | Templates
- * and open the template in the editor.
- */
 package hypeerweb;
 
-import com.thoughtworks.xstream.XStream;
-import com.thoughtworks.xstream.io.xml.DomDriver;
 import communicator.Communicator;
 import communicator.RemoteAddress;
-import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
-import java.io.OutputStream;
 import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Date;
+import java.util.HashSet;
 
 /**
  *
@@ -29,22 +18,20 @@ import java.util.Date;
  * InceptionWeb shuts down.
  */
 public class SegmentDB implements Serializable {
-	private final ArrayList<NodeImmutable> nodes;
+	private HashSet<Node> proxies;
+	private SegmentCache cache;
 	private final RemoteAddress oldAddress;
 	
-	public SegmentDB(){
-		nodes = new ArrayList<>();
+	public SegmentDB(Segment segment){
 		oldAddress = Communicator.getAddress();
+		proxies = new HashSet();
+		cache = segment.getCache();
+		//Get a list of proxies that are missing from the cache
+		//I don't really know a better way to do this
+		for (Object n : segment.nodes.values())
+			proxies.addAll(((Node) n).L.getProxies());
 	}
-	
-	/**
-	 * Stores the InceptionWeb segment in a database.
-	 * @param nodes The nodes in the segment to be saved 
-	 */
-	public void store(Collection<Node> nodes){
-		for(Node n : nodes)
-			this.nodes.add(new NodeImmutable(n));
-	}
+
 	/**
 	 * Transfers the database to another segment.
 	 * @param segment The segment to transfer the database to
@@ -58,7 +45,7 @@ public class SegmentDB implements Serializable {
 		}
 	}
 	
-	public void save(Segment segment){
+	public static void save(Segment segment){
 		try{
 			ObjectOutputStream stream = new ObjectOutputStream(new FileOutputStream(segment.dbname));
 			segment.setWriteRealNode(true);
@@ -69,7 +56,6 @@ public class SegmentDB implements Serializable {
 			e.printStackTrace();
 		}
 	}
-	
 	public static Segment load(String file) throws IOException, ClassNotFoundException{
 		ObjectInputStream stream = new ObjectInputStream(new FileInputStream(new File(file)));
 		Segment segment = (Segment) stream.readObject();

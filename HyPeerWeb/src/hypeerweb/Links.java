@@ -531,6 +531,19 @@ public class Links implements Serializable {
 			return null;
 		return inverseSurrogateNeighbors.first();
 	}
+	/**
+	 * Get all proxy nodes
+	 * @return an arraylist of proxy nodes
+	 */
+	public ArrayList<Node> getProxies(){
+		RemoteAddress origin = Communicator.getAddress();
+		ArrayList<Node> proxies = new ArrayList();
+		for (Node n: highest){
+			if (!n.getAddress().onSameMachineAs(origin))
+				proxies.add(n);
+		}
+		return proxies;
+	}
 	
 	//NETWORKING
 	public Object writeReplace() throws ObjectStreamException {

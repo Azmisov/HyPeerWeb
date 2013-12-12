@@ -239,7 +239,7 @@ public class ChatServer{
 			conn.executeRemotely(new NodeListener(
 				className, "_mergeServerData",
 				new String[]{"hypeerweb.SegmentDB", ChatUser.classNameArr, RemoteAddress.classNameArr},
-				new Object[]{segment.getDatabase(), rusers, raddress}
+				new Object[]{new SegmentDB(segment), rusers, raddress}
 			));
 		}
 		//Disconnect all clients
@@ -251,6 +251,8 @@ public class ChatServer{
 			);
 			for (ChatUser usr: clients.values())
 				Communicator.request(usr.client, changeServer, false);
+			//Close the app
+			System.exit(0);
 		}
 	}
 	public static void _changeNetworkID(Node removed, Node replaced, int oldWebID){
@@ -264,9 +266,10 @@ public class ChatServer{
 		cache.changeNetworkID(oldWebID, replaced.getWebId());
 		Command changeNetworkID = new Command(ChatClient.className, "changeNetworkID", 
 				new String[]{"int","int"}, new Object[]{oldWebID, newID});
-		for(ChatUser c : clients.values()){
+		for (ChatUser c : clients.values())
 			Communicator.request(c.client, changeNetworkID, false);
-		}
+		//Close the app
+		System.exit(0);
 	}
 	public static void _mergeServerData(Node n, SegmentDB db, ChatUser[] rusers, RemoteAddress[] addresses){
 		for(int i=0;i<rusers.length;i++){
@@ -294,7 +297,7 @@ public class ChatServer{
 			Communicator.request(user.client, shutdown, false);
 		}
 		state = State.OFF;
-		segment.store();
+		SegmentDB.save(segment);		
 		segment = null;
 	}
 	public static void startup_broadcast(){

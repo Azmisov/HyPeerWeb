@@ -255,7 +255,7 @@ public class Segment<T extends Node> extends Node{
 			public void removeNode(Segment web, Node n, NodeListener listener){
 				//If the HyPeerWeb has more than two nodes, remove normally
 				int size = web.getSegmentSize();
-				Node last;
+				Node last = null;
 				if (size > 2 ||
 					//Basically, we're trying to find a node with webID > 1 or height > 1
 					(last = (Node) web.getLastSegmentNode()).getWebId() > 1 ||
@@ -330,16 +330,17 @@ public class Segment<T extends Node> extends Node{
 		seg.state = state;
 		//InceptionWeb will always have at least one node
 		if (seg.isInceptionWeb){
+			Node t = seg.getFirstSegmentNode();
 			//Broadcast change to all sub-nodes
-			(new BroadcastVisitor(new NodeListener(
+			new BroadcastVisitor(new NodeListener(
 				className, "_changeInceptionState",
 				new String[]{HyPeerWebState.className},
 				new Object[]{state}
-			))).visit(seg.getFirstSegmentNode());
+			)).visit(seg.getFirstSegmentNode());
 		}
 	}
 	protected static void _changeInceptionState(Node n, HyPeerWebState state){
-		((Segment) n).inceptionState = HyPeerWebState.HAS_MANY;
+		((Segment) n).inceptionState = state;
 	}
 	protected static void _inheritState(Node n, HyPeerWebState state){
 		Segment seg = (Segment) n;
@@ -484,18 +485,6 @@ public class Segment<T extends Node> extends Node{
 				temp.addNode(n, false);
 		}
 		return temp.nodes.values().toArray(new NodeCache[temp.nodes.size()]);
-	}
-	public SegmentDB getDatabase(){
-		SegmentDB db = new SegmentDB();
-		db.store((Collection<Node>) nodes.values());
-		return db;
-	}
-	public void store(){
-		System.out.println("Storing in database");
-		getDatabase().save(this);
-	}
-	public void restore() throws Exception{
-		//TODO: NOT IMPLEMENTED
 	}
 	
 	//CLASS OVERRIDES

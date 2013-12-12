@@ -127,8 +127,7 @@ public class Command implements Serializable{
 				e.getCause().printStackTrace();
 			else{
 				//This is a reflection error
-				System.err.println("Reflection on: "+methodName+"("+Arrays.toString(paramTypes_lst.toArray(new String[l]))+")");
-				System.err.println("With parameters: "+Arrays.toString(paramVals_lst.toArray(new Object[l])));
+				System.err.println(this);
 				String[] names = new String[l];
 				for (int i=0; i<l; i++){
 					Object v = paramVals_lst.get(i);
@@ -183,5 +182,11 @@ public class Command implements Serializable{
 		paramTypes_lst = new ArrayList(Arrays.asList(paramTypes));
 		paramVals_lst = new ArrayList(Arrays.asList(paramVals));
 		return this;
+	}
+	
+	public String toString(){
+		int l = paramTypes_lst.size();
+		String name = "Reflection on: "+methodName+"("+Arrays.toString(paramTypes_lst.toArray(new String[l]))+")";
+		return name+"\nWith parameters: "+Arrays.toString(paramVals_lst.toArray(new Object[l]));
 	}
 }

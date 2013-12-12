@@ -127,6 +127,9 @@ public class Communicator extends Thread{
 		} catch(IOException | ClassNotFoundException e){
 			String errmess = e.getMessage();
 			System.err.println(errmess == null ? e : errmess);
+			System.err.println("Address: "+raddr);
+			System.err.println("Command: Failed to execute "+command.clazz+"."+command.methodName);
+			System.err.println(command);
 			e.printStackTrace();
 		}
 		return result;

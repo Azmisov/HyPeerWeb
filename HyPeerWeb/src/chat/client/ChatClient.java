@@ -43,8 +43,8 @@ public class ChatClient extends JFrame{
 	private static RemoteAddress server;
 	protected static ChatClient instance;
 	protected static ChatUser activeUser;						//The user associated with this client
-	protected static SegmentCache nodeCache = null;			//List of all nodes in HyPeerWeb
-	private static NodeCache selected;								//The selected node
+	protected static SegmentCache nodeCache = null;				//List of all nodes in HyPeerWeb
+	private static NodeCache selected;							//The selected node
 	private static String subnetName;
 	//List of all chat users
 	protected static HashMap<Integer, ChatUser> chatUsers = new HashMap();
