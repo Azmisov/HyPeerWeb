@@ -225,6 +225,7 @@ public class ListTab extends JPanel{
 				return;
 			
 			int size = ChatClient.nodeCache.segments.size();
+			System.out.println(size);
 			int index = 1;
 			Integer[] seg = ChatClient.nodeCache.segments.keySet().toArray(new Integer[size]);
 			size++;//All goes first
