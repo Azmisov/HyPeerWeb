@@ -29,7 +29,7 @@ public class ChatClient extends JFrame{
 	public static final String className = ChatClient.class.getName();
 	public static final int UID = Communicator.assignId();
 	//Window title
-	private static final String title = "HyPeerWeb Chat v0.3a";
+	private static final String title = "HyPeerWeb Chat v0.4";
 	//Window dimensions
 	private static final int width = 750, height = 700;
 	//Action bar's pixel width
