@@ -240,6 +240,8 @@ public class Links implements Serializable {
 		//We merge all duplicate proxy/real node references into one pointer
 		ArrayList<HeightUpdate> reinsert = new ArrayList();
 		for (Links l: toUpdate){
+			if (l == null)
+				continue;
 			if (l instanceof LinksProxy)
 				System.err.println("_resortLinks will fail! This should not happen");
 			reinsert.add(l._removeOutdatedLink(webId, oldHeight, newHeight));

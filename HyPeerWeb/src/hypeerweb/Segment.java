@@ -258,9 +258,9 @@ public class Segment<T extends Node> extends Node{
 				Node last = null;
 				if (size > 2 ||
 					//Basically, we're trying to find a node with webID > 1 or height > 1
-					(last = (Node) web.getLastSegmentNode()).getWebId() > 1 ||
+					size > 0 && ((last = (Node) web.getLastSegmentNode()).getWebId() > 1 ||
 					//The only nodes left are 0 and 1; check their heights to see if they have children
-					last.getHeight() > 1 ||
+					last.getHeight() > 1) ||
 					(size == 2 && ((Node) web.getFirstSegmentNode()).getHeight() > 1) ||
 					//The only other possibility is if we have one node, with a proxy child
 					//Always execute this last, to avoid network communication if at all possible
