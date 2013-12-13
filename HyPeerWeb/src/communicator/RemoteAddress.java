@@ -41,6 +41,15 @@ public class RemoteAddress implements Serializable{
 		}
 	}
 	/**
+	 * Clones a RemoteAddress with the specified UID
+	 * @param UID 
+	 */
+	public RemoteAddress(RemoteAddress addr, int UID){
+		ip = addr.ip;
+		port = addr.port;
+		this.UID = UID;
+	}
+	/**
 	 * Constructs a RemoteAddress from a given machine name, portNumber, and unique identifier
 	 * @param machineName the name of the machine, may be an IP ip or domain name.
 		pass null to use localhost as the machine ip

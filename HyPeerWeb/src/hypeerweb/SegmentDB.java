@@ -9,6 +9,7 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
+import java.util.HashMap;
 import java.util.HashSet;
 
 /**
@@ -22,7 +23,7 @@ public class SegmentDB implements Serializable {
 	private SegmentCache cache;
 	private final RemoteAddress oldAddress;
 	
-	public SegmentDB(Segment segment){
+	public SegmentDB(Segment<Node> segment){
 		oldAddress = Communicator.getAddress();
 		proxies = new HashSet();
 		cache = segment.getCache();
@@ -37,11 +38,40 @@ public class SegmentDB implements Serializable {
 	 * @param segment The segment to transfer the database to
 	 */
 	public void transferTo(Segment<Node> segment){
-		for (NodeImmutable n : nodes){
-			Node node = new Node(n);
-			segment.nodes.put(node.getWebId(), node);
-			segment.nodesByUID.put(node.UID, node);
-			node.L.broadcastReplacement(new NodeProxy(n, oldAddress), node);
+		HashMap<Integer, Node> node_map = new HashMap();
+		//Add all proxies to node map
+		for (Node n: proxies)
+			node_map.put(n.getWebId(), n);
+		//Rebuilt nodes
+		for (NodeCache n: cache.nodes.values()){
+			Node real = new Node(n.webID, n.height);
+			node_map.put(n.webID, real);
+		}
+		//Now rebuild the links
+		for (NodeCache n: cache.nodes.values()){
+			Node real = node_map.get(n.webID);
+			if (n.f != -1)
+				real.L.setFold(node_map.get(n.f));
+			if (n.sf != -1)
+				real.L.setSurrogateFold(node_map.get(n.sf));
+			if (n.isf != -1){
+				real.foldState = Node.FoldState.UNSTABLE;
+				real.L.setInverseSurrogateFold(node_map.get(n.isf));
+			}
+			for (int friend: n.n)
+				real.L.addNeighbor(node_map.get(friend));
+			for (int friend: n.sn)
+				real.L.addSurrogateNeighbor(node_map.get(friend));
+			for (int friend: n.isn)
+				real.L.addInverseSurrogateNeighbor(node_map.get(friend));
+		}
+		//Transfer map to segment
+		for (NodeCache n: cache.nodes.values()){
+			Node real = node_map.get(n.webID);
+			segment.nodes.put(n.webID, real);
+			segment.nodesByUID.put(real.UID, real);
+			RemoteAddress addr = new RemoteAddress(oldAddress, n.UID);
+			real.L.broadcastReplacement(new NodeProxy(n, addr), real);
 		}
 	}
 	

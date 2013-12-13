@@ -19,6 +19,7 @@ import java.util.HashSet;
 public class NodeCache implements NodeInterface, Serializable {
 	//Network id
 	protected int networkID;
+	protected int UID;
 	//Node attributes
 	protected final int webID, height;
 	//Node links
@@ -28,6 +29,7 @@ public class NodeCache implements NodeInterface, Serializable {
 
 	public NodeCache(hypeerweb.Node real, final SegmentCache parent){
 		this.parent = parent;
+		UID = real.UID;
 		webID = real.getWebId();
 		height = real.getHeight();
 		Segment host = real.getHostSegment();
