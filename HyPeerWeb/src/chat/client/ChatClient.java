@@ -303,7 +303,7 @@ public class ChatClient extends JFrame{
 		});
 		btnStartup.setEnabled(false);
 		//Debug button
-		JButton btnDebug = new JButton("Debug");
+		JButton btnDebug = new JButton("Resync");
 		btnDebug.addActionListener(new ActionListener(){
 			@Override
 			public void actionPerformed(ActionEvent e) {
@@ -590,7 +590,7 @@ public class ChatClient extends JFrame{
 			}
 		}
 	}
-	public static void startup(){
+	public static SegmentCache startup(){
 		for(Component comp : getAllComponents(instance)){
 			if(comp instanceof JButton){
 				if(((JButton)comp).getText().equals("Startup"))
@@ -599,6 +599,7 @@ public class ChatClient extends JFrame{
 					((JButton)comp).setEnabled(true);
 			}
 		}
+		return nodeCache;
 	}
 	
 	private static class NodeInfo extends AbstractTableModel{

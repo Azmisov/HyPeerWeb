@@ -47,7 +47,10 @@ public class NodeCache implements NodeInterface, Serializable {
 		sn = convertToCached(real.L.getSurrogateNeighbors());
 		isn = convertToCached(real.L.getInverseSurrogateNeighbors());
 	}
-
+	public void setParent(SegmentCache parent){
+		this.parent = parent;
+	}
+	
 	//BASIC GETTERS
 	public int getNetworkId() {
 		return networkID;

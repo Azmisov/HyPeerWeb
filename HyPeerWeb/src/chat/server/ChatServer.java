@@ -69,21 +69,18 @@ public class ChatServer implements Serializable{
 					stream.close();
 					
 					//Load database
-					cache = db.cache;
 					users = db.users;
 					clients = db.clients;
 					dbName = db.dbName;
 					segment = SegmentDB.load(dbName);
-					Communicator.setId(db.globalUID);
-					
+					Communicator.setId(db.globalUID);					
 					segment.L = db.links;
-					if (segment.L == null)
-						System.out.println("BAD BAD BAD");
+					cache = new SegmentCache();
 					
 					//Broadcast startup
 					Command startup = new Command(ChatClient.className, "startup");
 					for (ChatUser user : db.clients.values())
-						Communicator.request(user.client, startup, false);
+						cache = (SegmentCache) Communicator.request(user.client, startup, true);
 
 				} catch (Exception ex) {
 					System.err.println("Error recovering segment db");
@@ -345,15 +342,14 @@ public class ChatServer implements Serializable{
 		//Save database
 		SegmentDB.save(segment);	
 		ServerDB db = new ServerDB();
-		db.cache = cache;
 		db.clients = clients;
 		db.users = users;
 		db.dbName = segment.dbname;
 		db.globalUID = Communicator.assignId();
 		segment.L.setWriteRealLinks(true);
 		db.links = segment.L;
-		if (segment.L == null)
-			System.out.println("BAD BAD BAD");
+		for (NodeCache c: cache.nodes.values())
+			db.cache.add(c);
 		
 		try{
 			ObjectOutputStream stream = new ObjectOutputStream(new FileOutputStream("Server"+Communicator.getAddress().port+".db"));
@@ -690,6 +686,10 @@ public class ChatServer implements Serializable{
 		return instance != null;
 	}
 	public static void _debug(){
+		new BroadcastVisitor(new NodeListener(
+			ChatServer.className, "_sync_broadcast"
+		)).visit(segment);
+		/*
 		SegmentCache actualCache = segment.getCache();
 		Validator v = new Validator(actualCache);
 		System.err.println("PRINTING SERVER DATA");
@@ -705,14 +705,30 @@ public class ChatServer implements Serializable{
 			System.err.println(e.getMessage());
 		}
 		System.err.println("--------------------");
+		*/
 	}
-	
+	private static void _sync_broadcast(Node n){
+		RemoteAddress addr = Communicator.getAddress();
+		new BroadcastVisitor(new NodeListener(
+			ChatServer.className, "_sync_entire",
+			new String[]{RemoteAddress.className},
+			new Object[]{addr}
+		)).visit(segment);
+	}
+	private static void _sync_entire(Node n, RemoteAddress addr){
+		SegmentCache c = segment.getCache();
+		Command merge = new Command(ChatServer.className, "_sync_merge", new String[]{SegmentCache.className}, new Object[]{c});
+		Communicator.request(addr, merge, false);
+	}
+	private static void _sync_merge(SegmentCache new_cache){
+		cache.merge(new_cache);
+	}
 	public static class ServerDB implements Serializable{
 		public int globalUID;
-		private String dbName;
-		public SegmentCache cache;
+		public String dbName;
 		public HashMap<Integer, ChatUser> users;
 		public HashMap<Integer, ChatUser> clients;
 		public Links links;
+		public ArrayList<NodeCache> cache = new ArrayList();
 	}
 }
