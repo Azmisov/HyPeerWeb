@@ -21,7 +21,7 @@ public class Node implements Serializable, Comparable<Node>{
 		classNameArr = Node[].class.getName();
 	//Serialization
 	public final int UID = Communicator.assignId();
-	public boolean writeRealNode = false;
+	public transient boolean writeRealNode = false;
 	//Node Attributes
 	protected int webID, height;
 	public Attributes data = new Attributes();
@@ -462,7 +462,7 @@ public class Node implements Serializable, Comparable<Node>{
 			bitShifter <<= 1;
 		}
 		//If any of the neighbors match these webId's, we should broadcast to them
-		for(Node node : L.getNeighbors()){
+		for (Node node : L.getNeighbors()){
 			if (generatedNeighbors.contains(node.getWebId()))
 				found.add(node);
 		}
@@ -702,10 +702,8 @@ public class Node implements Serializable, Comparable<Node>{
 	
 	//CLASS OVERRIDES
 	public Object writeReplace() throws ObjectStreamException {
-		if(writeRealNode){
-			setWriteRealNode(false);
+		if (writeRealNode)
 			return this;
-		}
 		return new NodeProxy(this);
 	}
 	public Object readResolve() throws ObjectStreamException {

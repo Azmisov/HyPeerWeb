@@ -153,6 +153,9 @@ public class Communicator extends Thread{
 	public static int assignId(){
 		return LOCAL_ID_COUNTER++;
 	}
+	public static void setId(int UID){
+		LOCAL_ID_COUNTER = UID;
+	}
 	/**
 	 * Resolve a UID to it's local object/proxy
 	 * @param class_type the class of the object to resolve

@@ -296,11 +296,9 @@ public class ChatClient extends JFrame{
 		//Startup button
 		JButton btnStartup = new JButton("Startup");
 		btnStartup.addActionListener(new ActionListener() {
-
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				Command c = new Command(ChatServer.className, "startup_broadcast");
-				Communicator.request(server, c, false);
+				ChatServer.restartServerProcess(server.port);
 			}
 		});
 		btnStartup.setEnabled(false);

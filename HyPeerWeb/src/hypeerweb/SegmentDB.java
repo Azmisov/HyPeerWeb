@@ -78,7 +78,7 @@ public class SegmentDB implements Serializable {
 	public static void save(Segment segment){
 		try{
 			ObjectOutputStream stream = new ObjectOutputStream(new FileOutputStream(segment.dbname));
-			segment.setWriteRealNode(true);
+			segment.setWriteRealSegment(true);
 			stream.writeObject(segment);
 			stream.close();
 		}

@@ -7,9 +7,14 @@ import hypeerweb.*;
 import hypeerweb.validator.Validator;
 import hypeerweb.visitors.*;
 import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -17,13 +22,11 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map.Entry;
 import java.util.Random;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 /**
  * Handles communications in the chat network
  */
-public class ChatServer{
+public class ChatServer implements Serializable{
 	public static final String className = ChatServer.class.getName();
 	public static final int UID = Communicator.assignId();
 	//Chat servers are singletons
@@ -39,25 +42,54 @@ public class ChatServer{
 	private static final ArrayList<SyncRequest> syncResults = new ArrayList();
 	//Cached list of all users
 	private static final Random randomName = new Random();
-	private static final HashMap<Integer, ChatUser> users = new HashMap();
+	private static HashMap<Integer, ChatUser> users = new HashMap();
 	//List of all users and their GUI/Clients that are leeching on this network
-	private static final HashMap<Integer, ChatUser> clients = new HashMap();
+	private static HashMap<Integer, ChatUser> clients = new HashMap();
 	protected static enum State{ON, OFF};
 	protected static State state = State.ON;
 	
-	private ChatServer(){
-		Communicator.startup(0);
+	private ChatServer(int port){
+		Communicator.startup(port);
 		dbName = "HyPeerWeb" + Communicator.getAddress().port + ".db";
-		segment = Segment.<Node>newSegment(dbName, -1);
+		if (port == 0)
+			segment = Segment.<Node>newSegment(dbName, -1);
 	}
 	/**
 	 * Gets an instance of the server on this computer
 	 * @return the server singleton
 	 */
-	public static ChatServer getInstance(){
+	public static ChatServer getInstance(int port){
 		//Create the singleton
-		if (instance == null)
-			instance = new ChatServer();
+		if (instance == null){
+			instance = new ChatServer(port);
+			if (port != 0){
+				try {
+					ObjectInputStream stream = new ObjectInputStream(new FileInputStream(new File("Server"+port+".db")));
+					ServerDB db = (ServerDB) stream.readObject();
+					stream.close();
+					
+					//Load database
+					cache = db.cache;
+					users = db.users;
+					clients = db.clients;
+					dbName = db.dbName;
+					segment = SegmentDB.load(dbName);
+					Communicator.setId(db.globalUID);
+					
+					segment.L = db.links;
+					if (segment.L == null)
+						System.out.println("BAD BAD BAD");
+					
+					//Broadcast startup
+					Command startup = new Command(ChatClient.className, "startup");
+					for (ChatUser user : db.clients.values())
+						Communicator.request(user.client, startup, false);
+
+				} catch (Exception ex) {
+					System.err.println("Error recovering segment db");
+				}
+			}
+		}
 		return instance;
 	}
 	
@@ -130,6 +162,18 @@ public class ChatServer{
 				args.add("-leech");
 				args.add(leecher.toString());
 			}
+			System.out.println("Starting a new child server process...");
+			Process x = new ProcessBuilder(args).start();
+			new StreamGobbler(x.getErrorStream(), "Server Error").start();
+		} catch (IOException e) {
+			System.err.println("Failed to start a new JVM process!");
+		}
+	}
+	public static void restartServerProcess(int port){
+		try {
+			ArrayList<String> args = new ArrayList(Arrays.asList(
+				new String[]{Main.jvm, "-cp", Main.executable, Main.className, "-gui","-new","-p",String.valueOf(port)}
+			));
 			System.out.println("Starting a new child server process...");
 			Process x = new ProcessBuilder(args).start();
 			new StreamGobbler(x.getErrorStream(), "Server Error").start();
@@ -298,26 +342,39 @@ public class ChatServer{
 		for(ChatUser user : clients.values()){
 			Communicator.request(user.client, shutdown, false);
 		}
-		state = State.OFF;
-		SegmentDB.save(segment);		
-		segment = null;
-	}
-	public static void startup_broadcast(){
-		startup(null);
-		new BroadcastVisitor(new NodeListener(className, "startup")).visit(segment);
-	}
-	public static void startup(Node n){
-		if (state == State.OFF){
-			try {
-				segment = SegmentDB.load(dbName);
-			} catch (Exception ex) {
-				System.err.println("Could not recover chat server!!!");
-			}
-			Command startup = new Command(ChatClient.className, "startup");
-			for(ChatUser user : clients.values())
-				Communicator.request(user.client, startup, false);
-			state = State.ON;
+		//Save database
+		SegmentDB.save(segment);	
+		ServerDB db = new ServerDB();
+		db.cache = cache;
+		db.clients = clients;
+		db.users = users;
+		db.dbName = segment.dbname;
+		db.globalUID = Communicator.assignId();
+		segment.L.setWriteRealLinks(true);
+		db.links = segment.L;
+		if (segment.L == null)
+			System.out.println("BAD BAD BAD");
+		
+		try{
+			ObjectOutputStream stream = new ObjectOutputStream(new FileOutputStream("Server"+Communicator.getAddress().port+".db"));
+			stream.writeObject(db);
+			stream.close();
 		}
+		catch(Exception e){
+			e.printStackTrace();
+		}
+		
+		new Thread(){
+			@Override
+			public void run() {
+				try {
+					Thread.sleep(1000);
+				} catch (InterruptedException ex) {
+					System.err.println("Failed to wait to close!");
+				}
+				System.exit(0);
+			}
+		}.start();
 	}
 	public static boolean isShutDown(){
 		return state == State.OFF;
@@ -648,5 +705,14 @@ public class ChatServer{
 			System.err.println(e.getMessage());
 		}
 		System.err.println("--------------------");
+	}
+	
+	public static class ServerDB implements Serializable{
+		public int globalUID;
+		private String dbName;
+		public SegmentCache cache;
+		public HashMap<Integer, ChatUser> users;
+		public HashMap<Integer, ChatUser> clients;
+		public Links links;
 	}
 }

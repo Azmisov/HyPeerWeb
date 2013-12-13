@@ -6,7 +6,6 @@ import communicator.RemoteAddress;
 import java.io.ObjectStreamException;
 import java.io.Serializable;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map.Entry;
 import java.util.SortedSet;
@@ -547,10 +546,8 @@ public class Links implements Serializable {
 	
 	//NETWORKING
 	public Object writeReplace() throws ObjectStreamException {
-		if(writeRealLinks){
-			setWriteRealLinks(false);
+		if (writeRealLinks)
 			return this;
-		}
 		return new LinksProxy(UID);
 	}
 	public Object readResolve() throws ObjectStreamException {

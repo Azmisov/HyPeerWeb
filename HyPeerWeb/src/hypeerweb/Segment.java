@@ -4,15 +4,10 @@ import communicator.Communicator;
 import communicator.NodeListener;
 import hypeerweb.visitors.SendVisitor;
 import hypeerweb.visitors.BroadcastVisitor;
-import java.io.File;
-import java.io.IOException;
 import java.io.ObjectStreamException;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Random;
 import java.util.TreeMap;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 /**
  * The Great HyPeerWeb
@@ -21,7 +16,7 @@ import java.util.logging.Logger;
 public class Segment<T extends Node> extends Node{
 	public static final String className = Segment.class.getName();
 	//HyPeerWebSegment attributes
-	protected final TreeMap<Integer, T> nodes, nodesByUID;
+	public final TreeMap<Integer, T> nodes, nodesByUID;
 	public HyPeerWebState
 		state = HyPeerWebState.HAS_NONE,
 		inceptionState = HyPeerWebState.HAS_ONE;
@@ -488,9 +483,8 @@ public class Segment<T extends Node> extends Node{
 	}
 	
 	//CLASS OVERRIDES
-	@Override
-	public void setWriteRealNode(boolean writeRealNode) {
-		this.writeRealNode = writeRealNode;
+	public void setWriteRealSegment(boolean writeRealNode) {
+		setWriteRealNode(writeRealNode);
 		for(Node n : nodes.values()){
 			n.setWriteRealNode(writeRealNode);
 		}

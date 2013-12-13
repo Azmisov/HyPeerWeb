@@ -33,9 +33,10 @@ public class Main {
 			executable = URLDecoder.decode(Main.class.getProtectionDomain().getCodeSource().getLocation().getPath(), "UTF-8");
 			jvm = new java.io.File(new java.io.File(System.getProperty("java.home"), "bin"), "java").getAbsolutePath();
 			//Parse terminal arguments
+			int port = 0;
 			boolean new_network = false, use_gui = false;
 			RemoteAddress spawner = null, leecher = null;
-			if (args.length > 5)
+			if (args.length > 7)
 				throw syntax;
 			for (int i=0; i<args.length; i++){
 				switch(args[i]){
@@ -59,6 +60,12 @@ public class Main {
 							throw syntax;
 						leecher = parseAddress(args[i]);
 						break;
+					case "-p":
+					case "-port":
+						if (args.length == ++i)
+							throw syntax;
+						port = Integer.parseInt(args[i]);
+						break;
 					default:
 						throw syntax;
 				}
@@ -70,13 +77,14 @@ public class Main {
 				throw syntax;
 			}
 			//Create a new client or server, depending on the arguments
+			final int f_port = port;
 			final boolean f_new = new_network, f_gui = use_gui;
 			final RemoteAddress f_spawn = spawner, f_leech = leecher;
 			EventQueue.invokeLater(new Runnable() {
 				@Override
 				public void run(){
 					if (f_new || f_spawn != null){
-						ChatServer server = ChatServer.getInstance();
+						ChatServer server = ChatServer.getInstance(f_port);
 						//Start GUI, if necessary
 						if (f_gui){
 							JFrame win = new ChatServerGUI();
