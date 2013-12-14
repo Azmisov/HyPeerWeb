@@ -29,7 +29,7 @@ public class ChatClient extends JFrame{
 	public static final String className = ChatClient.class.getName();
 	public static final int UID = Communicator.assignId();
 	//Window title
-	private static final String title = "HyPeerWeb Chat v0.3a";
+	private static final String title = "HyPeerWeb Chat v0.4";
 	//Window dimensions
 	private static final int width = 750, height = 700;
 	//Action bar's pixel width
@@ -43,8 +43,8 @@ public class ChatClient extends JFrame{
 	private static RemoteAddress server;
 	protected static ChatClient instance;
 	protected static ChatUser activeUser;						//The user associated with this client
-	protected static SegmentCache nodeCache = null;			//List of all nodes in HyPeerWeb
-	private static NodeCache selected;								//The selected node
+	protected static SegmentCache nodeCache = null;				//List of all nodes in HyPeerWeb
+	private static NodeCache selected;							//The selected node
 	private static String subnetName;
 	//List of all chat users
 	protected static HashMap<Integer, ChatUser> chatUsers = new HashMap();
@@ -286,8 +286,24 @@ public class ChatClient extends JFrame{
 		});
 		//Shutdown button
 		JButton btnShutdown = new JButton("Shutdown");
+		btnShutdown.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				Command c = new Command(ChatServer.className, "shutdown_broadcast");
+				Communicator.request(server, c, false);
+			}
+		});
+		//Startup button
+		JButton btnStartup = new JButton("Startup");
+		btnStartup.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				ChatServer.restartServerProcess(server.port);
+			}
+		});
+		btnStartup.setEnabled(false);
 		//Debug button
-		JButton btnDebug = new JButton("Debug");
+		JButton btnDebug = new JButton("Resync");
 		btnDebug.addActionListener(new ActionListener(){
 			@Override
 			public void actionPerformed(ActionEvent e) {
@@ -318,9 +334,10 @@ public class ChatClient extends JFrame{
 		c.gridy++;
 		box.add(btnShutdown, c);
 		c.gridy++;
+		box.add(btnStartup, c);
+		c.gridy++;
 		box.add(btnDebug, c);
 		// </editor-fold>
-		
 		return box;
 	}
 	private JPanel initNodeBox(){
@@ -485,6 +502,7 @@ public class ChatClient extends JFrame{
 		//todo update listtab, graphtab, nodeinfo
 		//todo synchronize selection between tabs
 		//todo tell list-tab's scroll pane that it's height changed; right now, it isn't updating
+		//todo fix graph tab removed nodes
 		listTab.draw();
 		graph.draw();
 	}
@@ -519,6 +537,17 @@ public class ChatClient extends JFrame{
 	public static void updateUser(int userid, String username, int networkid){
 		chat.updateUser(userid, username, networkid);
 	}
+	public static void changeNetworkID(int oldWebID, int newWebID){
+		//Change network ID's for the users
+		if (activeUser.networkID == oldWebID)
+			activeUser.networkID = newWebID;
+		for (ChatUser usr: chatUsers.values()){
+			if (usr.networkID == oldWebID)
+				usr.networkID = newWebID;
+		}
+		//Update node cache
+		nodeCache.changeNetworkID(oldWebID, newWebID);
+	}
 	public static void updateNodeCache(int[] removedNodes, NodeCache[] addedNodes){
 		if (isConnected()){
 			//Always remove nodes before adding
@@ -541,6 +570,37 @@ public class ChatClient extends JFrame{
 		nodeCache = new SegmentCache();
 		redrawTabs();
 	}
+	public static java.util.List<Component> getAllComponents(final Container c) {
+		Component[] comps = c.getComponents();
+		java.util.List<Component> compList = new ArrayList<Component>();
+		for (Component comp : comps) {
+			compList.add(comp);
+			if (comp instanceof Container)
+				compList.addAll(getAllComponents((Container) comp));
+		}
+		return compList;
+		}
+	public static void shutdown(){
+		for(Component comp : getAllComponents(instance)){
+			if(comp instanceof JButton){
+				if(!((JButton)comp).getText().equals("Startup"))
+					((JButton)comp).setEnabled(false);
+				else
+					((JButton)comp).setEnabled(true);
+			}
+		}
+	}
+	public static SegmentCache startup(){
+		for(Component comp : getAllComponents(instance)){
+			if(comp instanceof JButton){
+				if(((JButton)comp).getText().equals("Startup"))
+					((JButton)comp).setEnabled(false);
+				else
+					((JButton)comp).setEnabled(true);
+			}
+		}
+		return nodeCache;
+	}
 	
 	private static class NodeInfo extends AbstractTableModel{
 		ArrayList<String[]> data = new ArrayList();
@@ -550,7 +610,7 @@ public class ChatClient extends JFrame{
 				int temp;
 				if ((temp = n.getRawFold()) != -1)
 					addInfo("F:",temp);
-				if ((temp = n.getRawFold()) != -1)
+				if ((temp = n.getRawSurrogateFold()) != -1)
 					addInfo("SF:",temp);
 				if ((temp = n.getRawInverseSurrogateFold()) != -1)
 					addInfo("ISF:",temp);

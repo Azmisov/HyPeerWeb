@@ -3,8 +3,6 @@ package chat.server;
 import communicator.Communicator;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
-import java.awt.event.WindowListener;
-import java.awt.event.WindowStateListener;
 import javax.swing.JFrame;
 import javax.swing.JScrollPane;
 import javax.swing.JTextPane;
@@ -15,11 +13,13 @@ import javax.swing.JTextPane;
  * @author isaac
  */
 public class ChatServerGUI extends JFrame{
+	private boolean shuttingDown = false;
+	
 	public ChatServerGUI(){
 		setTitle("HyPeerWeb Chat Server: "+Communicator.getAddress().port);
 		setSize(500, 350);
 		setLocationRelativeTo(null);
-		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+		setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
 		
 		//Console GUI
 		JScrollPane consoleScroll = new JScrollPane(
@@ -42,7 +42,10 @@ public class ChatServerGUI extends JFrame{
 		addWindowListener(new WindowAdapter() {
 			@Override
 			public void windowClosing(WindowEvent e) {
-				ChatServer.disconnect();
+				if (!shuttingDown){
+					shuttingDown = true;
+					ChatServer.disconnect();
+				}
 			}
 		});
 	}

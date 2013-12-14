@@ -1,5 +1,6 @@
 package hypeerweb;
 
+import communicator.Communicator;
 import communicator.NodeListener;
 import hypeerweb.visitors.SendVisitor;
 import hypeerweb.visitors.BroadcastVisitor;
@@ -15,8 +16,7 @@ import java.util.TreeMap;
 public class Segment<T extends Node> extends Node{
 	public static final String className = Segment.class.getName();
 	//HyPeerWebSegment attributes
-	protected final TreeMap<Integer, T> nodes;
-	private final TreeMap<Integer, T> nodesByUID;
+	public final TreeMap<Integer, T> nodes, nodesByUID;
 	public HyPeerWebState
 		state = HyPeerWebState.HAS_NONE,
 		inceptionState = HyPeerWebState.HAS_ONE;
@@ -26,8 +26,8 @@ public class Segment<T extends Node> extends Node{
 	//Static list of all HWSegments in this JVM; they may not correspond to the same HyPeerWeb
 	public static final ArrayList<Segment> segmentList = new ArrayList();
 	//Segment settings
-	protected final transient String dbname;
-	protected final transient long seed;
+	public final String dbname;
+	protected final long seed;
 	
 	/**
 	 * Constructor for initializing the HyPeerWeb with default Node values
@@ -35,7 +35,7 @@ public class Segment<T extends Node> extends Node{
 	 * @param seed the random seed number for getting random nodes; use -1
 	 *	to get a pseudo-random seed
 	 */
-	public Segment(String dbname, long seed){
+	protected Segment(String dbname, long seed){
 		this(dbname, seed, 0, 0);
 	}
 	/**
@@ -46,15 +46,68 @@ public class Segment<T extends Node> extends Node{
 	 * @param webID the node webID, if it has one
 	 * @param height the node height, if it has one
 	 */
-	public Segment(String dbname, long seed, int webID, int height){
+	protected Segment(String dbname, long seed, int webID, int height){
 		super(webID, height);
 		this.dbname = dbname;
-		this.seed = seed;
+		this.seed = 2;
 		nodes = new TreeMap();
 		nodesByUID = new TreeMap();
 		if (seed != -1)
 			rand.setSeed(seed);
-		segmentList.add(this);
+	}
+	
+	//SEGMENT OPS
+	/**
+	 * Creates a new segment
+	 * @param dbname filename for the database/node-cache
+	 * @param seed the random seed number for getting random nodes; use -1
+	 *	to get a pseudo-random seed
+	 */
+	public static <K extends Node> Segment newSegment(String dbname, long seed){
+		Segment<K> seg = new Segment(dbname, seed);
+		segmentList.add(seg);
+		return seg;
+	}
+	/**
+	 * Adds a segment to the HyPeerWeb, using a pre-initialized Segment;
+	 * Note: webID, height, Links (L), state, and inceptionState will be altered;
+	 * all other attributes will remain the same however
+	 * @param segment the pre-initialized segment
+	 * @param listener add segment callback; this will execute on the machine
+	 * the "segment" is on, unless remote execution is enabled
+	 */
+	public void addSegment(Segment<T> segment, NodeListener listener){
+		//Create a temporary segment container
+		Segment<Segment<T>> inceptionweb = new Segment(null, seed);
+		inceptionweb.state = inceptionState;
+		inceptionweb.isInceptionWeb = true;
+		inceptionweb.nodes.put(this.webID, this);
+		inceptionweb.nodesByUID.put(this.UID, this);
+		//Temporarily add it to the segment list (so addNode can resolve the host)
+		
+		//The only extra data we need to initialize is the state
+		segment.executeRemotely(new NodeListener(
+			className, "_inheritState",
+			new String[]{HyPeerWebState.className},
+			new Object[]{state}
+		));
+		//Now run the add operation
+		inceptionState.addNode(inceptionweb, segment, listener);
+	}
+	/**
+	 * Removes a segment from the HyPeerWeb
+	 * @param segment the segment to be removed
+	 * @param listener remove segment callback; this will execute on the machine
+	 * that removed segment is on, unless remote execution is enabled
+	 */
+	public void removeSegment(NodeListener listener){
+		Segment<Segment<T>> inceptionweb = new Segment(null, seed);
+		inceptionweb.state = inceptionState;
+		inceptionweb.isInceptionWeb = true;
+		inceptionweb.nodes.put(this.webID, this);
+		inceptionweb.nodesByUID.put(this.UID, this);
+		
+		inceptionState.removeNode(inceptionweb, this, listener);
 	}
 	
 	//ADD & REMOVE NODE
@@ -73,7 +126,8 @@ public class Segment<T extends Node> extends Node{
 	/**
 	 * Removes the node
 	 * @param node the node to remove
-	 * @param listener event callback
+	 * @param listener event callback; this will execute on the machine
+	 * that the removed node is on, unless remote execution is enabled
 	 */
 	public void removeNode(T node, NodeListener listener){
 		//Get the segment that has this node and execute the method there
@@ -85,15 +139,14 @@ public class Segment<T extends Node> extends Node{
 		Segment host;
 		//This node doesn't exist or isn't attached to a Segment
 		if (n == null || (host = n.getHostSegment()) == null)
-			listener.callback(null);
+			listener.callback(null, null, -1);
 		//Get the host segment to run removeNode on
 		else host.state.removeNode(host, n, listener);
 	}
 	/**
 	 * Removes all nodes from HyPeerWeb
-	 * Warning! This may leave the HyPeerWeb corrupt, if
-	 * all segments are not cleared together
-	 * @param listener event callback
+	 * @param listener event callback; executed on the each segment, unless
+	 * remote execution is enabled
 	 */
 	public void removeAllNodes(NodeListener listener){
 		(new BroadcastVisitor(new NodeListener(
@@ -112,55 +165,19 @@ public class Segment<T extends Node> extends Node{
 	/**
 	 * Adds a node to the HyPeerWeb, using a pre-initialized Node;
 	 * Note: webID, height, and Links (L) will be altered; all other
-	 * attributes will remain the same, however
-	 * @param node a pre-initialized Node
+	 * attributes will remain the same however
+	 * @param node a pre-initialized Node; this is the only method that requires the
+	 * input "node" be on same machine as the Segment
 	 * @param listener add node callback; this will execute on the machine
 	 * that "node" is on, unless remote execution is enabled
 	 */
 	public void addNode(T node, NodeListener listener){
+		assert(node.getAddress().equals(Communicator.getAddress()));
 		//Add node to UID list, so proxies can be resolved during the add process
 		nodesByUID.put(node.UID, node);
 		//The HyPeerWeb's state will handle everything else
+		// (e.g. finding a nonempty segment to add from)
 		state.addNode(this, node, listener);
-	}
-	/**
-	 * Adds a segment to the HyPeerWeb, using a pre-initialized Segment;
-	 * Note: webID, height, Links (L), state, and inceptionState will be altered;
-	 * all other attributes will remain the same however
-	 * @param segment the pre-initialized segment
-	 * @param listener add segment callback
-	 */
-	public void addSegment(Segment<T> segment, NodeListener listener){
-		//Create a temporary segment container
-		Segment<Segment<T>> inceptionweb = new Segment(null, seed);
-		inceptionweb.state = inceptionState;
-		inceptionweb.isInceptionWeb = true;
-		inceptionweb.nodes.put(this.webID, this);
-		inceptionweb.nodesByUID.put(this.UID, this);
-		//The only extra data we need to initialize is the state
-		segment.executeRemotely(new NodeListener(
-			className, "_inheritState",
-			new String[]{HyPeerWebState.className},
-			new Object[]{state}
-		));
-		//Change the inception's state, since we're adding another node
-		inceptionState = HyPeerWebState.HAS_MANY;
-		//Now run the add operation
-		inceptionweb.addNode(segment, listener);
-	}
-	/**
-	 * Removes a segment from the HyPeerWeb
-	 * @param segment the segment to be removed
-	 * @param listener remove segment callback
-	 */
-	public void removeSegment(NodeListener listener){
-		Segment<Segment<T>> inceptionweb = new Segment(null, seed);
-		inceptionweb.state = inceptionState;
-		inceptionweb.isInceptionWeb = true;
-		inceptionweb.nodes.put(this.webID, this);
-		inceptionweb.nodesByUID.put(this.UID, this);
-		
-		inceptionweb.removeNode(this, listener);
 	}
 	
 	//HYPEERWEB STATE
@@ -174,14 +191,14 @@ public class Segment<T extends Node> extends Node{
 		HAS_NONE {
 			@Override
 			public void addNode(Segment web, Node n, NodeListener listener){
+				web.changeState(HAS_ONE);
 				//Add to the current segment
+				//execution namespace, web, and n, are all on the same machine
 				n.resetLinks();
 				n.setWebID(0);
 				n.setHeight(0);
 				web.nodes.put(0, n);
-				//broadcast state change to HAS_ONE
-				web.changeState(HAS_ONE);
-				//run callback
+				//callback
 				if (listener != null)
 					listener.callback(n);
 			}
@@ -189,6 +206,7 @@ public class Segment<T extends Node> extends Node{
 			public void removeNode(Segment web, Node n, NodeListener listener){
 				//Throw an error; this shouldn't happen
 				web.changeState(CORRUPT);
+				//callback
 				if (listener != null)
 					listener.callback(null);
 			}
@@ -197,8 +215,6 @@ public class Segment<T extends Node> extends Node{
 		HAS_ONE {
 			@Override
 			public void addNode(Segment web, Node n, NodeListener listener){
-				//Broadcast state change and execute callback
-				//Host will be on the executing machine
 				web.changeState(HAS_MANY);
 				//Go get the segment that contains the first node, we'll start editing from there
 				web.getNode(0, false, new NodeListener(
@@ -209,13 +225,14 @@ public class Segment<T extends Node> extends Node{
 			}
 			@Override
 			public void removeNode(Segment web, Node n, NodeListener listener){
+				//broadcast state change to HAS_NONE
+				web.changeState(HAS_NONE);
 				//only node left; both n and web will be on this machine
 				web.nodes.clear();
 				web.nodesByUID.clear();
-				//broadcast state change to HAS_NONE
-				web.changeState(HAS_NONE);
+				//callback
 				if (listener != null)
-					listener.callback(n);
+					listener.callback(n, null, -1);
 			}
 		},
 		//More than one node
@@ -233,17 +250,17 @@ public class Segment<T extends Node> extends Node{
 			public void removeNode(Segment web, Node n, NodeListener listener){
 				//If the HyPeerWeb has more than two nodes, remove normally
 				int size = web.getSegmentSize();
-				Node last;
+				Node last = null;
 				if (size > 2 ||
 					//Basically, we're trying to find a node with webID > 1 or height > 1
-					(last = (Node) web.getLastSegmentNode()).getWebId() > 1 ||
+					size > 0 && ((last = (Node) web.getLastSegmentNode()).getWebId() > 1 ||
 					//The only nodes left are 0 and 1; check their heights to see if they have children
-					last.getHeight() > 1 ||
+					last.getHeight() > 1) ||
 					(size == 2 && ((Node) web.getFirstSegmentNode()).getHeight() > 1) ||
 					//The only other possibility is if we have one node, with a proxy child
 					//Always execute this last, to avoid network communication if at all possible
 					(size == 1 && last.L.getHighestLink().getWebId() > 1))
-				{					
+				{
 					//Get a random node to start a disconnect search from
 					web.getRandomNode(new NodeListener(
 						Node.className, "_MANY_remove_random",
@@ -253,17 +270,14 @@ public class Segment<T extends Node> extends Node{
 				}
 				//If the entire HyPeerWeb has only two nodes
 				else{
-					Node replace = n.L.getFold(); //gets node 1
-					if (replace == null)
-						web.changeState(CORRUPT);
-					//Remove node from list of nodes
-					else{
-						replace.executeRemotely(new NodeListener(
-							Node.className, "_TWO_remove",
-							new String[]{Node.className, NodeListener.className},
-							new Object[]{n, listener}
-						));
-					}
+					web.changeState(HAS_ONE);
+					//Make the other node be the HAS_ONE node, first
+					//Afterwards, we'll remove the node from the node-maps
+					n.L.getFold().executeRemotely(new NodeListener(
+						Node.className, "_TWO_remove",
+						new String[]{Node.className, NodeListener.className},
+						new Object[]{n, listener}
+					));
 				}		
 			}
 		},
@@ -311,21 +325,17 @@ public class Segment<T extends Node> extends Node{
 		seg.state = state;
 		//InceptionWeb will always have at least one node
 		if (seg.isInceptionWeb){
-			//changing the state for the first node will suffice
-			if (state == HyPeerWebState.HAS_MANY || state == HyPeerWebState.HAS_ONE)
-				((Segment) seg.getFirstSegmentNode()).state = state;
-			//Corrupt state changes need to be broadcasted
-			else if (state == HyPeerWebState.CORRUPT){
-				(new BroadcastVisitor(new NodeListener(
-					className, "_changeInceptionState",
-					new String[]{HyPeerWebState.className},
-					new Object[]{state}
-				))).visit(seg.getFirstSegmentNode());
-			}
+			Node t = seg.getFirstSegmentNode();
+			//Broadcast change to all sub-nodes
+			new BroadcastVisitor(new NodeListener(
+				className, "_changeInceptionState",
+				new String[]{HyPeerWebState.className},
+				new Object[]{state}
+			)).visit(seg.getFirstSegmentNode());
 		}
 	}
 	protected static void _changeInceptionState(Node n, HyPeerWebState state){
-		((Segment) n).inceptionState = HyPeerWebState.HAS_MANY;
+		((Segment) n).inceptionState = state;
 	}
 	protected static void _inheritState(Node n, HyPeerWebState state){
 		Segment seg = (Segment) n;
@@ -434,11 +444,7 @@ public class Segment<T extends Node> extends Node{
 			//that is not empty; this is terribly inefficient, but we don't
 			//know a better way to do it (at least not yet)
 			//findValidNode will always check current node first
-			Segment s = (Segment) findValidNode(Criteria.Type.NONEMPTY, -1, false);
-			System.out.println("FOUND NONEMPTY SEGMENT");
-			if (s.isSegmentEmpty())
-				System.out.println("BUT IT DIDN't WORK");
-			return s;
+			return (Segment) findValidNode(Criteria.Type.NONEMPTY, -1, false);
 		}
 	}
 	/**
@@ -475,20 +481,30 @@ public class Segment<T extends Node> extends Node{
 		}
 		return temp.nodes.values().toArray(new NodeCache[temp.nodes.size()]);
 	}
-	public void store() throws Exception{
-		//TODO: NOT IMPLEMENTED
-	}
-	public void restore() throws Exception{
-		//TODO: NOT IMPLEMENTED
-	}
 	
 	//CLASS OVERRIDES
+	public void setWriteRealSegment(boolean writeRealNode) {
+		setWriteRealNode(writeRealNode);
+		for(Node n : nodes.values()){
+			n.setWriteRealNode(writeRealNode);
+		}
+	}
 	@Override
 	public Object writeReplace() throws ObjectStreamException {
+		if(writeRealNode){
+			setWriteRealNode(false);
+			return this;
+		}
 		return new SegmentProxy(this);
 	}
 	@Override
 	public Object readResolve() throws ObjectStreamException {
 		return this;
 	}
+
+	@Override
+	public String toString() {
+		return "Segment{" + "nodes=" + nodes + ", \nnodesByUID=" + nodesByUID + ", \nstate=" + state + ", inceptionState=" + inceptionState + ", \nisInceptionWeb=" + isInceptionWeb + ", \ndbname=" + dbname + ", \nseed=" + seed + '}';
+	}
+	
 }

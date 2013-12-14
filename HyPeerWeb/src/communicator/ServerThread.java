@@ -1,5 +1,6 @@
 package communicator;
 
+import chat.server.ChatServer;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
@@ -43,6 +44,11 @@ public class ServerThread extends Thread {
 	    try {
 	        Command command = (Command) ois.readObject();
 			System.out.println("> "+command.clazz+"."+command.methodName);
+			//Detect server shutdwon
+			if (ChatServer.isShutDown() && command.clazz.equals(ChatServer.className) && command.methodName.equals("startup")){
+				System.err.println("The network has been shut down; Refusing to perform operation");
+				return;
+			}
 	        if (command.commSync){
 	            Object result = command.execute(true);
 	            oos.writeObject(result);

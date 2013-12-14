@@ -4,7 +4,6 @@ import hypeerweb.*;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
-import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.HashMap;
@@ -41,7 +40,7 @@ public class Communicator extends Thread{
 		try{
 	   		socket = new ServerSocket(port);
 			port = socket.getLocalPort();
-			address = new RemoteAddress(InetAddress.getLocalHost().getHostAddress(), port, 0);
+			address = new RemoteAddress(null, port, assignId());
 			System.out.println("Communicator: Listening on "+address);
 			this.start();
 		} catch(Exception e){
@@ -128,6 +127,9 @@ public class Communicator extends Thread{
 		} catch(IOException | ClassNotFoundException e){
 			String errmess = e.getMessage();
 			System.err.println(errmess == null ? e : errmess);
+			System.err.println("Address: "+raddr);
+			System.err.println("Command: Failed to execute "+command.clazz+"."+command.methodName);
+			System.err.println(command);
 			e.printStackTrace();
 		}
 		return result;
@@ -150,6 +152,9 @@ public class Communicator extends Thread{
 	 */
 	public static int assignId(){
 		return LOCAL_ID_COUNTER++;
+	}
+	public static void setId(int UID){
+		LOCAL_ID_COUNTER = UID;
 	}
 	/**
 	 * Resolve a UID to it's local object/proxy

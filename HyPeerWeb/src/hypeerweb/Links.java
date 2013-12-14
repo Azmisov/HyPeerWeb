@@ -6,7 +6,6 @@ import communicator.RemoteAddress;
 import java.io.ObjectStreamException;
 import java.io.Serializable;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map.Entry;
 import java.util.SortedSet;
@@ -26,15 +25,34 @@ public class Links implements Serializable {
 		public static String className = Type.class.getName();
 	}
 	//Serialization
-	public int UID;
+	public final int UID;
+	private boolean writeRealLinks = false;
 	//Link data
-	private Node fold;
-	private Node surrogateFold;
-	private Node inverseSurrogateFold;
-	private TreeSet<Node> neighbors;
-	private TreeSet<Node> surrogateNeighbors;
-	private TreeSet<Node> inverseSurrogateNeighbors;
-	private TreeSet<Node> highest;
+	protected Node fold;
+	protected Node surrogateFold;
+	protected Node inverseSurrogateFold;
+	protected TreeSet<Node> neighbors;
+	protected TreeSet<Node> surrogateNeighbors;
+	protected TreeSet<Node> inverseSurrogateNeighbors;
+	protected TreeSet<Node> highest;
+
+	@Override
+	public String toString() {
+		StringBuilder builder = new StringBuilder();
+		if(fold != null)
+			builder.append("Fold: " + fold.getWebId()+ "\n");
+		if(surrogateFold!=null)
+			builder.append("Surrogate Fold: " + surrogateFold.getWebId()  + "\n");
+		if(inverseSurrogateFold!=null)
+			builder.append("Surrogate Fold: " + inverseSurrogateFold.getWebId()  + "\n");
+		for(Node n : neighbors)
+			builder.append("Neighbor:" + n.getWebId() + "\n");
+		for(Node n : surrogateNeighbors)
+			builder.append("Surrogate Neighbor:" + n.getWebId() + "\n");
+		for(Node n : inverseSurrogateNeighbors)
+			builder.append("Inverse Surrogate Neighbor:" + n.getWebId() + "\n");
+		return builder.toString();
+	}
 	
 	/**
 	 * Creates an empty links object
@@ -55,28 +73,15 @@ public class Links implements Serializable {
 	 * @param sn list of surrogate neighbors
 	 * @param isn list of inverse surrogate neighbors
 	 */
-	public Links(Node f, Node sf, Node isf, ArrayList<Node> n, ArrayList<Node> sn, ArrayList<Node> isn){
-		//Add everything to the highest set as well
-		//Add folds
-		fold = f;
-		surrogateFold = sf;
-		inverseSurrogateFold = isf;
-		if (f != null) highest.add(f);
-		if (sf != null) highest.add(sf);
-		if (isf != null) highest.add(isf);
-		//Add neighbors
-		if (n != null){
-			neighbors.addAll(n);
-			highest.addAll(n);
-		}
-		if (sn != null){
-			surrogateNeighbors.addAll(sn);
-			highest.addAll(sn);
-		}
-		if (isn != null){
-			inverseSurrogateNeighbors.addAll(isn);
-			highest.addAll(isn);
-		}
+	public Links(int UID, LinksImmutable l){
+		this.UID = UID;		
+		fold = l.fold;
+		surrogateFold = l.surrogateFold;
+		inverseSurrogateFold = l.inverseSurrogateFold;
+		neighbors = l.neighbors;
+		surrogateNeighbors = l.surrogateNeighbors;
+		inverseSurrogateNeighbors = l.inverseSurrogateNeighbors;
+		highest = l.highest;
 	}
 	
 	/**
@@ -115,6 +120,7 @@ public class Links implements Serializable {
 		//Update the highest connection list
 		//Make sure this node isn't being referenced elsewhere
 		//Cannot have same reference in fold-set or neighbor-set
+		/*
 		boolean isFoldType = type == Type.FOLD || type == Type.SFOLD || type == Type.ISFOLD;
 		if (oldNode != null && !(
 			(!isFoldType &&
@@ -124,6 +130,17 @@ public class Links implements Serializable {
 		{
 			highest.remove(oldNode);
 		}
+		//*/
+		//*
+		//Update the highest connection list
+		//Make sure this node isn't being referenced elsewhere
+		if (oldNode != null && (!(fold == oldNode || surrogateFold == oldNode ||
+			inverseSurrogateFold == oldNode || neighbors.contains(oldNode) ||
+			surrogateNeighbors.contains(oldNode) || inverseSurrogateNeighbors.contains(oldNode))))
+		{
+			highest.remove(oldNode);
+		}
+		//*/
 		//Add it to the appropriate structure
 		//Change the key back to the changed value
 		if (newNode != null){
@@ -188,10 +205,11 @@ public class Links implements Serializable {
 				here.add(link.L);
 			//Is a proxy
 			else{
-				ArrayList<Links> list = proxies.get(laddr);
+				RemoteAddress generic = new RemoteAddress(laddr);
+				ArrayList<Links> list = proxies.get(generic);
 				if (list == null){
 					list = new ArrayList();
-					proxies.put(laddr, list);
+					proxies.put(generic, list);
 				}
 				list.add(link.L);
 			}
@@ -221,8 +239,11 @@ public class Links implements Serializable {
 		//We merge all duplicate proxy/real node references into one pointer
 		ArrayList<HeightUpdate> reinsert = new ArrayList();
 		for (Links l: toUpdate){
-			assert(!(l instanceof LinksProxy));
-			reinsert.add(l.removeOutdatedLink(webId, oldHeight, newHeight));
+			if (l == null)
+				continue;
+			if (l instanceof LinksProxy)
+				System.err.println("_resortLinks will fail! This should not happen");
+			reinsert.add(l._removeOutdatedLink(webId, oldHeight, newHeight));
 		}
 		
 		//Re-insert the one pointer to rule them all
@@ -241,9 +262,9 @@ public class Links implements Serializable {
 				if (update.neighborRef != null)
 					toUpdate[i].update(null, pointer, update.neighborRef);
 			}
-		}		
+		}
 	}
-	private HeightUpdate removeOutdatedLink(int webID, int oldHeight, int newHeight){
+	private HeightUpdate _removeOutdatedLink(int webID, int oldHeight, int newHeight){
 		/* Since height makes up part of the key for the TreeSets, changing height
 			poses a foreboding challenge. If the object is a reference/pointer in
 			multiple TreeSets, changing the pointer in one will break retrieval
@@ -323,7 +344,6 @@ public class Links implements Serializable {
 	 * @param n the node to remove
 	 */
 	protected void removeNeighbor(Node n){
-		System.err.println("FATAL ERROR HERE; THIS SHOULD NOT BE CALLED!!!!");
 		update(n, null, Type.NEIGHBOR);
 	}
 	
@@ -389,6 +409,9 @@ public class Links implements Serializable {
 	 */
 	protected void setInverseSurrogateFold(Node isf) {
 		update(null, isf, Type.ISFOLD);
+	}
+	public void setWriteRealLinks(boolean writeRealLinks){
+		this.writeRealLinks = writeRealLinks;
 	}
 	
 	//GETTERS
@@ -509,13 +532,30 @@ public class Links implements Serializable {
 			return null;
 		return inverseSurrogateNeighbors.first();
 	}
+	/**
+	 * Get all proxy nodes
+	 * @return an arraylist of proxy nodes
+	 */
+	public ArrayList<Node> getProxies(){
+		RemoteAddress origin = Communicator.getAddress();
+		ArrayList<Node> proxies = new ArrayList();
+		for (Node n: highest){
+			if (!n.getAddress().onSameMachineAs(origin))
+				proxies.add(n);
+		}
+		return proxies;
+	}
 	
 	//NETWORKING
 	public Object writeReplace() throws ObjectStreamException {
-		//TODO: Figure out how to send real links in case of replacing node
-		return new LinksProxy(this);
+		if (writeRealLinks)
+			return this;
+		return new LinksProxy(UID);
 	}
 	public Object readResolve() throws ObjectStreamException {
 		return this;
+	}
+	public LinksImmutable convertToImmutable(){
+		return new LinksImmutable(this);
 	}
 }

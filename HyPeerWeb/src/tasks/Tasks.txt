@@ -29,10 +29,13 @@ Other Stuff:
 	- add assert statements before all methods?
 	- write any missing javadoc
 	- come up with a way to remove SegmentProxy/NodeProxy duplicate code
+	- Make SegmentDB work for other proxies besides NodeProxy
 	- make comm.request and commands more generalized/reusable
 	- general code improvement...
 - RSA signing of application requests
+- Make remote-address hook up to the public IP somehow
 - Error detection and handling; rollback on failure
+- Fix inconsistent bug: after adding nodes and deleting all nodes, if you add more, removing them may fail or fail the validator, but we don't know when it can always fail
 
 Questions:
 ===========================

@@ -18,10 +18,10 @@ public class Command implements Serializable{
 	//The name of the method to be invoked.
 	public final String methodName;
 	//Fully qualified parameter class names (or raw primitive name: "int", "boolean", etc)
-	protected transient ArrayList<String> paramTypes_lst = new ArrayList();
+	protected ArrayList<String> paramTypes_lst = new ArrayList();
 	protected String[] paramTypes;
 	//The actual parameters to be used when the method is invoked.
-	protected transient ArrayList<Object> paramVals_lst = new ArrayList();
+	protected ArrayList<Object> paramVals_lst = new ArrayList();
 	protected Object[] paramVals;	
 	//These two vars should only be set in Communicator and used by ServerThread, never anywhere else
 	protected boolean commSync = false;		// execute synchronously
@@ -64,7 +64,7 @@ public class Command implements Serializable{
 	 * @param paramVal the parameter's value
 	 */
 	public void setBaseParameter(int index, Object paramVal){
-		paramVals_lst.set(index+addedParamCount, paramVal);
+		setParameter(index+addedParamCount, paramVal);
 	}
 	/**
 	 * Set the parameter at this index
@@ -127,8 +127,7 @@ public class Command implements Serializable{
 				e.getCause().printStackTrace();
 			else{
 				//This is a reflection error
-				System.err.println("Reflection on: "+methodName+"("+Arrays.toString(paramTypes_lst.toArray(new String[l]))+")");
-				System.err.println("With parameters: "+Arrays.toString(paramVals_lst.toArray(new Object[l])));
+				System.err.println(this);
 				String[] names = new String[l];
 				for (int i=0; i<l; i++){
 					Object v = paramVals_lst.get(i);
@@ -142,7 +141,8 @@ public class Command implements Serializable{
 	}
 	/**
 	 * Should this listener be executed on the machine that created it?
-	 * @param enabled true, to enable remote execution
+	 * @param enabled true, to enable remote execution; this sets
+	 * the "origin" machine as the current machine
 	 */
 	public Command setRemote(boolean enabled){
 		origin = enabled ? Communicator.getAddress() : null;
@@ -182,5 +182,11 @@ public class Command implements Serializable{
 		paramTypes_lst = new ArrayList(Arrays.asList(paramTypes));
 		paramVals_lst = new ArrayList(Arrays.asList(paramVals));
 		return this;
+	}
+	
+	public String toString(){
+		int l = paramTypes_lst.size();
+		String name = "Reflection on: "+methodName+"("+Arrays.toString(paramTypes_lst.toArray(new String[l]))+")";
+		return name+"\nWith parameters: "+Arrays.toString(paramVals_lst.toArray(new Object[l]));
 	}
 }

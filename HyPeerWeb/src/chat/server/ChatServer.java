@@ -4,11 +4,17 @@ import chat.Main;
 import chat.client.ChatClient;
 import communicator.*;
 import hypeerweb.*;
+import hypeerweb.validator.Validator;
 import hypeerweb.visitors.*;
 import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -20,7 +26,7 @@ import java.util.Random;
 /**
  * Handles communications in the chat network
  */
-public class ChatServer{
+public class ChatServer implements Serializable{
 	public static final String className = ChatServer.class.getName();
 	public static final int UID = Communicator.assignId();
 	//Chat servers are singletons
@@ -29,28 +35,58 @@ public class ChatServer{
 	//Inception web
 	private static Segment<Node> segment;
 	private static String networkName = "";
+	private static String dbName;
 	//Node cache for the entire HyPeerWeb
 	private static SegmentCache cache;
 	private static final ArrayList<Integer> syncRequests = new ArrayList();
 	private static final ArrayList<SyncRequest> syncResults = new ArrayList();
 	//Cached list of all users
 	private static final Random randomName = new Random();
-	private static final HashMap<Integer, ChatUser> users = new HashMap();
+	private static HashMap<Integer, ChatUser> users = new HashMap();
 	//List of all users and their GUI/Clients that are leeching on this network
-	private static final HashMap<Integer, ChatUser> clients = new HashMap();
+	private static HashMap<Integer, ChatUser> clients = new HashMap();
+	protected static enum State{ON, OFF};
+	protected static State state = State.ON;
 	
-	private ChatServer(){
-		segment = new Segment("HyPeerWeb.db", -1);
-		Communicator.startup(0);
+	private ChatServer(int port){
+		Communicator.startup(port);
+		dbName = "HyPeerWeb" + Communicator.getAddress().port + ".db";
+		if (port == 0)
+			segment = Segment.<Node>newSegment(dbName, -1);
 	}
 	/**
 	 * Gets an instance of the server on this computer
 	 * @return the server singleton
 	 */
-	public static ChatServer getInstance(){
+	public static ChatServer getInstance(int port){
 		//Create the singleton
-		if (instance == null)
-			instance = new ChatServer();
+		if (instance == null){
+			instance = new ChatServer(port);
+			if (port != 0){
+				try {
+					ObjectInputStream stream = new ObjectInputStream(new FileInputStream(new File("Server"+port+".db")));
+					ServerDB db = (ServerDB) stream.readObject();
+					stream.close();
+					
+					//Load database
+					users = db.users;
+					clients = db.clients;
+					dbName = db.dbName;
+					segment = SegmentDB.load(dbName);
+					Communicator.setId(db.globalUID);					
+					segment.L = db.links;
+					cache = new SegmentCache();
+					
+					//Broadcast startup
+					Command startup = new Command(ChatClient.className, "startup");
+					for (ChatUser user : db.clients.values())
+						cache = (SegmentCache) Communicator.request(user.client, startup, true);
+
+				} catch (Exception ex) {
+					System.err.println("Error recovering segment db");
+				}
+			}
+		}
 		return instance;
 	}
 	
@@ -87,7 +123,7 @@ public class ChatServer{
 			new Object[]{Communicator.getAddress(), cache, user, users.values().toArray(new ChatUser[users.size()])}
 		);
 		Communicator.request(client, register, false);
-		
+
 		//Add new client to our list (this should come last)
 		clients.put(newUser, user);
 	}
@@ -123,6 +159,18 @@ public class ChatServer{
 				args.add("-leech");
 				args.add(leecher.toString());
 			}
+			System.out.println("Starting a new child server process...");
+			Process x = new ProcessBuilder(args).start();
+			new StreamGobbler(x.getErrorStream(), "Server Error").start();
+		} catch (IOException e) {
+			System.err.println("Failed to start a new JVM process!");
+		}
+	}
+	public static void restartServerProcess(int port){
+		try {
+			ArrayList<String> args = new ArrayList(Arrays.asList(
+				new String[]{Main.jvm, "-cp", Main.executable, Main.className, "-gui","-new","-p",String.valueOf(port)}
+			));
 			System.out.println("Starting a new child server process...");
 			Process x = new ProcessBuilder(args).start();
 			new StreamGobbler(x.getErrorStream(), "Server Error").start();
@@ -223,7 +271,9 @@ public class ChatServer{
 		Segment conn = (Segment) segment.L.getLowestLink();
 		if (conn != null){
 			//Disconnect from the inception web
-			segment.removeSegment(null);
+			segment.removeSegment(new NodeListener(
+				className, "_changeNetworkID"
+			));
 			//Send data to "conn"
 			ChatUser[] rusers = clients.values().toArray(new ChatUser[clients.size()]);
 			RemoteAddress[] raddress = new RemoteAddress[clients.size()];
@@ -231,8 +281,8 @@ public class ChatServer{
 				raddress[i] = rusers[i].client;
 			conn.executeRemotely(new NodeListener(
 				className, "_mergeServerData",
-				new String[]{SegmentCache.className, ChatUser.classNameArr, RemoteAddress.classNameArr},
-				new Object[]{null, rusers, raddress}
+				new String[]{"hypeerweb.SegmentDB", ChatUser.classNameArr, RemoteAddress.classNameArr},
+				new Object[]{new SegmentDB(segment), rusers, raddress}
 			));
 		}
 		//Disconnect all clients
@@ -244,15 +294,32 @@ public class ChatServer{
 			);
 			for (ChatUser usr: clients.values())
 				Communicator.request(usr.client, changeServer, false);
+			//Close the app
+			System.exit(0);
 		}
 	}
-	public static void _mergeServerData(SegmentCache cache, ChatUser[] rusers, RemoteAddress[] addresses){
+	public static void _changeNetworkID(Node removed, Node replaced, int oldWebID){
+		//Change network ID's for the users
+		int newID = replaced.getWebId();
+		for (ChatUser usr: users.values()){
+			if (usr.networkID == oldWebID)
+				usr.networkID = newID;
+		}
+		//Change client stuff
+		cache.changeNetworkID(oldWebID, replaced.getWebId());
+		Command changeNetworkID = new Command(ChatClient.className, "changeNetworkID", 
+				new String[]{"int","int"}, new Object[]{oldWebID, newID});
+		for (ChatUser c : clients.values())
+			Communicator.request(c.client, changeNetworkID, false);
+		//Close the app
+		System.exit(0);
+	}
+	public static void _mergeServerData(Node n, SegmentDB db, ChatUser[] rusers, RemoteAddress[] addresses){
 		for(int i=0;i<rusers.length;i++){
 			rusers[i].client = addresses[i];
 			clients.put(rusers[i].id, rusers[i]);
 		}
-		//TODO change user network ID
-		//TODO add cache to this.cache
+		db.transferTo(segment);
 		Command changeServer = new Command(
 			ChatClient.className, "changeServer",
 			new String[]{RemoteAddress.className},
@@ -260,19 +327,61 @@ public class ChatServer{
 		);
 		for (int i=0; i<addresses.length; i++)
 			Communicator.request(addresses[i], changeServer, false);
-		//TODO 
 	}
 	/**
 	 * Shutdown all servers in this network
 	 */
-	public static void shutdown(){}
+	public static void shutdown_broadcast(){
+		new BroadcastVisitor(new NodeListener(className, "shutdown")).visit(segment);
+	}
+	public static void shutdown(Node n){
+		Command shutdown = new Command(ChatClient.className, "shutdown");
+		for(ChatUser user : clients.values()){
+			Communicator.request(user.client, shutdown, false);
+		}
+		//Save database
+		SegmentDB.save(segment);	
+		ServerDB db = new ServerDB();
+		db.clients = clients;
+		db.users = users;
+		db.dbName = segment.dbname;
+		db.globalUID = Communicator.assignId();
+		segment.L.setWriteRealLinks(true);
+		db.links = segment.L;
+		for (NodeCache c: cache.nodes.values())
+			db.cache.add(c);
+		
+		try{
+			ObjectOutputStream stream = new ObjectOutputStream(new FileOutputStream("Server"+Communicator.getAddress().port+".db"));
+			stream.writeObject(db);
+			stream.close();
+		}
+		catch(Exception e){
+			e.printStackTrace();
+		}
+		
+		new Thread(){
+			@Override
+			public void run() {
+				try {
+					Thread.sleep(1000);
+				} catch (InterruptedException ex) {
+					System.err.println("Failed to wait to close!");
+				}
+				System.exit(0);
+			}
+		}.start();
+	}
+	public static boolean isShutDown(){
+		return state == State.OFF;
+	}
 	/**
 	 * Change the ChatServer's name
 	 * @param name 
 	 */
 	public static void changeNetworkName(String name){
 		networkName = name;
-		//broadcast to all network name listeners
+		//todo: broadcast to all network name listeners
 	}
 	
 	//NODES
@@ -294,15 +403,20 @@ public class ChatServer{
 	 * @param webID the webID of the node to delete
 	 */
 	public static void removeNode(int webID){
-		segment.removeNode(webID, new NodeListener(
-			className, "_removeNode"
-		));
+		if (segment.state != Segment.HyPeerWebState.HAS_NONE){
+			segment.removeNode(webID, new NodeListener(
+				className, "_removeNode"
+			));
+		}
 	}
 	protected static void _removeNode(Node removed, Node replaced, int oldWebID){
 		HashSet<Integer> dirty = cache.removeNode(removed.convertToCached(), true);
 		//Replaced node is both an addedNode and a removedNode
-		NodeCache cleanReplace = replaced.convertToCached();
-		dirty.addAll(cache.replaceNode(oldWebID, cleanReplace, true));
+		NodeCache cleanReplace = null;
+		if (replaced != null){
+			cleanReplace = replaced.convertToCached();
+			dirty.addAll(cache.replaceNode(oldWebID, cleanReplace, true));
+		}
 		syncCache(dirty, cleanReplace, new int[]{removed.getWebId(), oldWebID});
 	}
 	public static void removeAllNodes(){
@@ -539,7 +653,7 @@ public class ChatServer{
 		public int id;
 		//Server that owns this user
 		public int networkID;
-		public transient RemoteAddress client;
+		public RemoteAddress client;
 		
 		/**
 		 * Create a new chat user
@@ -572,9 +686,49 @@ public class ChatServer{
 		return instance != null;
 	}
 	public static void _debug(){
+		new BroadcastVisitor(new NodeListener(
+			ChatServer.className, "_sync_broadcast"
+		)).visit(segment);
+		/*
+		SegmentCache actualCache = segment.getCache();
+		Validator v = new Validator(actualCache);
 		System.err.println("PRINTING SERVER DATA");
-		System.out.println(segment.inceptionState);
-		System.out.println(segment.convertToCached());		
+		System.out.println("ISTATE = "+segment.inceptionState);
+		try{
+			boolean valid = v.validate();
+			System.out.println("Valid = "+valid);
+			if (!valid){
+				System.out.println(actualCache);
+			}
+		} catch (Exception e){
+			System.err.println("Error validating:");
+			System.err.println(e.getMessage());
+		}
 		System.err.println("--------------------");
+		*/
+	}
+	private static void _sync_broadcast(Node n){
+		RemoteAddress addr = Communicator.getAddress();
+		new BroadcastVisitor(new NodeListener(
+			ChatServer.className, "_sync_entire",
+			new String[]{RemoteAddress.className},
+			new Object[]{addr}
+		)).visit(segment);
+	}
+	private static void _sync_entire(Node n, RemoteAddress addr){
+		SegmentCache c = segment.getCache();
+		Command merge = new Command(ChatServer.className, "_sync_merge", new String[]{SegmentCache.className}, new Object[]{c});
+		Communicator.request(addr, merge, false);
+	}
+	private static void _sync_merge(SegmentCache new_cache){
+		cache.merge(new_cache);
+	}
+	public static class ServerDB implements Serializable{
+		public int globalUID;
+		public String dbName;
+		public HashMap<Integer, ChatUser> users;
+		public HashMap<Integer, ChatUser> clients;
+		public Links links;
+		public ArrayList<NodeCache> cache = new ArrayList();
 	}
 }

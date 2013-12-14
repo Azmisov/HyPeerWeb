@@ -19,15 +19,17 @@ import java.util.HashSet;
 public class NodeCache implements NodeInterface, Serializable {
 	//Network id
 	protected int networkID;
+	protected int UID;
 	//Node attributes
 	protected final int webID, height;
 	//Node links
 	protected final int[] n, sn, isn;
 	protected int f = -1, sf = -1, isf = -1;
-	protected transient SegmentCache parent;
+	protected SegmentCache parent;
 
 	public NodeCache(hypeerweb.Node real, final SegmentCache parent){
 		this.parent = parent;
+		UID = real.UID;
 		webID = real.getWebId();
 		height = real.getHeight();
 		Segment host = real.getHostSegment();
@@ -45,7 +47,10 @@ public class NodeCache implements NodeInterface, Serializable {
 		sn = convertToCached(real.L.getSurrogateNeighbors());
 		isn = convertToCached(real.L.getInverseSurrogateNeighbors());
 	}
-
+	public void setParent(SegmentCache parent){
+		this.parent = parent;
+	}
+	
 	//BASIC GETTERS
 	public int getNetworkId() {
 		return networkID;

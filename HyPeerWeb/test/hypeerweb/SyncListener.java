@@ -15,4 +15,6 @@ public class SyncListener extends NodeListener{
 	}
 	@Override
 	public void callback(Node n){}
+	@Override
+	public void callback(Node n, Node n2, int id){}
 }
