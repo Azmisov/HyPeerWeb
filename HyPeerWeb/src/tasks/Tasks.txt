@@ -1,14 +1,3 @@
-For Pass-off:
-===========================
-- Server shutdown
-	- Come up with a way to store links/nodes in a database file
-	- This can probably be built on top of SegmentCache; it will need special deserialization though
-- Debug remove node
-	- Fix replaceNode to send actual links object, not proxy
-	- Make all HyPeerWeb states' removeNode use the new callback Brian made
-- Debug server disconnect
-	- Handle network-id changes for NodeCache/ChatUsers
-
 Other Stuff:
 ==========================
 - Network-name stuff (low priority)
@@ -36,6 +25,8 @@ Other Stuff:
 - Make remote-address hook up to the public IP somehow
 - Error detection and handling; rollback on failure
 - Fix inconsistent bug: after adding nodes and deleting all nodes, if you add more, removing them may fail or fail the validator, but we don't know when it can always fail
+- Fix database deserialization when bringing network back online; for some reason, the only way to get it to work again
+	is if you click the "Resync" button in the GUI
 
 Questions:
 ===========================
